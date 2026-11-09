@@ -1,120 +1,177 @@
-import maplibregl, { type LngLatLike } from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import mapboxgl from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
 import { useEffect, useRef } from 'react'
 import { config } from '../lib/config'
-import { REPORT_KINDS, ageLabel, type TrafficReport } from '../lib/reports'
-import type { Bounds } from '../lib/reports'
+import { REPORT_KINDS, ageLabel, type Bounds, type TrafficReport } from '../lib/reports'
 import type { FavoritePlace, Place, Route } from '../lib/types'
 
+mapboxgl.accessToken = config.mapbox.token
+
+export type BaseMap = 'default' | 'satellite'
+
+export interface ResultPin {
+  id: string
+  place: Place
+  label: string
+}
+
 interface Props {
+  base: BaseMap
+  dark: boolean
+  traffic: boolean
   selected: Place | null
+  results: ResultPin[]
+  hoveredResult: string | null
   favorites: FavoritePlace[]
   routes: Route[]
   selectedRoute: number
   stops: Place[]
-  onSelectRoute?: (index: number) => void
-  user: { latitude: number; longitude: number } | null
+  user: { latitude: number; longitude: number; accuracy?: number } | null
   reports: TrafficReport[]
   currentUserID: string | null
+  flyTo: { latitude: number; longitude: number; zoom?: number } | null
+  fitTo: { south: number; west: number; north: number; east: number } | null
+  leftInset: number
+  onSelectRoute?: (index: number) => void
   onReportDelete?: (id: string) => void
   onReportFlag?: (id: string) => void
-  onMoveEnd?: (bounds: Bounds) => void
-  flyTo: { latitude: number; longitude: number; zoom?: number } | null
+  onMoveEnd?: (bounds: Bounds, center: { latitude: number; longitude: number }, zoom: number) => void
   onMapClick: (latitude: number, longitude: number) => void
-  onReady?: (map: maplibregl.Map) => void
+  onPoiClick: (place: Place) => void
+  onResultClick: (id: string) => void
+  onReady?: (map: mapboxgl.Map) => void
 }
 
-const ROUTE_SOURCE = 'route'
+const CONGESTION: Record<string, string> = { low: '#1a73e8', moderate: '#f29900', heavy: '#d93025', severe: '#8c1d18', unknown: '#1a73e8' }
 
-export function MapView({ selected, favorites, routes, selectedRoute, stops, onSelectRoute, user, reports, currentUserID, onReportDelete, onReportFlag, onMoveEnd, flyTo, onMapClick, onReady }: Props) {
-  const route = routes[selectedRoute] ?? null
+function routeFeatures(route: Route | null): GeoJSON.FeatureCollection {
+  if (!route || route.mode === 'transit') return { type: 'FeatureCollection', features: [] }
+  const coords = route.geometry.coordinates
+  const cong = route.congestion
+  if (!cong || cong.length !== coords.length - 1) {
+    return { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { congestion: 'low' }, geometry: route.geometry }] }
+  }
+  // Merge runs of equal congestion into one line each.
+  const features: GeoJSON.Feature[] = []
+  let start = 0
+  for (let i = 1; i <= cong.length; i++) {
+    if (i === cong.length || cong[i] !== cong[start]) {
+      features.push({ type: 'Feature', properties: { congestion: cong[start] }, geometry: { type: 'LineString', coordinates: coords.slice(start, i + 1) } })
+      start = i
+    }
+  }
+  return { type: 'FeatureCollection', features }
+}
+
+function transitFeatures(route: Route | null): GeoJSON.FeatureCollection {
+  if (!route || route.mode !== 'transit') return { type: 'FeatureCollection', features: [] }
+  return {
+    type: 'FeatureCollection',
+    features: route.steps
+      .filter((s) => s.geometry)
+      .map((s) => ({ type: 'Feature' as const, properties: { kind: s.transit ? 'ride' : 'walk', color: s.transit?.color ?? '#1a73e8' }, geometry: s.geometry! })),
+  }
+}
+
+export function MapView(p: Props) {
   const container = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<maplibregl.Map | null>(null)
-  const selectedMarker = useRef<maplibregl.Marker | null>(null)
-  const fitKey = useRef<Route[] | null>(null)
-  const userMarker = useRef<maplibregl.Marker | null>(null)
-  const favoriteMarkers = useRef<maplibregl.Marker[]>([])
-  const stopMarkers = useRef<maplibregl.Marker[]>([])
-  const clickHandler = useRef(onMapClick)
-  clickHandler.current = onMapClick
-  const selectRoute = useRef(onSelectRoute)
-  selectRoute.current = onSelectRoute
-  const moveEnd = useRef(onMoveEnd)
-  moveEnd.current = onMoveEnd
-  const reportMarkers = useRef<maplibregl.Marker[]>([])
-  const reportActions = useRef({ onReportDelete, onReportFlag })
-  reportActions.current = { onReportDelete, onReportFlag }
+  const mapRef = useRef<mapboxgl.Map | null>(null)
+  const props = useRef(p)
+  props.current = p
+  const markers = useRef<{ selected?: mapboxgl.Marker; user?: mapboxgl.Marker; favorites: mapboxgl.Marker[]; stops: mapboxgl.Marker[]; results: Map<string, mapboxgl.Marker>; reports: mapboxgl.Marker[] }>({
+    favorites: [], stops: [], results: new Map(), reports: [],
+  })
+  const fittedRoutes = useRef<Route[] | null>(null)
+  const styleKey = (base: BaseMap, dark: boolean) => (base === 'satellite' ? config.mapbox.styles.satellite : dark ? config.mapbox.styles.dark : config.mapbox.styles.light)
+
+  // Push route + traffic data into the (possibly freshly reloaded) style.
+  const syncLayers = () => {
+    const map = mapRef.current
+    if (!map || !map.getSource('route')) return
+    const { routes, selectedRoute, traffic } = props.current
+    const route = routes[selectedRoute] ?? null
+    ;(map.getSource('route') as mapboxgl.GeoJSONSource | undefined)?.setData(routeFeatures(route))
+    ;(map.getSource('transit') as mapboxgl.GeoJSONSource | undefined)?.setData(transitFeatures(route))
+    ;(map.getSource('alternatives') as mapboxgl.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features: routes.map((r, index) => ({ type: 'Feature' as const, properties: { index }, geometry: r.geometry })).filter((f) => f.properties.index !== selectedRoute),
+    })
+    if (map.getLayer('traffic-flow')) map.setLayoutProperty('traffic-flow', 'visibility', traffic ? 'visible' : 'none')
+  }
+
+  const addCustomLayers = () => {
+    const map = mapRef.current!
+    const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
+    // Live traffic, Mapbox's own feed. Drawn under labels.
+    // Above every road and bridge, below road names and POI labels.
+    const firstSymbol = ['road-label-simple', 'road-label', 'road-number-shield', 'poi-label'].find((id) => map.getLayer(id))
+    if (!map.getSource('mapbox-traffic')) {
+      map.addSource('mapbox-traffic', { type: 'vector', url: 'mapbox://mapbox.mapbox-traffic-v1' })
+      map.addLayer({
+        id: 'traffic-flow', type: 'line', source: 'mapbox-traffic', 'source-layer': 'traffic',
+        layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1, 16, 3.5],
+          'line-color': ['match', ['get', 'congestion'], 'low', '#34a853', 'moderate', '#fbbc04', 'heavy', '#ea4335', 'severe', '#a50e0e', '#34a853'],
+          'line-offset': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 2],
+        },
+      }, firstSymbol)
+    }
+    for (const id of ['alternatives', 'route', 'transit']) if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: empty })
+    map.addLayer({ id: 'alt-casing', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#5f6368', 'line-width': 9, 'line-opacity': 0.5 } }, firstSymbol)
+    map.addLayer({ id: 'alt-line', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#bcc5d3', 'line-width': 6 } }, firstSymbol)
+    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#0b57d0', 'line-width': 10 } }, firstSymbol)
+    map.addLayer({
+      id: 'route-line', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': ['match', ['get', 'congestion'], ...Object.entries(CONGESTION).flat(), '#1a73e8'] as never, 'line-width': 6.5 },
+    }, firstSymbol)
+    map.addLayer({ id: 'transit-walk', type: 'line', source: 'transit', filter: ['==', ['get', 'kind'], 'walk'], layout: { 'line-cap': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 5, 'line-dasharray': [0.1, 1.8] } }, firstSymbol)
+    map.addLayer({ id: 'transit-ride', type: 'line', source: 'transit', filter: ['==', ['get', 'kind'], 'ride'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 7 } }, firstSymbol)
+    syncLayers()
+  }
 
   useEffect(() => {
     if (!container.current || mapRef.current) return
-    const map = new maplibregl.Map({
+    const map = new mapboxgl.Map({
       container: container.current,
-      style: config.tiles.styleURL,
+      style: styleKey(p.base, p.dark),
       center: [-73.9857, 40.7484],
-      zoom: 12,
-      attributionControl: { compact: true },
+      zoom: 13,
+      attributionControl: false,
+      projection: 'mercator',
     })
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right')
-    map.on('click', (e) => {
-      const hit = map.queryRenderedFeatures(e.point, { layers: ['alt-line'] })
-      if (hit.length && selectRoute.current) {
-        selectRoute.current(hit[0].properties.index as number)
-        return
-      }
-      clickHandler.current(e.lngLat.lat, e.lngLat.lng)
-    })
-    const emitBounds = () => {
-      const b = map.getBounds()
-      moveEnd.current?.({ south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() })
-    }
-    map.on('moveend', emitBounds)
-    map.on('load', () => {
-      emitBounds()
-      map.addSource(ROUTE_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-      map.addSource('alternatives', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-      map.addLayer({
-        id: 'alt-line',
-        type: 'line',
-        source: 'alternatives',
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#8e8e93', 'line-width': 6, 'line-opacity': 0.7 },
-      })
-      map.on('mouseenter', 'alt-line', () => (map.getCanvas().style.cursor = 'pointer'))
-      map.on('mouseleave', 'alt-line', () => (map.getCanvas().style.cursor = ''))
-      map.addSource('transit-steps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-      map.addLayer({
-        id: 'route-casing',
-        type: 'line',
-        source: ROUTE_SOURCE,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#0a5cc2', 'line-width': 10, 'line-opacity': 0.9 },
-      })
-      map.addLayer({
-        id: 'route-line',
-        type: 'line',
-        source: ROUTE_SOURCE,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#2f8fff', 'line-width': 6 },
-      })
-      map.addLayer({
-        id: 'transit-walk',
-        type: 'line',
-        source: 'transit-steps',
-        filter: ['==', ['get', 'kind'], 'walk'],
-        layout: { 'line-cap': 'round' },
-        paint: { 'line-color': '#5e5ce6', 'line-width': 5, 'line-dasharray': [0.2, 1.6] },
-      })
-      map.addLayer({
-        id: 'transit-ride',
-        type: 'line',
-        source: 'transit-steps',
-        filter: ['==', ['get', 'kind'], 'ride'],
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': ['get', 'color'], 'line-width': 7 },
-      })
-      onReady?.(map)
-    })
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right')
+    map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial', maxWidth: 100 }), 'bottom-right')
     mapRef.current = map
+    map.on('style.load', addCustomLayers)
+    const emit = () => {
+      const b = map.getBounds()!
+      const c = map.getCenter()
+      props.current.onMoveEnd?.({ south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() }, { latitude: c.lat, longitude: c.lng }, map.getZoom())
+    }
+    map.on('moveend', emit)
+    map.on('load', () => {
+      emit()
+      props.current.onReady?.(map)
+    })
+    map.on('click', (e) => {
+      const alt = map.queryRenderedFeatures(e.point, { layers: ['alt-line'] })
+      if (alt.length && props.current.onSelectRoute) return props.current.onSelectRoute(alt[0].properties!.index as number)
+      // A named POI on the basemap opens like a search result, as in Google Maps.
+      const poiLayers = (map.getStyle().layers ?? []).filter((l) => l.type === 'symbol' && /poi|transit|airport/.test(l.id)).map((l) => l.id)
+      const poi = poiLayers.length ? map.queryRenderedFeatures([[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]], { layers: poiLayers }).find((f) => f.properties?.name) : undefined
+      if (poi && poi.geometry.type === 'Point') {
+        const [lng, lat] = poi.geometry.coordinates as [number, number]
+        return props.current.onPoiClick({ title: String(poi.properties!.name), subtitle: '', latitude: lat, longitude: lng, kind: poi.properties!.class as string | undefined })
+      }
+      props.current.onMapClick(e.lngLat.lat, e.lngLat.lng)
+    })
+    map.on('mousemove', (e) => {
+      if (!map.getStyle()) return
+      const poiLayers = (map.getStyle().layers ?? []).filter((l) => l.type === 'symbol' && /poi|transit|airport/.test(l.id)).map((l) => l.id)
+      const hit = map.queryRenderedFeatures(e.point, { layers: [...poiLayers, ...(map.getLayer('alt-line') ? ['alt-line'] : [])] }).length > 0
+      map.getCanvas().style.cursor = hit ? 'pointer' : ''
+    })
     return () => {
       map.remove()
       mapRef.current = null
@@ -122,129 +179,142 @@ export function MapView({ selected, favorites, routes, selectedRoute, stops, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Base map / dark mode switches reload the style; custom layers come back via style.load.
+  const currentStyle = useRef(styleKey(p.base, p.dark))
+  useEffect(() => {
+    const next = styleKey(p.base, p.dark)
+    if (!mapRef.current || next === currentStyle.current) return
+    currentStyle.current = next
+    // A different style fires style.load, which rebuilds our layers on it.
+    mapRef.current.setStyle(next)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.base, p.dark])
+
+  useEffect(syncLayers, [p.routes, p.selectedRoute, p.traffic]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fit a new set of routes once.
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
-    selectedMarker.current?.remove()
-    selectedMarker.current = null
-    if (selected) {
-      selectedMarker.current = new maplibregl.Marker({ color: '#ff3b30' })
-        .setLngLat([selected.longitude, selected.latitude])
-        .addTo(map)
-    }
-  }, [selected])
+    const route = p.routes[p.selectedRoute]
+    if (!map || !route || fittedRoutes.current === p.routes || route.geometry.coordinates.length === 0) return
+    fittedRoutes.current = p.routes
+    const b = new mapboxgl.LngLatBounds()
+    for (const r of p.routes) for (const c of r.geometry.coordinates) b.extend(c as [number, number])
+    const narrow = window.innerWidth < 760
+    map.fitBounds(b, { padding: narrow ? { top: 70, bottom: window.innerHeight * 0.72, left: 30, right: 30 } : { top: 90, bottom: 100, left: p.leftInset + 60, right: 80 }, duration: 600 })
+  }, [p.routes, p.selectedRoute, p.leftInset])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !p.fitTo) return
+    const narrow = window.innerWidth < 760
+    map.fitBounds([[p.fitTo.west, p.fitTo.south], [p.fitTo.east, p.fitTo.north]], { padding: narrow ? { top: 120, bottom: window.innerHeight * 0.6, left: 30, right: 30 } : { top: 90, bottom: 60, left: p.leftInset + 50, right: 60 }, maxZoom: 16, duration: 600 })
+  }, [p.fitTo]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !p.flyTo) return
+    // Keep the point clear of the side panel.
+    // On phones the bottom sheet covers the lower ~58%, so lift the point above it.
+    const narrow = window.innerWidth < 760
+    map.flyTo({ center: [p.flyTo.longitude, p.flyTo.latitude], zoom: p.flyTo.zoom ?? Math.max(map.getZoom(), 15), offset: narrow ? [0, -window.innerHeight * 0.27] : [p.leftInset / 2, 0], duration: 700 })
+  }, [p.flyTo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    favoriteMarkers.current.forEach((m) => m.remove())
-    favoriteMarkers.current = favorites.map((f) => {
+    markers.current.selected?.remove()
+    markers.current.selected = undefined
+    if (p.selected) markers.current.selected = new mapboxgl.Marker({ color: '#ea4335' }).setLngLat([p.selected.longitude, p.selected.latitude]).addTo(map)
+  }, [p.selected])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const m = markers.current.results
+    for (const [id, mk] of m) if (!p.results.some((r) => r.id === id)) { mk.remove(); m.delete(id) }
+    for (const r of p.results) {
+      if (m.has(r.id)) continue
+      const el = document.createElement('button')
+      el.className = 'result-pin'
+      el.innerHTML = `<span class="dot"></span><span class="label"></span>`
+      el.querySelector('.label')!.textContent = r.label
+      el.addEventListener('click', (e) => { e.stopPropagation(); props.current.onResultClick(r.id) })
+      m.set(r.id, new mapboxgl.Marker({ element: el, anchor: 'left', offset: [-8, 0] }).setLngLat([r.place.longitude, r.place.latitude]).addTo(map))
+    }
+  }, [p.results])
+
+  useEffect(() => {
+    for (const [id, mk] of markers.current.results) mk.getElement().classList.toggle('hover', id === p.hoveredResult)
+  }, [p.hoveredResult, p.results])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    markers.current.favorites.forEach((m) => m.remove())
+    markers.current.favorites = p.favorites.map((f) => {
       const el = document.createElement('div')
       el.className = 'fav-marker'
-      el.style.background = f.colorHex ?? '#ff9500'
+      el.style.background = f.colorHex ?? '#ea4335'
       el.textContent = f.emoji ?? '★'
       el.title = f.customTitle || f.title
-      return new maplibregl.Marker({ element: el }).setLngLat([f.longitude, f.latitude]).addTo(map)
+      el.addEventListener('click', (e) => { e.stopPropagation(); props.current.onPoiClick({ title: f.customTitle || f.title, subtitle: f.subtitle, latitude: f.latitude, longitude: f.longitude }) })
+      return new mapboxgl.Marker({ element: el }).setLngLat([f.longitude, f.latitude]).addTo(map)
     })
-  }, [favorites])
+  }, [p.favorites])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    userMarker.current?.remove()
-    userMarker.current = null
-    if (user) {
+    markers.current.stops.forEach((m) => m.remove())
+    markers.current.stops = p.stops.map((s, i) => {
+      const last = i === p.stops.length - 1
+      if (last) return new mapboxgl.Marker({ color: '#ea4335' }).setLngLat([s.longitude, s.latitude]).addTo(map)
+      const el = document.createElement('div')
+      el.className = 'stop-marker'
+      el.textContent = i === 0 ? '' : String.fromCharCode(65 + i)
+      return new mapboxgl.Marker({ element: el }).setLngLat([s.longitude, s.latitude]).addTo(map)
+    })
+  }, [p.stops])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    markers.current.user?.remove()
+    markers.current.user = undefined
+    if (p.user) {
       const el = document.createElement('div')
       el.className = 'user-dot'
-      userMarker.current = new maplibregl.Marker({ element: el }).setLngLat([user.longitude, user.latitude]).addTo(map)
+      markers.current.user = new mapboxgl.Marker({ element: el }).setLngLat([p.user.longitude, p.user.latitude]).addTo(map)
     }
-  }, [user])
+  }, [p.user])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    const apply = () => {
-      const src = map.getSource(ROUTE_SOURCE) as maplibregl.GeoJSONSource | undefined
-      const alt = map.getSource('alternatives') as maplibregl.GeoJSONSource | undefined
-      const steps = map.getSource('transit-steps') as maplibregl.GeoJSONSource | undefined
-      if (!src || !alt || !steps) return
-      const isTransit = route?.mode === 'transit'
-      src.setData(
-        route && !isTransit
-          ? { type: 'Feature', properties: {}, geometry: route.geometry }
-          : { type: 'FeatureCollection', features: [] },
-      )
-      steps.setData({
-        type: 'FeatureCollection',
-        features: isTransit && route
-          ? route.steps.filter((s) => s.geometry).map((s) => ({ type: 'Feature' as const, properties: { kind: s.transit ? 'ride' : 'walk', color: s.transit?.color ?? '#5e5ce6' }, geometry: s.geometry! }))
-          : [],
-      })
-      alt.setData({
-        type: 'FeatureCollection',
-        features: routes
-          .map((r, index) => ({ type: 'Feature' as const, properties: { index }, geometry: r.geometry }))
-          .filter((f) => f.properties.index !== selectedRoute),
-      })
-      if (route && fitKey.current !== routes) {
-        fitKey.current = routes
-        const coords = route.geometry.coordinates as [number, number][]
-        const bounds = coords.reduce(
-          (b: maplibregl.LngLatBounds, c: [number, number]) => b.extend(c as LngLatLike),
-          new maplibregl.LngLatBounds(coords[0], coords[0]),
-        )
-        map.fitBounds(bounds, { padding: window.innerWidth < 640 ? { top: 80, bottom: window.innerHeight * 0.55 + 20, left: 30, right: 30 } : { top: 80, bottom: 80, left: 420, right: 80 }, duration: 600 })
-      }
-    }
-    if (map.isStyleLoaded()) apply()
-    else map.once('load', apply)
-  }, [routes, selectedRoute, route])
-
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    stopMarkers.current.forEach((m) => m.remove())
-    stopMarkers.current = stops.map((p, i) => {
-      const el = document.createElement('div')
-      el.className = 'stop-marker' + (i === stops.length - 1 ? ' dest' : '')
-      el.textContent = i === 0 ? '' : i === stops.length - 1 ? '' : String(i)
-      return new maplibregl.Marker({ element: el }).setLngLat([p.longitude, p.latitude]).addTo(map)
-    })
-  }, [stops])
-
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !flyTo) return
-    map.flyTo({ center: [flyTo.longitude, flyTo.latitude], zoom: flyTo.zoom ?? Math.max(map.getZoom(), 14), duration: 700 })
-  }, [flyTo])
-
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    reportMarkers.current.forEach((m) => m.remove())
-    reportMarkers.current = reports.map((r) => {
+    markers.current.reports.forEach((m) => m.remove())
+    markers.current.reports = p.reports.map((r) => {
       const meta = REPORT_KINDS.find((k) => k.kind === r.kind) ?? REPORT_KINDS[1]
       const el = document.createElement('div')
       el.className = 'report-marker'
       el.style.background = meta.color
       el.textContent = meta.icon
-      el.title = `${r.kind} · ${ageLabel(r.createdAt)}`
-      const mine = currentUserID === r.userID
-      const popup = new maplibregl.Popup({ offset: 16, closeButton: false }).setHTML(
+      const mine = p.currentUserID === r.userID
+      const popup = new mapboxgl.Popup({ offset: 16, closeButton: false }).setHTML(
         `<strong>${r.kind}</strong><br><span class="muted">${ageLabel(r.createdAt)}</span><br>` +
           (mine ? `<button class="link" data-act="delete">Remove my report</button>` : `<button class="link" data-act="flag">Flag as wrong</button>`),
       )
       popup.on('open', () => {
         popup.getElement()?.querySelector('[data-act]')?.addEventListener('click', (e) => {
           const act = (e.currentTarget as HTMLElement).dataset.act
-          if (act === 'delete') reportActions.current.onReportDelete?.(r.id)
-          else reportActions.current.onReportFlag?.(r.id)
+          if (act === 'delete') props.current.onReportDelete?.(r.id)
+          else props.current.onReportFlag?.(r.id)
           popup.remove()
         })
       })
-      return new maplibregl.Marker({ element: el }).setLngLat([r.longitude, r.latitude]).setPopup(popup).addTo(map)
+      return new mapboxgl.Marker({ element: el }).setLngLat([r.longitude, r.latitude]).setPopup(popup).addTo(map)
     })
-  }, [reports, currentUserID])
+  }, [p.reports, p.currentUserID])
 
   return <div ref={container} className="map" />
 }

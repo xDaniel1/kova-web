@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — 2026-11-09
+- Rebuilt around Google Maps' web layout: icon rail (Saved, Recents, Get app), floating search card, category chips, full-height side panel, collapse tab, Layers tile, zoom and locate controls, bottom sheet on phones
+- Map moved to Mapbox GL JS (Streets, Dark, Satellite) with a live Traffic layer and clickable map POIs
+- Search uses Mapbox Search Box suggestions; category chips and Enter show Google-ranked results with photos, ratings, price and open hours
+- Place panel with photo gallery, Overview / Reviews / About tabs and Directions, Save, Nearby, Send to phone, Share
+- Directions use Mapbox (live traffic): mode times, route options coloured by congestion, Leave now / Depart at / Arrive by, lane arrows and speed limits in mph
+- Replaced the public demo services (Photon, OSRM, OpenFreeMap, Overpass) with Mapbox
+
 ## 0.2.0 — unreleased
 - Place details from Google: photos, rating, price, hours, phone, website, reviews and a summary
 - Transit directions: subway, bus and ferry legs drawn in their line colours with stop names, times and fare

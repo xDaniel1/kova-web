@@ -54,8 +54,14 @@ export interface RouteStep {
   geometry?: GeoJSON.LineString
   /** Posted speed limit (OpenStreetMap maxspeed) on this step's road, when known. */
   speedLimit?: string
-  /** turn:lanes for the approach to this step's maneuver, e.g. ["left", "through", "through;right"]. */
-  lanes?: string[]
+  /** Lanes approaching this step's maneuver; `valid` lanes lead the right way. */
+  lanes?: Lane[]
+  maneuver?: { type: string; modifier?: string }
+}
+
+export interface Lane {
+  directions: string[]
+  valid: boolean
 }
 
 export interface Route {
@@ -68,6 +74,8 @@ export interface Route {
   steps: RouteStep[]
   fare?: string
   description?: string
+  /** Per-segment congestion along the geometry (driving only): low, moderate, heavy, severe, unknown. */
+  congestion?: string[]
 }
 
 export function newUUID(): string {

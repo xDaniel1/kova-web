@@ -1,9 +1,9 @@
-import type maplibregl from 'maplibre-gl'
+import type { GeoJSONSource, Map as MapboxMap } from 'mapbox-gl'
 import { useEffect, useState } from 'react'
 import { INDOOR_MIN_ZOOM, cellsIn, levelLabel, loadCell } from '../lib/indoor'
 
 interface Props {
-  map: maplibregl.Map | null
+  map: MapboxMap | null
 }
 
 const SRC = 'indoor'
@@ -24,7 +24,7 @@ export function IndoorLayer({ map }: Props) {
         setFeatures([])
         return
       }
-      const b = map.getBounds()
+      const b = map.getBounds()!
       const cells = cellsIn({ south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() })
       const loaded = await Promise.all(cells.map(loadCell))
       if (my !== gen) return
@@ -68,14 +68,19 @@ export function IndoorLayer({ map }: Props) {
         paint: { 'text-color': '#3a3630', 'text-halo-color': '#ffffff', 'text-halo-width': 1.2 },
       })
     }
-    if (map.isStyleLoaded()) setup()
-    else map.once('load', setup)
+    try { setup() } catch { /* style still loading; style.load will run it */ }
+    // Switching base map reloads the style and drops custom layers; put them back.
+    map.on('style.load', setup)
+    return () => {
+      map.off('style.load', setup)
+    }
   }, [map])
 
   // Push the features for the active floor (footprints always shown).
   useEffect(() => {
     if (!map) return
-    const src = map.getSource(SRC) as maplibregl.GeoJSONSource | undefined
+    const push = () => {
+    const src = map.getSource(SRC) as GeoJSONSource | undefined
     if (!src) return
     src.setData({
       type: 'FeatureCollection',
@@ -84,6 +89,12 @@ export function IndoorLayer({ map }: Props) {
         return lv.length === 0 ? f.properties?.kind === 'footprint' || levels.length === 0 : lv.includes(active)
       }),
     })
+    }
+    push()
+    map.on('style.load', push)
+    return () => {
+      map.off('style.load', push)
+    }
   }, [map, features, active, levels.length])
 
   if (levels.length < 2) return null

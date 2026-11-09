@@ -23,8 +23,12 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. Each open item has a GitH
 - [x] Discover / guides shelves (five themes, top-rated nearby places)
 - [x] Speed limits and lane data from Overpass on each driving step
 
+## 0.3 Google Maps-style web layout (done)
+- [x] Rail, search card, chips, side panel, Layers, bottom sheet on phones
+- [x] Results lists, place tabs, route options with traffic, departure times
+
 ## Infrastructure
-- [ ] Replace demo endpoints (Photon, OSRM public server) with production ones before promoting beyond beta
-- [ ] Evaluate MapKit JS so the web map matches the iOS look (needs an Apple Maps token)
+- [x] Replace demo endpoints (Photon, OSRM, OpenFreeMap, Overpass) with Mapbox
+- [x] ~~Evaluate MapKit JS~~ decided on Mapbox, matching the iPhone Mapbox edition
 - [x] Playwright smoke test in CI against the production build
 - [x] Error reporting into `public.client_errors` (insert-only; admins read it)

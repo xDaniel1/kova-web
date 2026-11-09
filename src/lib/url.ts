@@ -8,6 +8,7 @@ import type { Place, TravelMode } from './types'
 export type Stop = { kind: 'me' } | { kind: 'place'; place: Place }
 
 export interface ViewState {
+  search?: string
   place?: Place
   directions?: { stops: Stop[]; mode: TravelMode }
 }
@@ -46,6 +47,8 @@ export function encodeView(view: ViewState): string {
       const labels = stops.map(stopLabel)
       if (labels.some(Boolean)) q.set('q', labels.join('|'))
     }
+  } else if (view.search) {
+    q.set('search', view.search)
   } else if (view.place) {
     q.set('place', coord(view.place))
     if (view.place.title) q.set('q', view.place.title)
@@ -74,6 +77,8 @@ export function decodeView(search: string): ViewState {
       return { directions: { stops, mode: m && modes.includes(m) ? m : 'driving' } }
     }
   }
+  const query = q.get('search')
+  if (query) return { search: query }
   const c = parseCoord(q.get('place'))
   if (c) {
     const title = q.get('q') || 'Dropped pin'

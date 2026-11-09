@@ -2,6 +2,7 @@
 //
 //   POST /google/places/search   { query, near?: {latitude, longitude} }        → one place with full details
 //   GET  /google/places/photo?name=places/…/photos/…&maxWidth=800               → 302 to the image
+//   POST /google/places/list     { query, center, radius }                      → up to 20 places, Google-ranked
 //   POST /google/places/nearby   { latitude, longitude, radius, types: [...] }  → places for the guides shelves
 //   POST /google/transit         { origin, destination, departureTime?, arrivalTime? } → Routes API transit routes
 //
@@ -20,7 +21,7 @@ const DETAIL_FIELDS = [
   'businessStatus', 'currentOpeningHours', 'photos', 'reviews', 'editorialSummary', 'googleMapsUri',
 ].map((f) => `places.${f}`).join(',')
 
-const NEARBY_FIELDS = ['id', 'displayName', 'formattedAddress', 'location', 'rating', 'userRatingCount', 'photos', 'primaryTypeDisplayName']
+const NEARBY_FIELDS = ['id', 'displayName', 'formattedAddress', 'shortFormattedAddress', 'location', 'rating', 'userRatingCount', 'photos', 'primaryTypeDisplayName', 'priceLevel', 'currentOpeningHours.openNow', 'currentOpeningHours.weekdayDescriptions']
   .map((f) => `places.${f}`).join(',')
 
 const TRANSIT_FIELDS = [
@@ -91,6 +92,17 @@ Deno.serve(async (req) => {
       const data = await r.json()
       if (!r.ok || !data.photoUri) return json(data, r.status === 200 ? 502 : r.status, h)
       return new Response(null, { status: 302, headers: { ...h, Location: data.photoUri, 'Cache-Control': 'public, max-age=86400' } })
+    }
+
+    if (req.method === 'POST' && path === '/places/list') {
+      const { query, center, radius } = await req.json()
+      if (typeof query !== 'string' || !query.trim()) return json({ error: 'query required' }, 400, h)
+      const body: Record<string, unknown> = { textQuery: query, pageSize: 20, languageCode: 'en' }
+      if (center && Number.isFinite(center.latitude) && Number.isFinite(center.longitude)) {
+        body.locationBias = { circle: { center: { latitude: center.latitude, longitude: center.longitude }, radius: Math.min(50000, Math.max(200, Number(radius) || 3000)) } }
+      }
+      const r = await google('https://places.googleapis.com/v1/places:searchText', { method: 'POST', body: JSON.stringify(body), fieldMask: NEARBY_FIELDS })
+      return json(await r.json(), r.status, h, r.ok ? 900 : 0)
     }
 
     if (req.method === 'POST' && path === '/places/nearby') {

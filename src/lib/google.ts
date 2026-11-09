@@ -73,6 +73,9 @@ export interface NearbyPlace {
   id: string
   displayName?: { text: string }
   formattedAddress?: string
+  shortFormattedAddress?: string
+  priceLevel?: string
+  currentOpeningHours?: { openNow?: boolean; weekdayDescriptions?: string[] }
   location: { latitude: number; longitude: number }
   rating?: number
   userRatingCount?: number
@@ -85,10 +88,16 @@ export async function nearbyPlaces(center: { latitude: number; longitude: number
   return (data.places ?? []).filter((p) => p.location && (p.userRatingCount ?? 0) >= 20).sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
 }
 
+/** Google-ranked list for a text query ("pizza", "Restaurants") around a point. */
+export async function listPlaces(query: string, center: { latitude: number; longitude: number }, radius: number): Promise<NearbyPlace[]> {
+  const data = await call<{ places?: NearbyPlace[] }>('/places/list', { query, center, radius })
+  return (data.places ?? []).filter((p) => p.location)
+}
+
 export function toPlace(p: NearbyPlace | PlaceDetails): Place {
   return {
     title: p.displayName?.text ?? 'Place',
-    subtitle: p.formattedAddress ?? '',
+    subtitle: ('shortFormattedAddress' in p && p.shortFormattedAddress) || p.formattedAddress || '',
     latitude: p.location!.latitude,
     longitude: p.location!.longitude,
     kind: p.primaryTypeDisplayName?.text,

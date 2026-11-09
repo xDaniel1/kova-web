@@ -6,11 +6,17 @@ export const config = {
     url: 'https://fbumdslhguoytlhlrkyr.supabase.co',
     anonKey: 'sb_publishable_IP2ARQYuyoVKp5yaJg7SCw_K567lTdZ',
   },
-  // Keyless OpenStreetMap-based services. Fine for development and light use;
-  // swap for a paid or self-hosted endpoint before real traffic (see ROADMAP.md).
-  tiles: { styleURL: 'https://tiles.openfreemap.org/styles/liberty' },
-  geocoder: { baseURL: 'https://photon.komoot.io' },
-  router: { baseURL: 'https://router.project-osrm.org' },
+  // Mapbox public (pk.) token, the same account as the iPhone Mapbox edition. Public tokens are
+  // meant to ship to clients; restrict it to https://app.kovamaps.com in the Mapbox account.
+  mapbox: {
+    // Injected at build time from the VITE_MAPBOX_TOKEN secret (GitHub Actions) or .env.local.
+    token: import.meta.env.VITE_MAPBOX_TOKEN ?? '',
+    styles: {
+      light: 'mapbox://styles/mapbox/streets-v12',
+      dark: 'mapbox://styles/mapbox/dark-v11',
+      satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+    },
+  },
   // Where the iPhone app lives.
   appStoreURL: 'https://apps.apple.com/app/id6827830148',
   // Public TestFlight link; works once Apple's Beta App Review has approved the current build.
