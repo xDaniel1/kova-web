@@ -71,6 +71,9 @@ p { margin: 0; }
 
 .app { position: relative; height: 100%; overflow: hidden; }
 .map { position: absolute; inset: 0; }
+/* Placeholder while Mapbox loads: the map's own land colour, so there is no flash. */
+.map-loading { background: #f2efe9; }
+@media (prefers-color-scheme: dark) { .map-loading { background: #2a2c30; } }
 
 /* ---------- rail ---------- */
 .rail { position: absolute; z-index: 6; top: 0; left: 0; bottom: 0; width: 72px; background: var(--rail); border-right: 1px solid var(--hairline); display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; }

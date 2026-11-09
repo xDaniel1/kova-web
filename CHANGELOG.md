@@ -2,6 +2,15 @@
 
 Kova shares one semantic version across iOS, Android and web. Web releases are tagged `web-vX.Y.Z`; the build number is the GitHub Actions run and the commit is shown next to it (Account menu, Saved, Recents and the rail).
 
+## 1.0.1 — 2026-11-09
+Speed and quality pass.
+- First load is much lighter: the icon font is cut from 1,085 KB to 18 KB, the map engine loads on its own after the page shell, and the code is split so browsers cache React, Supabase and Mapbox separately
+- The search bar and map background paint straight from the HTML; fonts no longer block the first paint
+- A service worker caches the app's files, fonts and map glyphs, so repeat visits start fast
+- The Layers tile uses a bundled thumbnail instead of a Mapbox image request
+- Tests now also run in Firefox, Safari, tablet and phone sizes (`npm run e2e:all`)
+- Added robots.txt; the Layers button's accessible name now matches its label
+
 ## 1.0.0 — 2026-11-09
 First public release of Kova Maps for the web, aligned with iPhone 1.0.0.
 - Kova Tower remote controls: update required, maintenance mode, announcement banner, update nudge, per-user messages, and the sync / traffic reports / indoor maps switches. Fails safe to normal behaviour on any error. Reports its version to Tower (`platform: web`).

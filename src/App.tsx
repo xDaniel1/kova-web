@@ -1,13 +1,16 @@
 import type { User } from '@supabase/supabase-js'
 import type { Map as MapboxMap } from 'mapbox-gl'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AccountButton } from './components/AccountButton'
 import { CATEGORIES, CategoryChips } from './components/CategoryChips'
 import { DirectionsPanel, type When } from './components/DirectionsPanel'
 import { Icon } from './components/Icon'
-import { IndoorLayer } from './components/IndoorLayer'
 import { LayersControl } from './components/LayersControl'
-import { MapView, type BaseMap, type ResultPin } from './components/MapView'
+import type { BaseMap, ResultPin } from './components/MapView'
+
+// Mapbox GL is most of the JavaScript. Load it in parallel with the interface instead of before it.
+const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })))
+const IndoorLayer = lazy(() => import('./components/IndoorLayer').then((m) => ({ default: m.IndoorLayer })))
 import { PlacePanel } from './components/PlacePanel'
 import { Rail, type RailItem } from './components/Rail'
 import { ResultsPanel } from './components/ResultsPanel'
@@ -362,6 +365,7 @@ export default function App() {
 
   return (
     <div className={'app' + (panelOpen ? ' panel-open' : '') + (view.kind === 'directions' ? ' directions-mode' : '')}>
+      <Suspense fallback={<div className="map map-loading" aria-hidden />}>
       <MapView
         base={base}
         dark={dark}
@@ -391,7 +395,8 @@ export default function App() {
         }}
         onReady={setMapInstance}
       />
-      <IndoorLayer map={mapInstance} enabled={indoorOn} />
+      {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} />}
+      </Suspense>
 
       {!isNarrow && <Rail active={view.kind === 'saved' || view.kind === 'recents' ? (view.kind as RailItem) : null} savedCount={snapshot.favorites.length} onSelect={(item) => { setCollapsed(false); setRoutes([]); setView(view.kind === item ? { kind: 'home' } : { kind: item }) }} onMenu={() => setCollapsed((c) => !c)} onHome={closePanel} />}
 
