@@ -12,6 +12,6 @@ export const config = {
   geocoder: { baseURL: 'https://photon.komoot.io' },
   router: { baseURL: 'https://router.project-osrm.org' },
   // Where the iPhone app lives.
-  appStoreURL: 'https://apps.apple.com/app/kova-maps/id0000000000',
+  appStoreURL: 'https://apps.apple.com/app/id6827830148',
   siteURL: 'https://kovamaps.com',
 }
