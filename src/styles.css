@@ -142,3 +142,20 @@ p { margin: 4px 0; }
 .swatches button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; }
 .swatches button.on { border-color: var(--text); }
 .swatches button.glyph { background: var(--panel); font-size: 15px; }
+
+/* Traffic reports */
+.reports-control { position: absolute; right: 10px; bottom: 170px; }
+.report-menu { padding: 0; }
+.report-menu summary { list-style: none; cursor: pointer; padding: 9px 12px; font-weight: 600; font-size: 14px; white-space: nowrap; }
+.report-menu summary::-webkit-details-marker { display: none; }
+.report-menu ul { list-style: none; margin: 0; padding: 4px; border-top: 1px solid var(--border); }
+.report-menu li button { width: 100%; text-align: left; border: 0; background: transparent; padding: 8px; border-radius: 8px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.report-menu li button:hover { background: var(--border); }
+.report-dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; }
+.arming { display: flex; gap: 10px; align-items: center; font-size: 14px; white-space: nowrap; }
+.arming .link { margin: 0; }
+.report-marker { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; font-size: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.35); cursor: pointer; }
+.maplibregl-popup-content { background: var(--panel); color: var(--text); border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow); font-family: inherit; }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--panel); }
+.maplibregl-popup-content .link { margin-top: 6px; }
+@media (max-width: 640px) { .reports-control { bottom: auto; top: 68px; right: 10px; } }

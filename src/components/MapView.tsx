@@ -2,6 +2,8 @@ import maplibregl, { type LngLatLike } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { useEffect, useRef } from 'react'
 import { config } from '../lib/config'
+import { REPORT_KINDS, ageLabel, type TrafficReport } from '../lib/reports'
+import type { Bounds } from '../lib/reports'
 import type { FavoritePlace, Place, Route } from '../lib/types'
 
 interface Props {
@@ -12,6 +14,11 @@ interface Props {
   stops: Place[]
   onSelectRoute?: (index: number) => void
   user: { latitude: number; longitude: number } | null
+  reports: TrafficReport[]
+  currentUserID: string | null
+  onReportDelete?: (id: string) => void
+  onReportFlag?: (id: string) => void
+  onMoveEnd?: (bounds: Bounds) => void
   flyTo: { latitude: number; longitude: number; zoom?: number } | null
   onMapClick: (latitude: number, longitude: number) => void
   onReady?: (map: maplibregl.Map) => void
@@ -19,7 +26,7 @@ interface Props {
 
 const ROUTE_SOURCE = 'route'
 
-export function MapView({ selected, favorites, routes, selectedRoute, stops, onSelectRoute, user, flyTo, onMapClick, onReady }: Props) {
+export function MapView({ selected, favorites, routes, selectedRoute, stops, onSelectRoute, user, reports, currentUserID, onReportDelete, onReportFlag, onMoveEnd, flyTo, onMapClick, onReady }: Props) {
   const route = routes[selectedRoute] ?? null
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -32,6 +39,11 @@ export function MapView({ selected, favorites, routes, selectedRoute, stops, onS
   clickHandler.current = onMapClick
   const selectRoute = useRef(onSelectRoute)
   selectRoute.current = onSelectRoute
+  const moveEnd = useRef(onMoveEnd)
+  moveEnd.current = onMoveEnd
+  const reportMarkers = useRef<maplibregl.Marker[]>([])
+  const reportActions = useRef({ onReportDelete, onReportFlag })
+  reportActions.current = { onReportDelete, onReportFlag }
 
   useEffect(() => {
     if (!container.current || mapRef.current) return
@@ -51,7 +63,13 @@ export function MapView({ selected, favorites, routes, selectedRoute, stops, onS
       }
       clickHandler.current(e.lngLat.lat, e.lngLat.lng)
     })
+    const emitBounds = () => {
+      const b = map.getBounds()
+      moveEnd.current?.({ south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() })
+    }
+    map.on('moveend', emitBounds)
     map.on('load', () => {
+      emitBounds()
       map.addSource(ROUTE_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       map.addSource('alternatives', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       map.addLayer({
@@ -174,6 +192,34 @@ export function MapView({ selected, favorites, routes, selectedRoute, stops, onS
     if (!map || !flyTo) return
     map.flyTo({ center: [flyTo.longitude, flyTo.latitude], zoom: flyTo.zoom ?? Math.max(map.getZoom(), 14), duration: 700 })
   }, [flyTo])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    reportMarkers.current.forEach((m) => m.remove())
+    reportMarkers.current = reports.map((r) => {
+      const meta = REPORT_KINDS.find((k) => k.kind === r.kind) ?? REPORT_KINDS[1]
+      const el = document.createElement('div')
+      el.className = 'report-marker'
+      el.style.background = meta.color
+      el.textContent = meta.icon
+      el.title = `${r.kind} · ${ageLabel(r.createdAt)}`
+      const mine = currentUserID === r.userID
+      const popup = new maplibregl.Popup({ offset: 16, closeButton: false }).setHTML(
+        `<strong>${r.kind}</strong><br><span class="muted">${ageLabel(r.createdAt)}</span><br>` +
+          (mine ? `<button class="link" data-act="delete">Remove my report</button>` : `<button class="link" data-act="flag">Flag as wrong</button>`),
+      )
+      popup.on('open', () => {
+        popup.getElement()?.querySelector('[data-act]')?.addEventListener('click', (e) => {
+          const act = (e.currentTarget as HTMLElement).dataset.act
+          if (act === 'delete') reportActions.current.onReportDelete?.(r.id)
+          else reportActions.current.onReportFlag?.(r.id)
+          popup.remove()
+        })
+      })
+      return new maplibregl.Marker({ element: el }).setLngLat([r.longitude, r.latitude]).setPopup(popup).addTo(map)
+    })
+  }, [reports, currentUserID])
 
   return <div ref={container} className="map" />
 }

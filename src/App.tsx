@@ -4,10 +4,12 @@ import { AccountMenu } from './components/AccountMenu'
 import { DirectionsPanel } from './components/DirectionsPanel'
 import { MapView } from './components/MapView'
 import { PlaceCard } from './components/PlaceCard'
+import { ReportsControl } from './components/ReportsControl'
 import { SearchPanel } from './components/SearchPanel'
 import { useGeolocation } from './hooks/useGeolocation'
 import { config } from './lib/config'
 import { reverseGeocode } from './lib/geocode'
+import { deleteReport, fetchReports, fileReport, flagReport, type Bounds, type ReportKind, type TrafficReport } from './lib/reports'
 import { fetchRoutes } from './lib/routing'
 import { supabase } from './lib/supabase'
 import { fetchRemote, loadLocal, pushRemote, reconcile, saveLocal, type Snapshot } from './lib/sync'
@@ -44,6 +46,29 @@ export default function App() {
   })
   const geo = useGeolocation()
   const pushTimer = useRef<number | null>(null)
+  const [reports, setReports] = useState<TrafficReport[]>([])
+  const [arming, setArming] = useState<ReportKind | null>(null)
+  const [bounds, setBounds] = useState<Bounds | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const notify = useCallback((msg: string) => {
+    setToast(msg)
+    window.setTimeout(() => setToast((t) => (t === msg ? null : t)), 3000)
+  }, [])
+
+  // Traffic reports: signed-in users see everyone's recent reports in view. Refresh on pan and every minute.
+  const reloadReports = useCallback(() => {
+    if (!user || !bounds) {
+      setReports([])
+      return
+    }
+    fetchReports(bounds).then(setReports).catch(() => {})
+  }, [user, bounds])
+  useEffect(() => {
+    reloadReports()
+    const t = window.setInterval(reloadReports, 60_000)
+    return () => window.clearInterval(t)
+  }, [reloadReports])
 
   // Keep the address bar in step with the view, and follow back/forward.
   useEffect(() => {
@@ -142,6 +167,18 @@ export default function App() {
 
   const onMapClick = useCallback(
     async (latitude: number, longitude: number) => {
+      if (arming && user) {
+        const kind = arming
+        setArming(null)
+        try {
+          await fileReport(user.id, kind, latitude, longitude)
+          notify(`${kind} reported. Thanks for helping other drivers.`)
+          reloadReports()
+        } catch (e) {
+          notify((e as Error).message.includes('policy') ? 'Your account cannot file reports.' : 'Could not file the report.')
+        }
+        return
+      }
       if (mode.kind === 'directions') return
       const pin: Place = { title: 'Dropped pin', subtitle: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`, latitude, longitude }
       setMode({ kind: 'place', place: pin })
@@ -152,7 +189,7 @@ export default function App() {
         // Keep the coordinate label.
       }
     },
-    [mode.kind],
+    [mode.kind, arming, user, notify, reloadReports],
   )
 
   const selected = mode.kind === 'place' ? mode.place : null
@@ -255,9 +292,15 @@ export default function App() {
         onSelectRoute={setSelectedRoute}
         stops={resolvedStops ?? []}
         user={geo.fix}
+        reports={reports}
+        currentUserID={user?.id ?? null}
+        onReportDelete={(id) => deleteReport(id).then(reloadReports).catch(() => notify('Could not remove the report.'))}
+        onReportFlag={(id) => user && flagReport(id, user.id).then(() => { notify('Thanks, flagged.'); reloadReports() }).catch(() => notify('Already flagged, or not allowed.'))}
+        onMoveEnd={setBounds}
         flyTo={flyTo}
         onMapClick={onMapClick}
       />
+      <ReportsControl signedIn={!!user} arming={arming} count={reports.length} onArm={setArming} />
 
       <header className="topbar">
         <a className="brand" href={config.siteURL} title="Kova Maps">
@@ -314,7 +357,7 @@ export default function App() {
       <button className="locate" onClick={geo.locate} title="Your location" aria-label="Show my location" disabled={geo.busy}>
         {geo.busy ? '…' : '➤'}
       </button>
-      {geo.error && mode.kind !== 'directions' && <div className="toast">{geo.error}</div>}
+      {(toast ?? (geo.error && mode.kind !== 'directions' ? geo.error : null)) && <div className="toast">{toast ?? geo.error}</div>}
     </div>
   )
 }

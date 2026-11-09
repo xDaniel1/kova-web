@@ -18,7 +18,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. Each open item has a GitH
 - [ ] Place details: hours, phone, website, photos (Google Places behind an Edge Function)
 
 ## 0.3 Kova features
-- [ ] Traffic incident reports layer (read `traffic_reports`, file one when signed in)
+- [x] Traffic incident reports layer (read `traffic_reports`, file one when signed in, remove yours, flag others')
 - [ ] Indoor maps: load the nightly plans from kovamaps.com/indoor and draw floors
 - [ ] Discover / guides shelves
 - [ ] Speed limits and lane data from Overpass on the route
@@ -26,5 +26,5 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. Each open item has a GitH
 ## Infrastructure
 - [ ] Replace demo endpoints (Photon, OSRM public server) with production ones before promoting beyond beta
 - [ ] Evaluate MapKit JS so the web map matches the iOS look (needs an Apple Maps token)
-- [ ] Playwright smoke test in CI against the production build
+- [x] Playwright smoke test in CI against the production build
 - [ ] Error reporting
