@@ -1,6 +1,6 @@
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { config } from '../lib/config'
 import { REPORT_KINDS, ageLabel, type Bounds, type TrafficReport } from '../lib/reports'
 import type { FavoritePlace, Place, Route } from '../lib/types'
@@ -90,6 +90,8 @@ export function MapView(p: Props) {
     favorites: [], stops: [], results: new Map(), reports: [],
   })
   const fittedRoutes = useRef<Route[] | null>(null)
+  // Markers placed before the first load use a provisional transform and land in the wrong spot.
+  const [ready, setReady] = useState(false)
   const styleKey = (base: BaseMap, dark: boolean) => (base === 'satellite' ? config.mapbox.styles.satellite : dark ? config.mapbox.styles.dark : config.mapbox.styles.light)
 
   // Push route + traffic data into the (possibly freshly reloaded) style.
@@ -159,6 +161,7 @@ export function MapView(p: Props) {
     }
     map.on('moveend', emit)
     map.on('load', () => {
+      setReady(true)
       emit()
       props.current.onReady?.(map)
     })
@@ -236,15 +239,15 @@ export function MapView(p: Props) {
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !ready) return
     markers.current.selected?.remove()
     markers.current.selected = undefined
     if (p.selected) markers.current.selected = new mapboxgl.Marker({ element: kovaPin(), anchor: 'bottom' }).setLngLat([p.selected.longitude, p.selected.latitude]).addTo(map)
-  }, [p.selected])
+  }, [p.selected, ready])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !ready) return
     const m = markers.current.results
     for (const [id, mk] of m) if (!p.results.some((r) => r.id === id)) { mk.remove(); m.delete(id) }
     for (const r of p.results) {
@@ -256,7 +259,7 @@ export function MapView(p: Props) {
       el.addEventListener('click', (e) => { e.stopPropagation(); props.current.onResultClick(r.id) })
       m.set(r.id, new mapboxgl.Marker({ element: el, anchor: 'left', offset: [-8, 0] }).setLngLat([r.place.longitude, r.place.latitude]).addTo(map))
     }
-  }, [p.results])
+  }, [p.results, ready])
 
   useEffect(() => {
     for (const [id, mk] of markers.current.results) mk.getElement().classList.toggle('hover', id === p.hoveredResult)
@@ -264,7 +267,7 @@ export function MapView(p: Props) {
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !ready) return
     markers.current.favorites.forEach((m) => m.remove())
     markers.current.favorites = p.favorites.map((f) => {
       const el = document.createElement('div')
@@ -275,11 +278,11 @@ export function MapView(p: Props) {
       el.addEventListener('click', (e) => { e.stopPropagation(); props.current.onPoiClick({ title: f.customTitle || f.title, subtitle: f.subtitle, latitude: f.latitude, longitude: f.longitude }) })
       return new mapboxgl.Marker({ element: el }).setLngLat([f.longitude, f.latitude]).addTo(map)
     })
-  }, [p.favorites])
+  }, [p.favorites, ready])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !ready) return
     markers.current.stops.forEach((m) => m.remove())
     markers.current.stops = p.stops.map((s, i) => {
       const last = i === p.stops.length - 1
@@ -289,11 +292,11 @@ export function MapView(p: Props) {
       el.textContent = i === 0 ? '' : String.fromCharCode(65 + i)
       return new mapboxgl.Marker({ element: el }).setLngLat([s.longitude, s.latitude]).addTo(map)
     })
-  }, [p.stops])
+  }, [p.stops, ready])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !ready) return
     markers.current.user?.remove()
     markers.current.user = undefined
     if (p.user) {
@@ -301,11 +304,11 @@ export function MapView(p: Props) {
       el.className = 'user-dot'
       markers.current.user = new mapboxgl.Marker({ element: el }).setLngLat([p.user.longitude, p.user.latitude]).addTo(map)
     }
-  }, [p.user])
+  }, [p.user, ready])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !ready) return
     markers.current.reports.forEach((m) => m.remove())
     markers.current.reports = p.reports.map((r) => {
       const meta = REPORT_KINDS.find((k) => k.kind === r.kind) ?? REPORT_KINDS[1]
@@ -328,7 +331,7 @@ export function MapView(p: Props) {
       })
       return new mapboxgl.Marker({ element: el }).setLngLat([r.longitude, r.latitude]).setPopup(popup).addTo(map)
     })
-  }, [p.reports, p.currentUserID])
+  }, [p.reports, p.currentUserID, ready])
 
   return <div ref={container} className="map" />
 }
