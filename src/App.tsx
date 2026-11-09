@@ -9,6 +9,8 @@ import { LayersControl } from './components/LayersControl'
 import type { BaseMap, ResultPin } from './components/MapView'
 
 // Mapbox GL is most of the JavaScript. Load it in parallel with the interface instead of before it.
+import { MapBoundary } from './components/MapBoundary'
+
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })))
 const IndoorLayer = lazy(() => import('./components/IndoorLayer').then((m) => ({ default: m.IndoorLayer })))
 import { PlacePanel } from './components/PlacePanel'
@@ -365,6 +367,13 @@ export default function App() {
 
   return (
     <div className={'app' + (panelOpen ? ' panel-open' : '') + (view.kind === 'directions' ? ' directions-mode' : '')}>
+      <MapBoundary
+        onFail={() => {
+          // No map means no camera; search around the user's position, or midtown Manhattan like the map's start.
+          const c = geo.fix ?? { latitude: 40.7484, longitude: -73.9857 }
+          setCamera((cur) => cur ?? { center: c, zoom: 13, bounds: { south: c.latitude - 0.04, north: c.latitude + 0.04, west: c.longitude - 0.06, east: c.longitude + 0.06 } })
+        }}
+      >
       <Suspense fallback={<div className="map map-loading" aria-hidden />}>
       <MapView
         base={base}
@@ -397,6 +406,7 @@ export default function App() {
       />
       {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} />}
       </Suspense>
+      </MapBoundary>
 
       {!isNarrow && <Rail active={view.kind === 'saved' || view.kind === 'recents' ? (view.kind as RailItem) : null} savedCount={snapshot.favorites.length} onSelect={(item) => { setCollapsed(false); setRoutes([]); setView(view.kind === item ? { kind: 'home' } : { kind: item }) }} onMenu={() => setCollapsed((c) => !c)} onHome={closePanel} />}
 

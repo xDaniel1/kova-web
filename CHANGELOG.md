@@ -9,6 +9,7 @@ Speed and quality pass.
 - A service worker caches the app's files, fonts and map glyphs, so repeat visits start fast
 - The Layers tile uses a bundled thumbnail instead of a Mapbox image request
 - Tests now also run in Firefox, Safari, tablet and phone sizes (`npm run e2e:all`)
+- Fix: browsers without WebGL showed a blank page. The app now stays usable and explains why the map is missing
 - Added robots.txt; the Layers button's accessible name now matches its label
 
 ## 1.0.0 — 2026-11-09
