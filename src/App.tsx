@@ -10,6 +10,7 @@ import { useGeolocation } from './hooks/useGeolocation'
 import { config } from './lib/config'
 import { reverseGeocode } from './lib/geocode'
 import { deleteReport, fetchReports, fileReport, flagReport, type Bounds, type ReportKind, type TrafficReport } from './lib/reports'
+import { annotateRoute } from './lib/overpass'
 import { fetchRoutes } from './lib/routing'
 import { supabase } from './lib/supabase'
 import { fetchRemote, loadLocal, pushRemote, reconcile, saveLocal, type Snapshot } from './lib/sync'
@@ -247,6 +248,12 @@ export default function App() {
         if (controller.signal.aborted) return
         setRoutes(r)
         setSelectedRoute(0)
+        // Speed limits and lanes arrive a moment later; the route is usable before they do.
+        if (travel === 'driving') {
+          annotateRoute(r[0], controller.signal)
+            .then((annotated) => !controller.signal.aborted && setRoutes((cur) => (cur[0] === r[0] ? [annotated, ...cur.slice(1)] : cur)))
+            .catch(() => {})
+        }
       })
       .catch((e) => {
         if (controller.signal.aborted) return

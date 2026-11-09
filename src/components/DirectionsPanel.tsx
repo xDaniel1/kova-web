@@ -22,10 +22,20 @@ const modes: { id: TravelMode; label: string }[] = [
   { id: 'driving', label: '🚗 Drive' },
   { id: 'walking', label: '🚶 Walk' },
   { id: 'cycling', label: '🚲 Bike' },
+  { id: 'transit', label: '🚇 Transit' },
 ]
+
+function clock(iso?: string): string {
+  return iso ? new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''
+}
 
 function stopName(s: Stop | null): string {
   return s?.kind === 'me' ? 'My location' : s?.kind === 'place' ? s.place.title : ''
+}
+
+const LANE_GLYPHS: Record<string, string> = { left: '↰', slight_left: '↖', sharp_left: '↙', through: '↑', right: '↱', slight_right: '↗', sharp_right: '↘', reverse: '↶', merge_to_left: '↰', merge_to_right: '↱', none: '↑' }
+function laneGlyph(lane: string): string {
+  return lane.split(';').map((l) => LANE_GLYPHS[l] ?? '↑').join('')
 }
 
 export function DirectionsPanel(p: Props) {
@@ -121,8 +131,19 @@ export function DirectionsPanel(p: Props) {
         <>
           <p className="eta">
             <strong>{formatDuration(route.durationSeconds)}</strong>
-            <span className="muted"> · {formatDistance(route.distanceMeters)} · arrive {formatArrival(route.durationSeconds)}</span>
+            <span className="muted"> · {formatDistance(route.distanceMeters)} · arrive {formatArrival(route.durationSeconds)}{route.fare ? ` · ${route.fare}` : ''}</span>
           </p>
+          {route.mode === 'transit' && (
+            <div className="transit-summary">
+              {route.steps.map((s, i) =>
+                s.transit ? (
+                  <span key={i} className="line-badge" style={{ background: s.transit.color, color: s.transit.textColor }}>{s.transit.line}</span>
+                ) : (
+                  <span key={i} className="walk-badge" title={formatDuration(s.durationSeconds ?? 0)}>🚶</span>
+                ),
+              )}
+            </div>
+          )}
           {route.legs.map((leg, li) => {
             const legMeters = leg.reduce((a, s) => a + s.distanceMeters, 0)
             const open = openLeg === li
@@ -137,9 +158,29 @@ export function DirectionsPanel(p: Props) {
                 {(open || route.legs.length === 1) && (
                   <ol className="steps">
                     {leg.map((s, i) => (
-                      <li key={i}>
-                        <span>{s.instruction}</span>
-                        {s.distanceMeters > 0 && <small className="muted">{formatDistance(s.distanceMeters)}</small>}
+                      <li key={i} className={s.transit ? 'ride' : ''} style={s.transit ? { borderLeftColor: s.transit.color } : undefined}>
+                        {s.transit ? (
+                          <span>
+                            <span className="line-badge" style={{ background: s.transit.color, color: s.transit.textColor }}>{s.transit.line}</span>{' '}
+                            {s.transit.vehicle}{s.transit.headsign ? ` toward ${s.transit.headsign}` : ''}
+                            <br />
+                            <small className="muted">
+                              {clock(s.transit.departureTime)} {s.transit.from} → {clock(s.transit.arrivalTime)} {s.transit.to}
+                              {s.transit.stops ? ` · ${s.transit.stops} ${s.transit.stops === 1 ? 'stop' : 'stops'}` : ''}
+                            </small>
+                          </span>
+                        ) : (
+                          <span>
+                            {s.instruction}
+                            {s.speedLimit && <span className="speed-sign" title="Posted speed limit">{s.speedLimit}</span>}
+                            {s.lanes && s.lanes.length > 0 && (
+                              <span className="lanes" title="Lanes at the turn">
+                                {s.lanes.map((l, j) => <span key={j} className="lane">{laneGlyph(l)}</span>)}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        <small className="muted">{s.durationSeconds && s.transit ? formatDuration(s.durationSeconds) : s.distanceMeters > 0 ? formatDistance(s.distanceMeters) : ''}</small>
                       </li>
                     ))}
                   </ol>

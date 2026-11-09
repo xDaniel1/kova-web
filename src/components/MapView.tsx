@@ -81,6 +81,7 @@ export function MapView({ selected, favorites, routes, selectedRoute, stops, onS
       })
       map.on('mouseenter', 'alt-line', () => (map.getCanvas().style.cursor = 'pointer'))
       map.on('mouseleave', 'alt-line', () => (map.getCanvas().style.cursor = ''))
+      map.addSource('transit-steps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       map.addLayer({
         id: 'route-casing',
         type: 'line',
@@ -94,6 +95,22 @@ export function MapView({ selected, favorites, routes, selectedRoute, stops, onS
         source: ROUTE_SOURCE,
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': '#2f8fff', 'line-width': 6 },
+      })
+      map.addLayer({
+        id: 'transit-walk',
+        type: 'line',
+        source: 'transit-steps',
+        filter: ['==', ['get', 'kind'], 'walk'],
+        layout: { 'line-cap': 'round' },
+        paint: { 'line-color': '#5e5ce6', 'line-width': 5, 'line-dasharray': [0.2, 1.6] },
+      })
+      map.addLayer({
+        id: 'transit-ride',
+        type: 'line',
+        source: 'transit-steps',
+        filter: ['==', ['get', 'kind'], 'ride'],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': ['get', 'color'], 'line-width': 7 },
       })
       onReady?.(map)
     })
@@ -149,12 +166,20 @@ export function MapView({ selected, favorites, routes, selectedRoute, stops, onS
     const apply = () => {
       const src = map.getSource(ROUTE_SOURCE) as maplibregl.GeoJSONSource | undefined
       const alt = map.getSource('alternatives') as maplibregl.GeoJSONSource | undefined
-      if (!src || !alt) return
+      const steps = map.getSource('transit-steps') as maplibregl.GeoJSONSource | undefined
+      if (!src || !alt || !steps) return
+      const isTransit = route?.mode === 'transit'
       src.setData(
-        route
+        route && !isTransit
           ? { type: 'Feature', properties: {}, geometry: route.geometry }
           : { type: 'FeatureCollection', features: [] },
       )
+      steps.setData({
+        type: 'FeatureCollection',
+        features: isTransit && route
+          ? route.steps.filter((s) => s.geometry).map((s) => ({ type: 'Feature' as const, properties: { kind: s.transit ? 'ride' : 'walk', color: s.transit?.color ?? '#5e5ce6' }, geometry: s.geometry! }))
+          : [],
+      })
       alt.setData({
         type: 'FeatureCollection',
         features: routes

@@ -30,12 +30,32 @@ export interface Place {
   kind?: string
 }
 
-export type TravelMode = 'driving' | 'walking' | 'cycling'
+export type TravelMode = 'driving' | 'walking' | 'cycling' | 'transit'
 
 export interface RouteStep {
   instruction: string
   distanceMeters: number
   name: string
+  durationSeconds?: number
+  /** Transit rides carry the line; walking steps between them do not. */
+  transit?: {
+    line: string
+    color: string
+    textColor: string
+    vehicle: string
+    from: string
+    to: string
+    stops?: number
+    headsign?: string
+    departureTime?: string
+    arrivalTime?: string
+  }
+  /** Per-step geometry, used to draw transit rides in their line colour. */
+  geometry?: GeoJSON.LineString
+  /** Posted speed limit (OpenStreetMap maxspeed) on this step's road, when known. */
+  speedLimit?: string
+  /** turn:lanes for the approach to this step's maneuver, e.g. ["left", "through", "through;right"]. */
+  lanes?: string[]
 }
 
 export interface Route {
@@ -46,6 +66,8 @@ export interface Route {
   /** Steps grouped per leg (one leg between each pair of stops). */
   legs: RouteStep[][]
   steps: RouteStep[]
+  fare?: string
+  description?: string
 }
 
 export function newUUID(): string {

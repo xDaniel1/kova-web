@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchPlaces } from '../lib/geocode'
 import type { FavoritePlace, Place, RecentSearch } from '../lib/types'
+import { GuidesShelf } from './GuidesShelf'
 
 interface Props {
   near: { latitude: number; longitude: number } | null
@@ -115,6 +116,7 @@ export function SearchPanel({ near, favorites, recents, onPick, onDirections, on
           {favorites.length === 0 && recents.length === 0 && (
             <p className="muted">Search for a place, or click anywhere on the map to drop a pin.</p>
           )}
+          <GuidesShelf near={near} onPick={onPick} />
         </>
       )}
     </section>

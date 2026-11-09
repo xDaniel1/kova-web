@@ -12,7 +12,7 @@ export interface ViewState {
   directions?: { stops: Stop[]; mode: TravelMode }
 }
 
-const modes: TravelMode[] = ['driving', 'walking', 'cycling']
+const modes: TravelMode[] = ['driving', 'walking', 'cycling', 'transit']
 
 function coord(p: { latitude: number; longitude: number }): string {
   return `${p.latitude.toFixed(6)},${p.longitude.toFixed(6)}`

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FavoritePlace, Place } from '../lib/types'
+import { PlaceDetails } from './PlaceDetails'
 
 interface Props {
   place: Place
@@ -16,6 +17,10 @@ const EMOJI = ['★', '🏠', '💼', '☕', '🍽️', '🛒', '🏋️', '🎓
 
 export function PlaceCard({ place, favorite, onDirections, onToggleFavorite, onEditFavorite, onClose }: Props) {
   const [editing, setEditing] = useState(false)
+  const [address, setAddress] = useState<string | null>(null)
+  useEffect(() => setAddress(null), [place])
+  const looksLikeCoords = /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(place.subtitle)
+  const subtitle = looksLikeCoords && address ? address : place.subtitle
 
   const copyLink = async () => {
     try {
@@ -34,7 +39,7 @@ export function PlaceCard({ place, favorite, onDirections, onToggleFavorite, onE
             {favorite?.emoji && <span className="chip-icon inline" style={{ background: favorite.colorHex ?? '#ff9500' }}>{favorite.emoji}</span>}
             {favorite?.customTitle || place.title}
           </h1>
-          <p className="muted">{favorite?.customTitle ? place.title + ' · ' : ''}{place.subtitle}</p>
+          <p className="muted">{favorite?.customTitle ? place.title + ' · ' : ''}{subtitle}</p>
         </div>
         <button className="icon" onClick={onClose} aria-label="Close">✕</button>
       </div>
@@ -84,6 +89,7 @@ export function PlaceCard({ place, favorite, onDirections, onToggleFavorite, onE
         </div>
       )}
 
+      {place.title !== 'Dropped pin' && <PlaceDetails place={place} onAddress={setAddress} />}
       <p className="muted small">{place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}</p>
     </section>
   )

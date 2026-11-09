@@ -5,8 +5,8 @@ The browser edition of [Kova Maps](https://kovamaps.com), the iPhone maps app. I
 | | iOS app (`waypoint-ios`) | Web (this repo) |
 |---|---|---|
 | Map | Apple MapKit | MapLibre GL with OpenFreeMap vector tiles |
-| Search | Apple + Google Places | Photon (OpenStreetMap) |
-| Directions | MKDirections, Google Routes | OSRM (drive / walk / bike) |
+| Search | Apple + Google Places | Photon (OpenStreetMap) for typing, Google Places for details |
+| Directions | MKDirections, Google Routes | OSRM (drive / walk / bike), Google Routes (transit) |
 | Accounts & sync | Supabase (Kova Tower project) | Same Supabase project, same `sync_snapshots` row |
 
 ## What works today
@@ -15,6 +15,11 @@ The browser edition of [Kova Maps](https://kovamaps.com), the iPhone maps app. I
 - Place card with Save (favorite) and Drive / Walk / Bike directions from your location
 - Turn-by-turn step list with distance, duration and arrival time
 - Favorites and recents, kept on the device, and synced to your account once you sign in with Google or Apple. Same data the iPhone app uses.
+- Place details from Google: photos, rating, hours, phone, website, reviews
+- Transit directions with lines in their colours, stop names, times and fare
+- Discover shelves of top-rated nearby places
+- Speed limits and lane arrows on driving steps (OpenStreetMap)
+- Traffic incident reports shared with the iPhone app
 - Light and dark mode, works on phone-width screens
 
 See [ROADMAP.md](ROADMAP.md) for what comes next and the open [issues](https://github.com/xDaniel1/kova-web/issues) for the tracked work.
@@ -28,7 +33,7 @@ See [ROADMAP.md](ROADMAP.md) for what comes next and the open [issues](https://g
 
 ### Secrets
 
-There are none. `src/lib/config.ts` holds the Supabase project URL and the *publishable* anon key, which is meant to be public: every table is protected by row-level security, so the key alone can read nothing that is not yours. Never add a service-role key or a paid API key to this repo. If a keyed service is needed later (Google Places, MapKit JS), it goes behind a Supabase Edge Function or an origin-restricted key.
+The browser holds none. `src/lib/config.ts` holds the Supabase project URL and the *publishable* anon key, which is meant to be public: every table is protected by row-level security, so the key alone can read nothing that is not yours. Never add a service-role key or a paid API key to this repo. Google Places and Google Routes are called from the `google` Edge Function in `supabase/functions/google`, which holds the key as a function secret (`GOOGLE_API_KEY`) and only answers callers that present the publishable key from an allowed origin. Deploy it with `npx supabase functions deploy google --no-verify-jwt --use-api --remote=<project ref>`.
 
 ## Related repos
 
