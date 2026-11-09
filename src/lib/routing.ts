@@ -42,29 +42,31 @@ function describe(step: OSRMStep): string {
   }
 }
 
-export async function fetchRoute(
-  from: { latitude: number; longitude: number },
-  to: { latitude: number; longitude: number },
+/** Routes through every point in order. Alternatives are only offered by OSRM for two-point trips. */
+export async function fetchRoutes(
+  points: { latitude: number; longitude: number }[],
   mode: TravelMode,
   signal?: AbortSignal,
-): Promise<Route> {
-  const coords = `${from.longitude},${from.latitude};${to.longitude},${to.latitude}`
+): Promise<Route[]> {
+  if (points.length < 2) throw new Error('Need at least two places')
+  const coords = points.map((p) => `${p.longitude},${p.latitude}`).join(';')
   const url = new URL(`/route/v1/${profile[mode]}/${coords}`, config.router.baseURL)
   url.searchParams.set('overview', 'full')
   url.searchParams.set('geometries', 'geojson')
   url.searchParams.set('steps', 'true')
+  if (points.length === 2) url.searchParams.set('alternatives', '2')
   const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`Routing failed (${res.status})`)
+  if (!res.ok) throw new Error(res.status === 400 ? 'No route between these places' : `Routing failed (${res.status})`)
   const json = (await res.json()) as { code: string; routes: OSRMRoute[] }
-  const first = json.routes?.[0]
-  if (json.code !== 'Ok' || !first) throw new Error('No route found')
-  return {
+  if (json.code !== 'Ok' || !json.routes?.length) throw new Error('No route found')
+  return json.routes.map((r) => ({
     mode,
-    distanceMeters: first.distance,
-    durationSeconds: first.duration,
-    geometry: first.geometry,
-    steps: first.legs.flatMap((leg) =>
+    distanceMeters: r.distance,
+    durationSeconds: r.duration,
+    geometry: r.geometry,
+    legs: r.legs.map((leg) => leg.steps.map((s) => ({ instruction: describe(s), distanceMeters: s.distance, name: s.name }))),
+    steps: r.legs.flatMap((leg) =>
       leg.steps.map((s) => ({ instruction: describe(s), distanceMeters: s.distance, name: s.name })),
     ),
-  }
+  }))
 }

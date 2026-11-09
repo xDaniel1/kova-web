@@ -7,10 +7,11 @@ interface Props {
   favorites: FavoritePlace[]
   recents: RecentSearch[]
   onPick: (place: Place) => void
+  onDirections: () => void
   onClearRecents: () => void
 }
 
-export function SearchPanel({ near, favorites, recents, onPick, onClearRecents }: Props) {
+export function SearchPanel({ near, favorites, recents, onPick, onDirections, onClearRecents }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Place[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -59,6 +60,7 @@ export function SearchPanel({ near, favorites, recents, onPick, onClearRecents }
           aria-label="Search places"
         />
         {busy && <span className="spinner" aria-label="Searching" />}
+        <button className="icon accent" onClick={onDirections} aria-label="Directions" title="Directions">⤴</button>
       </div>
 
       {error && <p className="error">{error}</p>}

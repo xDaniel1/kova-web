@@ -8,24 +8,62 @@ import { SearchPanel } from './components/SearchPanel'
 import { useGeolocation } from './hooks/useGeolocation'
 import { config } from './lib/config'
 import { reverseGeocode } from './lib/geocode'
-import { fetchRoute } from './lib/routing'
+import { fetchRoutes } from './lib/routing'
 import { supabase } from './lib/supabase'
 import { fetchRemote, loadLocal, pushRemote, reconcile, saveLocal, type Snapshot } from './lib/sync'
 import { newUUID, type FavoritePlace, type Place, type RecentSearch, type Route, type TravelMode } from './lib/types'
+import { decodeView, encodeView, type Stop } from './lib/url'
 
-type Mode = { kind: 'browse' } | { kind: 'place'; place: Place } | { kind: 'directions'; place: Place; travel: TravelMode }
+type Mode =
+  | { kind: 'browse' }
+  | { kind: 'place'; place: Place }
+  | { kind: 'directions'; stops: Stop[]; travel: TravelMode; returnTo: Place | null }
+
+const samePoint = (a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) =>
+  Math.abs(a.latitude - b.latitude) < 1e-6 && Math.abs(a.longitude - b.longitude) < 1e-6
+
+function initialMode(): Mode {
+  const v = decodeView(window.location.search)
+  if (v.directions) return { kind: 'directions', stops: v.directions.stops, travel: v.directions.mode, returnTo: null }
+  if (v.place) return { kind: 'place', place: v.place }
+  return { kind: 'browse' }
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [snapshot, setSnapshot] = useState<Snapshot>(() => loadLocal())
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'error'>('idle')
-  const [mode, setMode] = useState<Mode>({ kind: 'browse' })
-  const [route, setRoute] = useState<Route | null>(null)
+  const [mode, setMode] = useState<Mode>(initialMode)
+  const [routes, setRoutes] = useState<Route[]>([])
+  const [selectedRoute, setSelectedRoute] = useState(0)
   const [routeBusy, setRouteBusy] = useState(false)
   const [routeError, setRouteError] = useState<string | null>(null)
-  const [flyTo, setFlyTo] = useState<{ latitude: number; longitude: number; zoom?: number } | null>(null)
+  const [flyTo, setFlyTo] = useState<{ latitude: number; longitude: number; zoom?: number } | null>(() => {
+    const m = initialMode()
+    return m.kind === 'place' ? { latitude: m.place.latitude, longitude: m.place.longitude, zoom: 15 } : null
+  })
   const geo = useGeolocation()
   const pushTimer = useRef<number | null>(null)
+
+  // Keep the address bar in step with the view, and follow back/forward.
+  useEffect(() => {
+    const search = encodeView(
+      mode.kind === 'directions'
+        ? { directions: { stops: mode.stops.filter((s) => s.kind === 'me' || Number.isFinite(s.place.latitude)), mode: mode.travel } }
+        : mode.kind === 'place'
+          ? { place: mode.place }
+          : {},
+    )
+    if (search !== window.location.search) history.pushState(null, '', window.location.pathname + search)
+  }, [mode])
+  useEffect(() => {
+    const onPop = () => {
+      setRoutes([])
+      setMode(initialMode())
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   // Auth session.
   useEffect(() => {
@@ -86,8 +124,7 @@ export default function App() {
           longitude: place.longitude,
           date: new Date().toISOString(),
         }
-        const rest = s.recents.filter((r) => !(Math.abs(r.latitude - place.latitude) < 1e-6 && Math.abs(r.longitude - place.longitude) < 1e-6))
-        return { recents: [entry, ...rest].slice(0, 20) }
+        return { recents: [entry, ...s.recents.filter((r) => !samePoint(r, place))].slice(0, 20) }
       })
     },
     [commit],
@@ -95,7 +132,7 @@ export default function App() {
 
   const pick = useCallback(
     (place: Place) => {
-      setRoute(null)
+      setRoutes([])
       setMode({ kind: 'place', place })
       setFlyTo({ latitude: place.latitude, longitude: place.longitude, zoom: 15 })
       addRecent(place)
@@ -118,10 +155,9 @@ export default function App() {
     [mode.kind],
   )
 
-  const selected = mode.kind === 'browse' ? null : mode.place
+  const selected = mode.kind === 'place' ? mode.place : null
   const favoriteOf = useMemo(
-    () => (p: Place | null): FavoritePlace | undefined =>
-      p ? snapshot.favorites.find((f) => Math.abs(f.latitude - p.latitude) < 1e-6 && Math.abs(f.longitude - p.longitude) < 1e-6) : undefined,
+    () => (p: Place | null): FavoritePlace | undefined => (p ? snapshot.favorites.find((f) => samePoint(f, p)) : undefined),
     [snapshot.favorites],
   )
 
@@ -135,27 +171,58 @@ export default function App() {
     }))
   }
 
-  // Routing: re-run whenever the destination, mode or user fix changes.
+  const editFavorite = (patch: Partial<Pick<FavoritePlace, 'customTitle' | 'emoji' | 'colorHex'>>) => {
+    const existing = favoriteOf(selected)
+    if (!existing) return
+    commit((s) => ({ favorites: s.favorites.map((f) => (f.id === existing.id ? { ...f, ...patch } : f)) }))
+  }
+
+  // Resolve stops to coordinates; "me" needs a location fix.
+  const needsFix = mode.kind === 'directions' && mode.stops.some((s) => s.kind === 'me')
   useEffect(() => {
-    if (mode.kind !== 'directions' || !geo.fix) return
+    if (needsFix && !geo.fix && !geo.busy && !geo.error) geo.locate()
+  }, [needsFix, geo])
+
+  const resolvedStops: Place[] | null = useMemo(() => {
+    if (mode.kind !== 'directions') return null
+    const out: Place[] = []
+    for (const s of mode.stops) {
+      if (s.kind === 'me') {
+        if (!geo.fix) return null
+        out.push({ title: 'My location', subtitle: '', latitude: geo.fix.latitude, longitude: geo.fix.longitude })
+      } else {
+        if (!Number.isFinite(s.place.latitude)) return null
+        out.push(s.place)
+      }
+    }
+    return out.length >= 2 ? out : null
+  }, [mode, geo.fix])
+
+  // Routing: re-run whenever the resolved stops or travel mode change.
+  const travel = mode.kind === 'directions' ? mode.travel : null
+  useEffect(() => {
+    if (!resolvedStops || !travel) return
     const controller = new AbortController()
     setRouteBusy(true)
     setRouteError(null)
-    fetchRoute(geo.fix, mode.place, mode.travel, controller.signal)
+    fetchRoutes(resolvedStops, travel, controller.signal)
       .then((r) => {
-        if (!controller.signal.aborted) setRoute(r)
+        if (controller.signal.aborted) return
+        setRoutes(r)
+        setSelectedRoute(0)
       })
       .catch((e) => {
-        if (!controller.signal.aborted) setRouteError((e as Error).message)
+        if (controller.signal.aborted) return
+        setRoutes([])
+        setRouteError((e as Error).message)
       })
       .finally(() => !controller.signal.aborted && setRouteBusy(false))
     return () => controller.abort()
-  }, [mode, geo.fix])
+  }, [resolvedStops, travel])
 
-  const startDirections = (travel: TravelMode) => {
-    if (mode.kind === 'browse') return
-    if (!geo.fix) geo.locate()
-    setMode({ kind: 'directions', place: mode.place, travel })
+  const startDirections = () => {
+    if (mode.kind !== 'place') return
+    setMode({ kind: 'directions', stops: [{ kind: 'me' }, { kind: 'place', place: mode.place }], travel: 'driving', returnTo: mode.place })
   }
 
   useEffect(() => {
@@ -163,9 +230,34 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geo.fix])
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && mode.kind !== 'browse') {
+        setRoutes([])
+        setMode(mode.kind === 'directions' && mode.returnTo ? { kind: 'place', place: mode.returnTo } : { kind: 'browse' })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mode])
+
+  const directionsError =
+    routeError ??
+    (mode.kind === 'directions' && needsFix && !geo.fix && !geo.busy ? geo.error ?? 'Share your location, or pick a starting place.' : null)
+
   return (
     <div className="app">
-      <MapView selected={selected} favorites={snapshot.favorites} route={route} user={geo.fix} flyTo={flyTo} onMapClick={onMapClick} />
+      <MapView
+        selected={selected}
+        favorites={snapshot.favorites}
+        routes={routes}
+        selectedRoute={selectedRoute}
+        onSelectRoute={setSelectedRoute}
+        stops={resolvedStops ?? []}
+        user={geo.fix}
+        flyTo={flyTo}
+        onMapClick={onMapClick}
+      />
 
       <header className="topbar">
         <a className="brand" href={config.siteURL} title="Kova Maps">
@@ -177,15 +269,22 @@ export default function App() {
       <aside className="sidebar">
         {mode.kind === 'directions' ? (
           <DirectionsPanel
-            destination={mode.place}
-            route={route}
+            stops={mode.stops}
+            routes={routes}
+            selectedRoute={selectedRoute}
             mode={mode.travel}
-            busy={routeBusy || (!geo.fix && geo.busy)}
-            error={routeError ?? (!geo.fix && !geo.busy ? geo.error ?? 'Share your location to get directions.' : null)}
-            onMode={(travel) => setMode({ kind: 'directions', place: mode.place, travel })}
+            busy={routeBusy || (needsFix && !geo.fix && geo.busy)}
+            error={directionsError}
+            near={geo.fix}
+            onStops={(stops) => {
+              setRoutes([])
+              setMode({ ...mode, stops })
+            }}
+            onMode={(t) => setMode({ ...mode, travel: t })}
+            onSelectRoute={setSelectedRoute}
             onClose={() => {
-              setRoute(null)
-              setMode({ kind: 'place', place: mode.place })
+              setRoutes([])
+              setMode(mode.returnTo ? { kind: 'place', place: mode.returnTo } : { kind: 'browse' })
             }}
           />
         ) : (
@@ -195,15 +294,16 @@ export default function App() {
               favorites={snapshot.favorites}
               recents={snapshot.recents}
               onPick={pick}
+              onDirections={() => setMode({ kind: 'directions', stops: [{ kind: 'me' }, { kind: 'place', place: { title: '', subtitle: '', latitude: NaN, longitude: NaN } }], travel: 'driving', returnTo: null })}
               onClearRecents={() => commit(() => ({ recents: [] }))}
             />
             {mode.kind === 'place' && (
               <PlaceCard
                 place={mode.place}
-                isFavorite={!!favoriteOf(mode.place)}
-                canRoute={true}
+                favorite={favoriteOf(mode.place)}
                 onDirections={startDirections}
                 onToggleFavorite={toggleFavorite}
+                onEditFavorite={editFavorite}
                 onClose={() => setMode({ kind: 'browse' })}
               />
             )}
@@ -214,7 +314,7 @@ export default function App() {
       <button className="locate" onClick={geo.locate} title="Your location" aria-label="Show my location" disabled={geo.busy}>
         {geo.busy ? '…' : '➤'}
       </button>
-      {geo.error && <div className="toast">{geo.error}</div>}
+      {geo.error && mode.kind !== 'directions' && <div className="toast">{geo.error}</div>}
     </div>
   )
 }

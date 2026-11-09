@@ -10,11 +10,11 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. Each open item has a GitH
 - [x] Supabase sign-in (Google, Apple) and favorites/recents sync with the iPhone app
 
 ## 0.2 Parity basics
-- [ ] Start and end fields in directions (route between any two places, not just from "me")
-- [ ] Multi-stop routes
+- [x] Start and end fields in directions (route between any two places, not just from "me")
+- [x] Multi-stop routes, with reorder and per-leg step lists; alternative routes on two-point trips
 - [ ] Transit directions (needs a provider; the iOS app uses Google Routes)
-- [ ] Edit a favorite: custom name, emoji, colour (same fields the iOS app syncs)
-- [ ] Shareable URLs: `/place?lat&lng`, `/directions?from&to`, so links open the same view
+- [x] Edit a favorite: custom name, emoji, colour (same fields the iOS app syncs)
+- [x] Shareable URLs (`?place=`, `?from=&to=&via=&mode=`) with back/forward support and a copy-link button
 - [ ] Place details: hours, phone, website, photos (Google Places behind an Edge Function)
 
 ## 0.3 Kova features

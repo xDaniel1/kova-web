@@ -7,7 +7,10 @@ import type { FavoritePlace, Place, Route } from '../lib/types'
 interface Props {
   selected: Place | null
   favorites: FavoritePlace[]
-  route: Route | null
+  routes: Route[]
+  selectedRoute: number
+  stops: Place[]
+  onSelectRoute?: (index: number) => void
   user: { latitude: number; longitude: number } | null
   flyTo: { latitude: number; longitude: number; zoom?: number } | null
   onMapClick: (latitude: number, longitude: number) => void
@@ -16,14 +19,19 @@ interface Props {
 
 const ROUTE_SOURCE = 'route'
 
-export function MapView({ selected, favorites, route, user, flyTo, onMapClick, onReady }: Props) {
+export function MapView({ selected, favorites, routes, selectedRoute, stops, onSelectRoute, user, flyTo, onMapClick, onReady }: Props) {
+  const route = routes[selectedRoute] ?? null
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const selectedMarker = useRef<maplibregl.Marker | null>(null)
+  const fitKey = useRef<Route[] | null>(null)
   const userMarker = useRef<maplibregl.Marker | null>(null)
   const favoriteMarkers = useRef<maplibregl.Marker[]>([])
+  const stopMarkers = useRef<maplibregl.Marker[]>([])
   const clickHandler = useRef(onMapClick)
   clickHandler.current = onMapClick
+  const selectRoute = useRef(onSelectRoute)
+  selectRoute.current = onSelectRoute
 
   useEffect(() => {
     if (!container.current || mapRef.current) return
@@ -35,9 +43,26 @@ export function MapView({ selected, favorites, route, user, flyTo, onMapClick, o
       attributionControl: { compact: true },
     })
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right')
-    map.on('click', (e) => clickHandler.current(e.lngLat.lat, e.lngLat.lng))
+    map.on('click', (e) => {
+      const hit = map.queryRenderedFeatures(e.point, { layers: ['alt-line'] })
+      if (hit.length && selectRoute.current) {
+        selectRoute.current(hit[0].properties.index as number)
+        return
+      }
+      clickHandler.current(e.lngLat.lat, e.lngLat.lng)
+    })
     map.on('load', () => {
       map.addSource(ROUTE_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      map.addSource('alternatives', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      map.addLayer({
+        id: 'alt-line',
+        type: 'line',
+        source: 'alternatives',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#8e8e93', 'line-width': 6, 'line-opacity': 0.7 },
+      })
+      map.on('mouseenter', 'alt-line', () => (map.getCanvas().style.cursor = 'pointer'))
+      map.on('mouseleave', 'alt-line', () => (map.getCanvas().style.cursor = ''))
       map.addLayer({
         id: 'route-casing',
         type: 'line',
@@ -105,24 +130,44 @@ export function MapView({ selected, favorites, route, user, flyTo, onMapClick, o
     if (!map) return
     const apply = () => {
       const src = map.getSource(ROUTE_SOURCE) as maplibregl.GeoJSONSource | undefined
-      if (!src) return
+      const alt = map.getSource('alternatives') as maplibregl.GeoJSONSource | undefined
+      if (!src || !alt) return
       src.setData(
         route
           ? { type: 'Feature', properties: {}, geometry: route.geometry }
           : { type: 'FeatureCollection', features: [] },
       )
-      if (route) {
+      alt.setData({
+        type: 'FeatureCollection',
+        features: routes
+          .map((r, index) => ({ type: 'Feature' as const, properties: { index }, geometry: r.geometry }))
+          .filter((f) => f.properties.index !== selectedRoute),
+      })
+      if (route && fitKey.current !== routes) {
+        fitKey.current = routes
         const coords = route.geometry.coordinates as [number, number][]
         const bounds = coords.reduce(
           (b: maplibregl.LngLatBounds, c: [number, number]) => b.extend(c as LngLatLike),
           new maplibregl.LngLatBounds(coords[0], coords[0]),
         )
-        map.fitBounds(bounds, { padding: { top: 80, bottom: 80, left: 420, right: 80 }, duration: 600 })
+        map.fitBounds(bounds, { padding: window.innerWidth < 640 ? { top: 80, bottom: window.innerHeight * 0.55 + 20, left: 30, right: 30 } : { top: 80, bottom: 80, left: 420, right: 80 }, duration: 600 })
       }
     }
     if (map.isStyleLoaded()) apply()
     else map.once('load', apply)
-  }, [route])
+  }, [routes, selectedRoute, route])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    stopMarkers.current.forEach((m) => m.remove())
+    stopMarkers.current = stops.map((p, i) => {
+      const el = document.createElement('div')
+      el.className = 'stop-marker' + (i === stops.length - 1 ? ' dest' : '')
+      el.textContent = i === 0 ? '' : i === stops.length - 1 ? '' : String(i)
+      return new maplibregl.Marker({ element: el }).setLngLat([p.longitude, p.latitude]).addTo(map)
+    })
+  }, [stops])
 
   useEffect(() => {
     const map = mapRef.current

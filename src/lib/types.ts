@@ -43,6 +43,8 @@ export interface Route {
   distanceMeters: number
   durationSeconds: number
   geometry: GeoJSON.LineString
+  /** Steps grouped per leg (one leg between each pair of stops). */
+  legs: RouteStep[][]
   steps: RouteStep[]
 }
 
