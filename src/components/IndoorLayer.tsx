@@ -63,7 +63,7 @@ export function IndoorLayer({ map }: Props) {
         id: 'indoor-labels', type: 'symbol', source: SRC, filter: ['==', ['geometry-type'], 'Point'], minzoom: 17,
         layout: {
           'text-field': ['concat', ['coalesce', ['get', 'icon'], ''], ' ', ['get', 'name']],
-          'text-size': 11, 'text-font': ['Noto Sans Regular'], 'text-max-width': 8, 'text-allow-overlap': false,
+          'text-size': 11, 'text-font': ['DIN Pro Regular', 'Arial Unicode MS Regular'], 'text-max-width': 8, 'text-allow-overlap': false,
         },
         paint: { 'text-color': '#3a3630', 'text-halo-color': '#ffffff', 'text-halo-width': 1.2 },
       })

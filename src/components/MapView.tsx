@@ -193,8 +193,14 @@ export function MapView(p: Props) {
     const next = styleKey(p.base, p.dark)
     if (!mapRef.current || next === currentStyle.current) return
     currentStyle.current = next
-    // A different style fires style.load, which rebuilds our layers on it.
-    mapRef.current.setStyle(next)
+    const map = mapRef.current
+    // Switching style while the first one is still loading crashes Mapbox's image manager
+    // (blank map). Wait until the map is idle, then switch; style.load rebuilds our layers.
+    const apply = () => {
+      if (currentStyle.current === next) map.setStyle(next)
+    }
+    if (map.loaded()) apply()
+    else map.once('idle', apply)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.base, p.dark])
 

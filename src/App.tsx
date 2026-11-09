@@ -127,7 +127,13 @@ export default function App() {
   // ---- auth + sync (same sync_snapshots row as the iPhone app)
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null))
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null)
+      // The OAuth redirect leaves "#" (or the token fragment) in the address bar; tidy it.
+      if (window.location.href.endsWith('#') || window.location.hash.includes('access_token')) {
+        history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+    })
     return () => sub.subscription.unsubscribe()
   }, [])
   useEffect(() => {

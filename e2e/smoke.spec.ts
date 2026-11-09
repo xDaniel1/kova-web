@@ -34,3 +34,15 @@ test('the map loads without console errors', async ({ page }) => {
   await page.waitForResponse((r) => r.url().includes('api.mapbox.com/v4/') && r.ok(), { timeout: 20_000 })
   expect(errors).toEqual([])
 })
+
+test('dark mode renders the map without errors', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'dark' })
+  const page = await context.newPage()
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/')
+  await page.waitForResponse((r) => r.url().includes('dark-v11') && r.ok(), { timeout: 20_000 })
+  await page.waitForTimeout(2500)
+  expect(errors).toEqual([])
+  await context.close()
+})
