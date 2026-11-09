@@ -1,18 +1,22 @@
 import type { GeoJSONSource, Map as MapboxMap } from 'mapbox-gl'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { INDOOR_MIN_ZOOM, cellsIn, levelLabel, loadCell } from '../lib/indoor'
 
 interface Props {
   map: MapboxMap | null
+  /** Tower's indoor_maps switch: when off, no new plans are fetched (ones on screen may stay). */
+  enabled: boolean
 }
 
 const SRC = 'indoor'
 const FILL: Record<string, string> = { room: '#e8e4dc', corridor: '#f7f5f0', area: '#efece5', shop: '#dfe9f7', amenity: '#e3f1e4', footprint: '#d9d4c8' }
 
 /** Draws published indoor plans when zoomed into a venue, with a floor picker. */
-export function IndoorLayer({ map }: Props) {
+export function IndoorLayer({ map, enabled }: Props) {
   const [features, setFeatures] = useState<GeoJSON.Feature[]>([])
   const [level, setLevel] = useState(0)
+  const enabledRef = useRef(enabled)
+  enabledRef.current = enabled
 
   // Load cells for the viewport when zoomed in far enough.
   useEffect(() => {
@@ -20,6 +24,7 @@ export function IndoorLayer({ map }: Props) {
     let gen = 0
     const refresh = async () => {
       const my = ++gen
+      if (!enabledRef.current) return
       if (map.getZoom() < INDOOR_MIN_ZOOM) {
         setFeatures([])
         return

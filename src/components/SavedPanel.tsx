@@ -1,5 +1,6 @@
 import type { FavoritePlace, RecentSearch } from '../lib/types'
 import { Icon } from './Icon'
+import { VERSION_LABEL } from '../lib/version'
 
 export function SavedPanel({ favorites, signedIn, onPick, onRemove }: { favorites: FavoritePlace[]; signedIn: boolean; onPick: (f: FavoritePlace) => void; onRemove: (f: FavoritePlace) => void }) {
   return (
@@ -18,6 +19,7 @@ export function SavedPanel({ favorites, signedIn, onPick, onRemove }: { favorite
           </li>
         ))}
       </ul>
+      <p className="muted tiny pad version-line">Kova Maps for web {VERSION_LABEL}</p>
     </div>
   )
 }
@@ -40,6 +42,7 @@ export function RecentsPanel({ recents, onPick, onClear }: { recents: RecentSear
           </li>
         ))}
       </ul>
+      <p className="muted tiny pad version-line">Kova Maps for web {VERSION_LABEL}</p>
     </div>
   )
 }

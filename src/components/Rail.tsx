@@ -1,6 +1,7 @@
 import { config } from '../lib/config'
 import { Icon } from './Icon'
 import { LogoMark } from './Logo'
+import { APP_VERSION, VERSION_LABEL } from '../lib/version'
 
 export type RailItem = 'saved' | 'recents'
 
@@ -32,6 +33,7 @@ export function Rail({ active, savedCount, onSelect, onMenu, onHome }: Props) {
         <Icon name="smartphone" />
         <span>Get app</span>
       </a>
+      <span className="rail-version" title={`Kova Maps for web ${VERSION_LABEL}`}>v{APP_VERSION}</span>
     </nav>
   )
 }

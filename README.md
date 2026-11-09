@@ -36,6 +36,17 @@ See [ROADMAP.md](ROADMAP.md) for what comes next and the open [issues](https://g
 
 The browser holds only public keys. `src/lib/config.ts` holds the Supabase project URL and the *publishable* anon key. The Mapbox public token (`pk.`) is injected at build time from the `MAPBOX_TOKEN` secret, so it is not in the repo; restrict it to `https://app.kovamaps.com` in the Mapbox account. The anon key is meant to be public: every table is protected by row-level security, so the key alone can read nothing that is not yours. Never add a service-role key or a paid API key to this repo. Google Places and Google Routes are called from the `google` Edge Function in `supabase/functions/google`, which holds the key as a function secret (`GOOGLE_API_KEY`) and only answers callers that present the publishable key from an allowed origin. Deploy it with `npx supabase functions deploy google --no-verify-jwt --use-api --remote=<project ref>`.
 
+## Versioning and releases
+
+- One semantic version for all of Kova (iOS, Android, web), currently **1.0.0**. The web version lives in `package.json`.
+- Build = the GitHub Actions run number; the short commit is shown beside it, e.g. `1.0.0 (build 57 · a1b2c3d)`. It appears in the rail, the account menu and the Saved and Recents panels.
+- Every release gets a `CHANGELOG.md` entry, a `web-vX.Y.Z` tag and a GitHub release.
+- Kova Tower's `latest_version.web` and `min_version.web` drive the update nudge and the update-required screen (see `src/lib/remote.ts` and kova-admin `docs/app-controls-contract.md`).
+
+## Kova Tower controls
+
+The app reads `app_config` and `app_messages` at load and whenever the tab becomes visible (at most every 30 s), caches the last good config in `localStorage`, and reports its version with `rpc/report_client`. Any failure leaves the app working normally. Covered by `e2e/remote-controls.spec.ts`.
+
 ## Related repos
 
 - [`waypoint-ios`](https://github.com/xDaniel1/waypoint-ios): the iPhone app and the Supabase schema (`supabase/schema.sql`)
