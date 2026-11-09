@@ -14,7 +14,7 @@ interface Props {
   onToast: (msg: string) => void
 }
 
-const COLORS = ['#ea4335', '#fbbc04', '#34a853', '#1a73e8', '#a142f4', '#ff6d01', '#5f6368']
+const COLORS = ['#0e809c', '#2b3fa0', '#ea4335', '#fbbc04', '#34a853', '#a142f4', '#ff6d01', '#5f6368']
 const EMOJI = ['★', '🏠', '💼', '☕', '🍽️', '🛒', '🏋️', '🎓', '✈️', '🏥', '🌳', '❤️']
 type Tab = 'overview' | 'reviews' | 'about'
 
@@ -139,7 +139,7 @@ export function PlacePanel(p: Props) {
                   <label>Name<input value={favorite.customTitle ?? ''} placeholder={place.title} onChange={(e) => p.onEditFavorite({ customTitle: e.target.value || null })} /></label>
                   <div className="swatches" role="radiogroup" aria-label="Colour">
                     {COLORS.map((c) => (
-                      <button key={c} role="radio" aria-checked={(favorite.colorHex ?? '#ea4335') === c} className={(favorite.colorHex ?? '#ea4335') === c ? 'on' : ''} style={{ background: c }} onClick={() => p.onEditFavorite({ colorHex: c })} aria-label={c} />
+                      <button key={c} role="radio" aria-checked={(favorite.colorHex ?? '#0e809c') === c} className={(favorite.colorHex ?? '#0e809c') === c ? 'on' : ''} style={{ background: c }} onClick={() => p.onEditFavorite({ colorHex: c })} aria-label={c} />
                     ))}
                   </div>
                   <div className="swatches" role="radiogroup" aria-label="Icon">

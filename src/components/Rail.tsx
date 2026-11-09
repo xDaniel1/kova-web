@@ -1,5 +1,6 @@
 import { config } from '../lib/config'
 import { Icon } from './Icon'
+import { LogoMark } from './Logo'
 
 export type RailItem = 'saved' | 'recents'
 
@@ -8,13 +9,15 @@ interface Props {
   savedCount: number
   onSelect: (item: RailItem) => void
   onMenu: () => void
+  onHome: () => void
 }
 
 /** Google Maps' left icon rail: menu, Saved, Recents, and a "Get app" link at the bottom. */
-export function Rail({ active, savedCount, onSelect, onMenu }: Props) {
+export function Rail({ active, savedCount, onSelect, onMenu, onHome }: Props) {
   return (
     <nav className="rail" aria-label="Main">
-      <button className="rail-menu" onClick={onMenu} aria-label="Menu"><Icon name="menu" /></button>
+      <button className="rail-logo" onClick={onHome} aria-label="Kova Maps home" title="Kova Maps"><LogoMark size={36} /></button>
+      <button className="rail-menu" onClick={onMenu} aria-label="Toggle side panel" title="Toggle side panel"><Icon name="menu" /></button>
       <button className={'rail-item' + (active === 'saved' ? ' on' : '')} onClick={() => onSelect('saved')}>
         <Icon name="bookmark" fill={active === 'saved'} />
         <span>Saved</span>

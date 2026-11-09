@@ -379,7 +379,7 @@ export default function App() {
       />
       <IndoorLayer map={mapInstance} />
 
-      {!isNarrow && <Rail active={view.kind === 'saved' || view.kind === 'recents' ? (view.kind as RailItem) : null} savedCount={snapshot.favorites.length} onSelect={(item) => { setCollapsed(false); setRoutes([]); setView(view.kind === item ? { kind: 'home' } : { kind: item }) }} onMenu={() => setCollapsed((c) => !c)} />}
+      {!isNarrow && <Rail active={view.kind === 'saved' || view.kind === 'recents' ? (view.kind as RailItem) : null} savedCount={snapshot.favorites.length} onSelect={(item) => { setCollapsed(false); setRoutes([]); setView(view.kind === item ? { kind: 'home' } : { kind: item }) }} onMenu={() => setCollapsed((c) => !c)} onHome={closePanel} />}
 
       {view.kind !== 'directions' && (
         <div className="search-wrap" style={{ left: isNarrow ? 8 : RAIL_WIDTH + 16 }}>

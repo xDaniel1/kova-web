@@ -42,7 +42,15 @@ interface Props {
   onReady?: (map: mapboxgl.Map) => void
 }
 
-const CONGESTION: Record<string, string> = { low: '#1a73e8', moderate: '#f29900', heavy: '#d93025', severe: '#8c1d18', unknown: '#1a73e8' }
+const CONGESTION: Record<string, string> = { low: '#1d6fd1', moderate: '#f29900', heavy: '#d93025', severe: '#8c1d18', unknown: '#1d6fd1' }
+
+/** Kova's place pin: the brand gradient teardrop with a white dot. */
+function kovaPin(): HTMLElement {
+  const el = document.createElement('div')
+  el.className = 'kova-pin'
+  el.innerHTML = '<svg viewBox="0 0 32 44" width="32" height="44" aria-hidden="true"><defs><linearGradient id="kp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b3fa0"/><stop offset="1" stop-color="#0099a8"/></linearGradient></defs><path d="M16 43c-1-6-14-14-14-27a14 14 0 0 1 28 0c0 13-13 21-14 27z" fill="url(#kp)" stroke="#fff" stroke-width="2"/><circle cx="16" cy="16" r="5.5" fill="#fff"/></svg>'
+  return el
+}
 
 function routeFeatures(route: Route | null): GeoJSON.FeatureCollection {
   if (!route || route.mode === 'transit') return { type: 'FeatureCollection', features: [] }
@@ -120,10 +128,10 @@ export function MapView(p: Props) {
     for (const id of ['alternatives', 'route', 'transit']) if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: empty })
     map.addLayer({ id: 'alt-casing', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#5f6368', 'line-width': 9, 'line-opacity': 0.5 } }, firstSymbol)
     map.addLayer({ id: 'alt-line', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#bcc5d3', 'line-width': 6 } }, firstSymbol)
-    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#0b57d0', 'line-width': 10 } }, firstSymbol)
+    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#0d3f7a', 'line-width': 10 } }, firstSymbol)
     map.addLayer({
       id: 'route-line', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': ['match', ['get', 'congestion'], ...Object.entries(CONGESTION).flat(), '#1a73e8'] as never, 'line-width': 6.5 },
+      paint: { 'line-color': ['match', ['get', 'congestion'], ...Object.entries(CONGESTION).flat(), '#1d6fd1'] as never, 'line-width': 6.5 },
     }, firstSymbol)
     map.addLayer({ id: 'transit-walk', type: 'line', source: 'transit', filter: ['==', ['get', 'kind'], 'walk'], layout: { 'line-cap': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 5, 'line-dasharray': [0.1, 1.8] } }, firstSymbol)
     map.addLayer({ id: 'transit-ride', type: 'line', source: 'transit', filter: ['==', ['get', 'kind'], 'ride'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 7 } }, firstSymbol)
@@ -225,7 +233,7 @@ export function MapView(p: Props) {
     if (!map) return
     markers.current.selected?.remove()
     markers.current.selected = undefined
-    if (p.selected) markers.current.selected = new mapboxgl.Marker({ color: '#ea4335' }).setLngLat([p.selected.longitude, p.selected.latitude]).addTo(map)
+    if (p.selected) markers.current.selected = new mapboxgl.Marker({ element: kovaPin(), anchor: 'bottom' }).setLngLat([p.selected.longitude, p.selected.latitude]).addTo(map)
   }, [p.selected])
 
   useEffect(() => {
@@ -255,7 +263,7 @@ export function MapView(p: Props) {
     markers.current.favorites = p.favorites.map((f) => {
       const el = document.createElement('div')
       el.className = 'fav-marker'
-      el.style.background = f.colorHex ?? '#ea4335'
+      el.style.background = f.colorHex ?? '#0e809c'
       el.textContent = f.emoji ?? '★'
       el.title = f.customTitle || f.title
       el.addEventListener('click', (e) => { e.stopPropagation(); props.current.onPoiClick({ title: f.customTitle || f.title, subtitle: f.subtitle, latitude: f.latitude, longitude: f.longitude }) })
@@ -269,7 +277,7 @@ export function MapView(p: Props) {
     markers.current.stops.forEach((m) => m.remove())
     markers.current.stops = p.stops.map((s, i) => {
       const last = i === p.stops.length - 1
-      if (last) return new mapboxgl.Marker({ color: '#ea4335' }).setLngLat([s.longitude, s.latitude]).addTo(map)
+      if (last) return new mapboxgl.Marker({ element: kovaPin(), anchor: 'bottom' }).setLngLat([s.longitude, s.latitude]).addTo(map)
       const el = document.createElement('div')
       el.className = 'stop-marker'
       el.textContent = i === 0 ? '' : String.fromCharCode(65 + i)
