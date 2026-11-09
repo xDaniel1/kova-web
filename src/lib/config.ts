@@ -13,5 +13,7 @@ export const config = {
   router: { baseURL: 'https://router.project-osrm.org' },
   // Where the iPhone app lives.
   appStoreURL: 'https://apps.apple.com/app/id6827830148',
+  // Public TestFlight link; works once Apple's Beta App Review has approved the current build.
+  testFlightURL: 'https://testflight.apple.com/join/cWQN9SQm',
   siteURL: 'https://kovamaps.com',
 }

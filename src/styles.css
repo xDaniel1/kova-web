@@ -48,6 +48,9 @@ p { margin: 4px 0; }
   padding: 6px 12px 6px 8px; border-radius: 999px; box-shadow: var(--shadow);
 }
 .beta { font-size: 11px; font-weight: 600; color: var(--accent); background: rgba(10,132,255,0.12); padding: 2px 7px; border-radius: 999px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; background: var(--panel); backdrop-filter: blur(18px); border: 1px solid var(--border); padding: 9px 14px; border-radius: 999px; box-shadow: var(--shadow); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.pill:hover { background: var(--border); }
+@media (max-width: 640px) { .pill { display: none; } }
 .account { display: flex; align-items: center; gap: 8px; background: var(--panel); backdrop-filter: blur(18px); border: 1px solid var(--border); padding: 6px 8px; border-radius: 999px; box-shadow: var(--shadow); }
 .account button { border: 0; background: transparent; padding: 4px 8px; border-radius: 999px; }
 .account button:hover { background: var(--border); }

@@ -306,7 +306,10 @@ export default function App() {
         <a className="brand" href={config.siteURL} title="Kova Maps">
           <img src="/favicon.svg" alt="" width={28} height={28} /> Kova Maps <span className="beta">web beta</span>
         </a>
-        <AccountMenu user={user} syncState={syncState} />
+        <div className="row-gap">
+          <a className="pill" href={config.testFlightURL} title="Install the iPhone beta with TestFlight"> iPhone beta</a>
+          <AccountMenu user={user} syncState={syncState} />
+        </div>
       </header>
 
       <aside className="sidebar">
