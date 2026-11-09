@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.3.0 — 2026-11-09
+Kova shares one semantic version across iOS, Android and web. Web releases are tagged `web-vX.Y.Z`; the build number is the GitHub Actions run and the commit is shown next to it (Account menu, Saved, Recents and the rail).
+
+## 1.0.0 — 2026-11-09
+First public release of Kova Maps for the web, aligned with iPhone 1.0.0.
+- Kova Tower remote controls: update required, maintenance mode, announcement banner, update nudge, per-user messages, and the sync / traffic reports / indoor maps switches. Fails safe to normal behaviour on any error. Reports its version to Tower (`platform: web`).
+- Visible version and build in the app
+- Kova branding: logo mark, brand gradient, Kova pin, app icons and install manifest
+- Fixes: blank map when the colour scheme changed during load; leftover `#` after sign-in; indoor label font
+
+## 0.3.0 — 2026-11-09 (pre-release)
 - Rebuilt around Google Maps' web layout: icon rail (Saved, Recents, Get app), floating search card, category chips, full-height side panel, collapse tab, Layers tile, zoom and locate controls, bottom sheet on phones
 - Map moved to Mapbox GL JS (Streets, Dark, Satellite) with a live Traffic layer and clickable map POIs
 - Search uses Mapbox Search Box suggestions; category chips and Enter show Google-ranked results with photos, ratings, price and open hours
@@ -8,7 +17,7 @@
 - Directions use Mapbox (live traffic): mode times, route options coloured by congestion, Leave now / Depart at / Arrive by, lane arrows and speed limits in mph
 - Replaced the public demo services (Photon, OSRM, OpenFreeMap, Overpass) with Mapbox
 
-## 0.2.0 — unreleased
+## 0.2.0 — 2026-11-09 (pre-release)
 - Place details from Google: photos, rating, price, hours, phone, website, reviews and a summary
 - Transit directions: subway, bus and ferry legs drawn in their line colours with stop names, times and fare
 - Discover shelves: Great Coffee, Dinner Tonight, Parks & Outdoors, Nightlife, Arts & Culture

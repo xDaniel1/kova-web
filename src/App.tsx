@@ -14,6 +14,9 @@ import { ResultsPanel } from './components/ResultsPanel'
 import { RecentsPanel, SavedPanel } from './components/SavedPanel'
 import { SearchCard } from './components/SearchCard'
 import { useGeolocation } from './hooks/useGeolocation'
+import { useRemoteControls } from './hooks/useRemoteControls'
+import { AnnouncementBanner, Maintenance, MessageCard, UpdateNudge, UpdateRequired } from './components/RemoteGates'
+import { allows } from './lib/remote'
 import { config } from './lib/config'
 import { listPlaces, toPlace, type NearbyPlace } from './lib/google'
 import { retrieve, reverseGeocode } from './lib/mapbox'
@@ -88,6 +91,11 @@ export default function App() {
   const [mapInstance, setMapInstance] = useState<MapboxMap | null>(null)
   const [isNarrow, setIsNarrow] = useState(() => window.innerWidth < 760)
   const dark = usePrefersDark()
+  const remote = useRemoteControls(user?.id ?? null)
+  const can = (f: Parameters<typeof allows>[1]) => allows(remote.config, f)
+  const syncOn = can('sync')
+  const reportsOn = can('trafficReports')
+  const indoorOn = can('indoorMaps')
   const geo = useGeolocation()
   const pushTimer = useRef<number | null>(null)
 
@@ -137,7 +145,7 @@ export default function App() {
     return () => sub.subscription.unsubscribe()
   }, [])
   useEffect(() => {
-    if (!user) return
+    if (!user || !syncOn) return
     let cancelled = false
     setSyncState('syncing')
     fetchRemote(user.id)
@@ -152,12 +160,12 @@ export default function App() {
       })
       .catch(() => !cancelled && setSyncState('error'))
     return () => { cancelled = true }
-  }, [user])
+  }, [user, syncOn])
   const commit = useCallback((update: (s: Snapshot) => Partial<Snapshot>) => {
     setSnapshot((prev) => {
       const next: Snapshot = { ...prev, ...update(prev), updatedAt: new Date().toISOString() }
       saveLocal(next)
-      if (user) {
+      if (user && syncOn) {
         if (pushTimer.current) window.clearTimeout(pushTimer.current)
         pushTimer.current = window.setTimeout(() => {
           setSyncState('syncing')
@@ -166,7 +174,7 @@ export default function App() {
       }
       return next
     })
-  }, [user])
+  }, [user, syncOn])
   const addRecent = useCallback((place: Place) => {
     commit((s) => {
       const entry: RecentSearch = { id: newUUID(), title: place.title, subtitle: place.subtitle, latitude: place.latitude, longitude: place.longitude, date: new Date().toISOString() }
@@ -176,9 +184,9 @@ export default function App() {
 
   // ---- traffic reports (signed in only, per RLS)
   const reloadReports = useCallback(() => {
-    if (!user || !camera || !showReports || camera.zoom < 10) return setReports([])
+    if (!user || !camera || !showReports || !reportsOn || camera.zoom < 10) return setReports([])
     fetchReports(camera.bounds).then(setReports).catch(() => {})
-  }, [user, camera, showReports])
+  }, [user, camera, showReports, reportsOn])
   useEffect(() => {
     reloadReports()
     const t = window.setInterval(reloadReports, 60_000)
@@ -383,7 +391,7 @@ export default function App() {
         }}
         onReady={setMapInstance}
       />
-      <IndoorLayer map={mapInstance} />
+      <IndoorLayer map={mapInstance} enabled={indoorOn} />
 
       {!isNarrow && <Rail active={view.kind === 'saved' || view.kind === 'recents' ? (view.kind as RailItem) : null} savedCount={snapshot.favorites.length} onSelect={(item) => { setCollapsed(false); setRoutes([]); setView(view.kind === item ? { kind: 'home' } : { kind: item }) }} onMenu={() => setCollapsed((c) => !c)} onHome={closePanel} />}
 
@@ -405,7 +413,7 @@ export default function App() {
             onRecent={(r) => openPlace(r)}
             onDirections={() => startDirections()}
             onClose={closePanel}
-            accessory={isNarrow ? <span className="search-account"><AccountButton user={user} syncState={syncState} /></span> : undefined}
+            accessory={isNarrow ? <span className="search-account"><AccountButton user={user} syncState={syncState} syncOn={syncOn} /></span> : undefined}
           />
         </div>
       )}
@@ -487,7 +495,7 @@ export default function App() {
 
       <div className="top-right">
         <a className="get-app-pill" href={config.testFlightURL} target="_blank" rel="noreferrer"><Icon name="smartphone" size={18} /> Get the iPhone app</a>
-        <AccountButton user={user} syncState={syncState} />
+        <AccountButton user={user} syncState={syncState} syncOn={syncOn} />
       </div>
 
       <div className="map-controls">
@@ -499,10 +507,24 @@ export default function App() {
       </div>
 
       <div className="layers-wrap" style={{ left: (isNarrow ? 8 : leftInset + 16) }}>
-        <LayersControl base={base} traffic={traffic} reports={showReports} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
+        <LayersControl base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
+      </div>
+
+      <div className="banners" style={{ left: isNarrow ? 8 : leftInset + 16 }}>
+        {remote.announcement && <AnnouncementBanner a={remote.announcement} onDismiss={remote.dismissAnnouncement} />}
+        {remote.updateNudge && <UpdateNudge message={remote.config.latestVersion.message} onDismiss={remote.dismissUpdate} />}
       </div>
 
       {toast && <div className="toast" role="status">{toast}</div>}
+
+      {/* Tower gates. Update-required wins over maintenance; messages never sit on top of either. */}
+      {remote.updateRequired ? (
+        <UpdateRequired message={remote.config.minimumVersion.message} />
+      ) : remote.maintenance ? (
+        <Maintenance message={remote.config.maintenance.message} checking={remote.checking} onRetry={() => void remote.refresh(true)} />
+      ) : remote.message ? (
+        <MessageCard m={remote.message} onDone={() => remote.readMessage(remote.message!)} />
+      ) : null}
     </div>
   )
 }
