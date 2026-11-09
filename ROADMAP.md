@@ -19,7 +19,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. Each open item has a GitH
 
 ## 0.3 Kova features
 - [x] Traffic incident reports layer (read `traffic_reports`, file one when signed in, remove yours, flag others')
-- [ ] Indoor maps: load the nightly plans from kovamaps.com/indoor and draw floors
+- [x] Indoor maps: load the nightly plans from kovamaps.com/indoor and draw floors with a floor picker
 - [x] Discover / guides shelves (five themes, top-rated nearby places)
 - [x] Speed limits and lane data from Overpass on each driving step
 

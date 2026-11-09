@@ -200,3 +200,9 @@ p { margin: 4px 0; }
 @media (prefers-color-scheme: dark) { .speed-sign { background: #fff; color: #000; } }
 .lanes { display: inline-flex; gap: 1px; margin-left: 6px; vertical-align: middle; }
 .lane { display: inline-grid; place-items: center; width: 16px; height: 18px; background: #1c1c1e; color: #fff; font-size: 11px; border-radius: 2px; }
+
+/* Indoor floor picker */
+.floor-picker { position: absolute; right: 10px; top: 120px; display: flex; flex-direction: column; padding: 4px; gap: 2px; max-height: 50vh; overflow: auto; }
+.floor-picker button { border: 0; background: transparent; width: 34px; height: 30px; border-radius: 8px; font-weight: 600; font-size: 13px; }
+.floor-picker button.on { background: var(--accent); color: #fff; }
+@media (max-width: 640px) { .floor-picker { top: 120px; } }

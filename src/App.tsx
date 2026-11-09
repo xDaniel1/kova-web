@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AccountMenu } from './components/AccountMenu'
 import { DirectionsPanel } from './components/DirectionsPanel'
+import { IndoorLayer } from './components/IndoorLayer'
 import { MapView } from './components/MapView'
 import { PlaceCard } from './components/PlaceCard'
 import { ReportsControl } from './components/ReportsControl'
@@ -51,6 +52,7 @@ export default function App() {
   const [arming, setArming] = useState<ReportKind | null>(null)
   const [bounds, setBounds] = useState<Bounds | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [mapInstance, setMapInstance] = useState<import('maplibre-gl').Map | null>(null)
 
   const notify = useCallback((msg: string) => {
     setToast(msg)
@@ -306,7 +308,9 @@ export default function App() {
         onMoveEnd={setBounds}
         flyTo={flyTo}
         onMapClick={onMapClick}
+        onReady={setMapInstance}
       />
+      <IndoorLayer map={mapInstance} />
       <ReportsControl signedIn={!!user} arming={arming} count={reports.length} onArm={setArming} />
 
       <header className="topbar">

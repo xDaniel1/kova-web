@@ -5,6 +5,7 @@
 - Transit directions: subway, bus and ferry legs drawn in their line colours with stop names, times and fare
 - Discover shelves: Great Coffee, Dinner Tonight, Parks & Outdoors, Nightlife, Arts & Culture
 - Speed limit signs and lane arrows on driving steps, from OpenStreetMap
+- Indoor maps for published venues (airports, malls, stations) with a floor picker at street zoom
 - Browser error reporting to the Kova Tower database
 - The Google key lives in a Supabase Edge Function (`supabase/functions/google`), never in the browser
 - Directions between any two places, with "My location" as an option for either end
