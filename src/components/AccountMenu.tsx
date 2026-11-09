@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { signInWithApple, signInWithGoogle, signOut } from '../lib/supabase'
+import { signInWithGoogle, signOut } from '../lib/supabase'
 
 interface Props {
   user: User | null
@@ -10,8 +10,8 @@ export function AccountMenu({ user, syncState }: Props) {
   if (!user) {
     return (
       <div className="account">
+        {/* Apple sign-in on the web needs a Services ID and OAuth secret in Supabase; tracked in issue #19. */}
         <button onClick={() => signInWithGoogle().catch((e) => alert(e.message))}>Sign in with Google</button>
-        <button onClick={() => signInWithApple().catch((e) => alert(e.message))}>Sign in with Apple</button>
       </div>
     )
   }
