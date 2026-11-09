@@ -79,3 +79,15 @@ describe('messages', () => {
     expect(webURL('mailto:x@y.z')).toBeNull()
   })
 })
+
+describe('reportClient', () => {
+  it('does not report from automated browsers', async () => {
+    const { reportClient } = await import('./remote')
+    const calls: unknown[] = []
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async (...a: unknown[]) => { calls.push(a); return new Response('{}') }) as typeof fetch
+    Object.defineProperty(globalThis, 'navigator', { value: { webdriver: true, userAgent: 'HeadlessChrome' }, configurable: true })
+    try { await reportClient() } finally { globalThis.fetch = realFetch }
+    expect(calls).toHaveLength(0)
+  })
+})
