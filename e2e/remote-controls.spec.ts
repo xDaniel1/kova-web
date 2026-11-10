@@ -84,6 +84,8 @@ test('messages show one at a time and are remembered once read', async ({ page }
 
 test('the web app reports its version to Tower', async ({ page }) => {
   let body: Record<string, string> | null = null
+  // The app skips the report in automated browsers; present as a normal one so the request is sent (and mocked).
+  await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }))
   await page.route('**/rest/v1/app_config*', (r) => r.fulfill({ json: [] }))
   await page.route('**/rest/v1/app_messages*', (r) => r.fulfill({ json: [] }))
   await page.route('**/rest/v1/rpc/report_client', (r) => {
