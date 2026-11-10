@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test'
 
+// Keep the production service worker from bypassing Playwright's network fixtures.
+test.use({ serviceWorkers: 'block' })
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/search/searchbox/v1/suggest?**', route => route.fulfill({ json: {
     suggestions: [{ mapbox_id: 'test-place', name: 'Test Coffee', full_address: 'New York', feature_type: 'poi' }],
@@ -23,7 +26,7 @@ test('a suggestion can be activated with keyboard focus', async ({ page }) => {
 })
 
 test('a touch tap activates a suggestion', async ({ browser }) => {
-  const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } })
+  const context = await browser.newContext({ serviceWorkers: 'block', hasTouch: true, viewport: { width: 390, height: 844 } })
   const page = await context.newPage()
   await page.route('**/search/searchbox/v1/suggest?**', route => route.fulfill({ json: {
     suggestions: [{ mapbox_id: 'test-place', name: 'Test Coffee', feature_type: 'poi' }],
