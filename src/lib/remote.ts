@@ -262,6 +262,8 @@ export async function recordRead(messageID: string, userID: string): Promise<voi
 }
 
 export async function reportClient(): Promise<void> {
+  // Automated browsers (Playwright end-to-end runs, Lighthouse, crawlers) are not installs.
+  if (typeof navigator !== 'undefined' && navigator.webdriver) return
   try {
     const ua = navigator.userAgent
     const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Firefox\//.test(ua) ? 'Firefox' : 'Browser'
