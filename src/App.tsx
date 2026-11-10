@@ -404,7 +404,7 @@ export default function App() {
         }}
         onReady={setMapInstance}
       />
-      {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} />}
+      {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} dark={dark && base !== 'satellite'} left={(isNarrow ? 8 : leftInset + 16) + (isNarrow ? 72 : 92)} />}
       </Suspense>
       </MapBoundary>
 

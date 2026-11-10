@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Fix a blank map caused by the deferred Mapbox stylesheet overriding the map container position.
+- Make search suggestions work with touch and keyboard activation, cancel outdated requests, and explain suggestion failures.
+- Add Mapbox airport floor plans, floor selection and a searchable venue directory using the iPhone app's indoor data approach.
+- Begin the Kova web styling refresh with teal navigation, a visible wordmark and revised search controls; show the build and commit beside the version.
+
+
 Kova shares one semantic version across iOS, Android and web. Web releases are tagged `web-vX.Y.Z`; the build number is the GitHub Actions run and the commit is shown next to it (Account menu, Saved, Recents and the rail).
 
 ## 1.0.1 — 2026-11-09
