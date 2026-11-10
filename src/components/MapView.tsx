@@ -1,6 +1,7 @@
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useEffect, useRef, useState } from 'react'
+import { browserMapBudget } from '../lib/performance'
 import { config } from '../lib/config'
 import { REPORT_KINDS, ageLabel, type Bounds, type TrafficReport } from '../lib/reports'
 import type { FavoritePlace, Place, Route } from '../lib/types'
@@ -142,6 +143,7 @@ export function MapView(p: Props) {
 
   useEffect(() => {
     if (!container.current || mapRef.current) return
+    const budget = browserMapBudget()
     const map = new mapboxgl.Map({
       container: container.current,
       style: styleKey(p.base, p.dark),
@@ -149,6 +151,11 @@ export function MapView(p: Props) {
       zoom: 13,
       attributionControl: false,
       projection: 'mercator',
+      maxTileCacheSize: budget.maxTileCacheSize,
+      fadeDuration: budget.fadeDuration,
+      antialias: false,
+      preserveDrawingBuffer: false,
+      respectPrefersReducedMotion: true,
     })
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right')
     map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial', maxWidth: 100 }), 'bottom-right')
@@ -177,13 +184,23 @@ export function MapView(p: Props) {
       }
       props.current.onMapClick(e.lngLat.lat, e.lngLat.lng)
     })
-    map.on('mousemove', (e) => {
-      if (!map.getStyle()) return
-      const poiLayers = (map.getStyle().layers ?? []).filter((l) => l.type === 'symbol' && /poi|transit|airport/.test(l.id)).map((l) => l.id)
-      const hit = map.queryRenderedFeatures(e.point, { layers: [...poiLayers, ...(map.getLayer('alt-line') ? ['alt-line'] : [])] }).length > 0
-      map.getCanvas().style.cursor = hit ? 'pointer' : ''
-    })
+    let hoverFrame = 0
+    let hoverPoint: mapboxgl.Point | null = null
+    const onHover = (e: mapboxgl.MapMouseEvent) => {
+      hoverPoint = e.point
+      if (hoverFrame) return
+      hoverFrame = requestAnimationFrame(() => {
+        hoverFrame = 0
+        if (!hoverPoint || map.isMoving() || !map.isStyleLoaded()) return
+        if (!map.getStyle()) return
+        const poiLayers = (map.getStyle().layers ?? []).filter((l) => l.type === 'symbol' && /poi|transit|airport/.test(l.id)).map((l) => l.id)
+        const hit = map.queryRenderedFeatures(hoverPoint, { layers: [...poiLayers, ...(map.getLayer('alt-line') ? ['alt-line'] : [])] }).length > 0
+        map.getCanvas().style.cursor = hit ? 'pointer' : ''
+      })
+    }
+    map.on('mousemove', onHover)
     return () => {
+      cancelAnimationFrame(hoverFrame)
       map.remove()
       mapRef.current = null
     }
@@ -218,14 +235,14 @@ export function MapView(p: Props) {
     const b = new mapboxgl.LngLatBounds()
     for (const r of p.routes) for (const c of r.geometry.coordinates) b.extend(c as [number, number])
     const narrow = window.innerWidth < 760
-    map.fitBounds(b, { padding: narrow ? { top: 70, bottom: window.innerHeight * 0.72, left: 30, right: 30 } : { top: 90, bottom: 100, left: p.leftInset + 60, right: 80 }, duration: 600 })
+    map.fitBounds(b, { padding: narrow ? { top: 70, bottom: window.innerHeight * 0.72, left: 30, right: 30 } : { top: 90, bottom: 100, left: p.leftInset + 60, right: 80 }, duration: browserMapBudget().cameraDuration })
   }, [p.routes, p.selectedRoute, p.leftInset])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !p.fitTo) return
     const narrow = window.innerWidth < 760
-    map.fitBounds([[p.fitTo.west, p.fitTo.south], [p.fitTo.east, p.fitTo.north]], { padding: narrow ? { top: 120, bottom: window.innerHeight * 0.6, left: 30, right: 30 } : { top: 90, bottom: 60, left: p.leftInset + 50, right: 60 }, maxZoom: 16, duration: 600 })
+    map.fitBounds([[p.fitTo.west, p.fitTo.south], [p.fitTo.east, p.fitTo.north]], { padding: narrow ? { top: 120, bottom: window.innerHeight * 0.6, left: 30, right: 30 } : { top: 90, bottom: 60, left: p.leftInset + 50, right: 60 }, maxZoom: 16, duration: browserMapBudget().cameraDuration })
   }, [p.fitTo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -234,7 +251,7 @@ export function MapView(p: Props) {
     // Keep the point clear of the side panel.
     // On phones the bottom sheet covers the lower ~58%, so lift the point above it.
     const narrow = window.innerWidth < 760
-    map.flyTo({ center: [p.flyTo.longitude, p.flyTo.latitude], zoom: p.flyTo.zoom ?? Math.max(map.getZoom(), 15), offset: narrow ? [0, -window.innerHeight * 0.27] : [p.leftInset / 2, 0], duration: 700 })
+    map.flyTo({ center: [p.flyTo.longitude, p.flyTo.latitude], zoom: p.flyTo.zoom ?? Math.max(map.getZoom(), 15), offset: narrow ? [0, -window.innerHeight * 0.27] : [p.leftInset / 2, 0], duration: browserMapBudget().cameraDuration })
   }, [p.flyTo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

@@ -19,6 +19,8 @@ export function cellOf(latitude: number, longitude: number): Cell {
 export function cellsIn(bounds: { south: number; west: number; north: number; east: number }, max = 12): Cell[] {
   const a = cellOf(bounds.south, bounds.west)
   const b = cellOf(bounds.north, bounds.east)
+  // Reject broad viewports before allocating or iterating over every cell.
+  if ((b.row - a.row + 1) * (b.col - a.col + 1) > max) return []
   const out: Cell[] = []
   for (let r = a.row; r <= b.row; r++) for (let c = a.col; c <= b.col; c++) out.push({ row: r, col: c })
   return out.length > max ? [] : out
@@ -158,19 +160,30 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
 
 const cache = new Map<string, GeoJSON.Feature[] | null>()
 
+const MAX_CACHED_CELLS = 48
+function rememberCell(key: string, value: GeoJSON.Feature[] | null) {
+  cache.delete(key)
+  cache.set(key, value)
+  if (cache.size > MAX_CACHED_CELLS) cache.delete(cache.keys().next().value!)
+}
+
 export async function loadCell(cell: Cell): Promise<GeoJSON.Feature[] | null> {
   const key = `${cell.row}_${cell.col}`
-  if (cache.has(key)) return cache.get(key)!
+  if (cache.has(key)) {
+    const value = cache.get(key)!
+    rememberCell(key, value)
+    return value
+  }
   try {
     const res = await fetch(`${BASE}/indoor_${key}.json`)
     if (res.status === 404) {
-      cache.set(key, null)
+      rememberCell(key, null)
       return null
     }
     if (!res.ok) return null // transient; try again on the next move
     const json = (await res.json()) as { elements: Element[] }
     const features = toFeatures(json.elements ?? [])
-    cache.set(key, features)
+    rememberCell(key, features)
     return features
   } catch {
     return null

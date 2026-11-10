@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bound map tile caches and indoor cell history; use shorter map effects on modest hardware and respect reduced motion. Coalesce pointer hit tests to one per animation frame and avoid them during map movement.
+
 - Fix a blank map caused by the deferred Mapbox stylesheet overriding the map container position.
 - Make search suggestions work with touch and keyboard activation, cancel outdated requests, and explain suggestion failures.
 - Add Mapbox airport floor plans, floor selection and a searchable venue directory using the iPhone app's indoor data approach.

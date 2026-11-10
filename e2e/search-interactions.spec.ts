@@ -45,13 +45,14 @@ test('suggestion errors explain the next action', async ({ page }) => {
   await page.route('**/search/searchbox/v1/suggest?**', route => route.fulfill({ status: 503, body: '{}' }))
   await page.goto('/')
   await page.getByLabel('Search Kova Maps').fill('Coffee')
-  await expect(page.getByRole('status')).toContainText('Suggestions unavailable. Press Search')
+  await expect(page.locator('.search-card').getByRole('status')).toContainText('Suggestions unavailable. Press Search')
 })
 
 
 test('the map keeps its viewport height after the deferred stylesheet loads', async ({ page }) => {
   await page.goto('/')
-  const map = page.locator('.map.mapboxgl-map')
+  // Some CI GPUs cannot create WebGL; verify the fallback layout there as well.
+  const map = page.locator('.map.mapboxgl-map, .map.map-failed')
   await expect(map).toBeVisible()
   await expect(page.locator('link[href*="mapbox"][rel="stylesheet"]')).toHaveCount(1)
   await expect.poll(async () => map.evaluate(el => ({

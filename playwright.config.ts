@@ -9,7 +9,7 @@ export default defineConfig({
   testDir: 'e2e',
   timeout: 60_000,
   retries: process.env.CI || all ? 1 : 0,
-  use: { baseURL: 'http://localhost:4173', permissions: [] },
+  use: { baseURL: 'http://localhost:4173', permissions: [], serviceWorkers: 'block' },
   projects: [
     { name: 'chrome', use: { ...devices['Desktop Chrome'] } },
     ...(all
