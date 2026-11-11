@@ -20,3 +20,12 @@ it('leaves satellite imagery alone and tolerates absent style layers', () => {
   applyMapDetail(map as unknown as MapboxMap, false, true)
   expect(map.addLayer).not.toHaveBeenCalled()
 })
+
+
+it('also supports the simplified dark-style road layers', () => {
+  const map = { getLayer: (id: string) => ['road-simple', 'road-label-simple'].includes(id) ? { id, source: 'composite' } : undefined,
+    setPaintProperty: vi.fn(), setLayoutProperty: vi.fn(), setLayerZoomRange: vi.fn(), addLayer: vi.fn() }
+  applyMapDetail(map as unknown as MapboxMap, false, true)
+  expect(map.setLayoutProperty).toHaveBeenCalledWith('road-label-simple', 'text-allow-overlap', false)
+  expect(map.addLayer.mock.calls[0][0].source).toBe('composite')
+})
