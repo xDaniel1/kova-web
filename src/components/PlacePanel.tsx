@@ -26,6 +26,7 @@ export function PlacePanel(p: Props) {
   const [showHours, setShowHours] = useState(false)
   const [editing, setEditing] = useState(false)
   const [photoIndex, setPhotoIndex] = useState(0)
+  const [photoFailed, setPhotoFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -33,15 +34,23 @@ export function PlacePanel(p: Props) {
     setTab('overview')
     setPhotoIndex(0)
     setEditing(false)
+    setShowHours(false)
+    setPhotoFailed(false)
     if (place.title === 'Dropped pin') {
       setDetails(null)
       return
     }
-    lookupPlace(place).then((d) => !cancelled && setDetails(d)).catch(() => !cancelled && setDetails(null))
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
+    lookupPlace(place, controller.signal).then((d) => !cancelled && setDetails(d)).catch(() => !cancelled && setDetails(null)).finally(() => clearTimeout(timeout))
     return () => {
       cancelled = true
+      clearTimeout(timeout)
+      controller.abort()
     }
   }, [place])
+
+  useEffect(() => setPhotoFailed(false), [photoIndex])
 
   const d = details === 'loading' ? null : details
   const photos = d?.photos ?? []
@@ -88,7 +97,8 @@ export function PlacePanel(p: Props) {
         <div className="hero skeleton" />
       ) : photos.length > 0 ? (
         <div className="hero">
-          <img src={photoURL(photos[photoIndex], 900)} alt={name} />
+          <img src={photoURL(photos[photoIndex], 900)} alt={name} onError={() => setPhotoFailed(true)} style={photoFailed ? { display: 'none' } : undefined} />
+          {photoFailed && <div className="photo-unavailable"><Icon name="location_on" />Photo unavailable</div>}
           {photos.length > 1 && (
             <div className="hero-nav">
               <button aria-label="Previous photo" onClick={() => setPhotoIndex((i) => (i - 1 + photos.length) % photos.length)}><Icon name="chevron_left" /></button>
@@ -103,7 +113,7 @@ export function PlacePanel(p: Props) {
         <h1>{favorite?.emoji && <span className="title-emoji">{favorite.emoji}</span>}{name}</h1>
         {d?.rating !== undefined && (
           <div className="rating-line">
-            <span>{d.rating.toFixed(1)}</span> <Stars rating={d.rating} /> <button className="link-plain" onClick={() => setTab('reviews')}>({d.userRatingCount?.toLocaleString()})</button>
+            <span>{d.rating.toFixed(1)}</span> <Stars rating={d.rating} /> {d.userRatingCount !== undefined && <button className="link-plain" onClick={() => setTab('reviews')}>({d.userRatingCount.toLocaleString()})</button>}
             {d.priceLevel && PRICE[d.priceLevel] && <span className="muted"> · {PRICE[d.priceLevel]}</span>}
           </div>
         )}
@@ -162,7 +172,7 @@ export function PlacePanel(p: Props) {
               <li className="hours-row">
                 <button onClick={() => setShowHours((v) => !v)} aria-expanded={showHours}>
                   <Icon name="schedule" />
-                  <span><span className={o.open ? 'open' : 'closed'}>{o.open ? 'Open' : 'Closed'}</span>{o.text && <span> · {o.text}</span>}</span>
+                  <span><span className={o.open === undefined ? 'muted' : o.open ? 'open' : 'closed'}>{o.open === undefined ? (hours.weekdayDescriptions?.length ? 'Hours available; current status unknown' : 'Hours not provided') : o.open ? 'Open' : 'Closed'}</span>{o.text && <span> · {o.text}</span>}</span>
                   <Icon name={showHours ? 'expand_less' : 'expand_more'} className="trail" />
                 </button>
                 {showHours && hours.weekdayDescriptions && (
@@ -206,7 +216,7 @@ export function PlacePanel(p: Props) {
           {d.rating !== undefined && (
             <div className="review-summary">
               <div className="big-rating">{d.rating.toFixed(1)}</div>
-              <div><Stars rating={d.rating} size={16} /><div className="muted small">{d.userRatingCount?.toLocaleString()} reviews</div></div>
+              <div><Stars rating={d.rating} size={16} /><div className="muted small">{d.userRatingCount !== undefined ? `${d.userRatingCount.toLocaleString()} reviews` : 'Review count unavailable'}</div></div>
             </div>
           )}
           <ul className="reviews">
@@ -220,7 +230,7 @@ export function PlacePanel(p: Props) {
                 {r.text?.text && <p>{r.text.text}</p>}
               </li>
             ))}
-            {(d.reviews ?? []).length === 0 && <li className="muted">No reviews yet.</li>}
+            {(d.reviews ?? []).length === 0 && <li className="muted">No reviews available for this place.</li>}
           </ul>
           {d.googleMapsUri && <a className="link-plain pad" href={d.googleMapsUri} target="_blank" rel="noreferrer">More reviews on Google</a>}
         </div>
@@ -243,7 +253,8 @@ export function PlacePanel(p: Props) {
         </div>
       )}
 
-      {details === null && place.title !== 'Dropped pin' && <p className="muted small pad">No extra details for this place.</p>}
+      {details === null && place.title !== 'Dropped pin' && <p className="muted small pad">Limited place details here. Directions, saving and coordinate sharing are still available.</p>}
+      {details !== 'loading' && <a className="link-plain pad" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place.latitude},${place.longitude}`)}`} target="_blank" rel="noreferrer">Open this location in Google Maps</a>}
       {d && <p className="muted tiny pad">Place details and photos from Google.</p>}
     </div>
   )

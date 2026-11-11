@@ -6,9 +6,10 @@ import type { Place } from './types'
 
 const BASE = `${config.supabase.url}/functions/v1/google`
 
-async function call<T>(path: string, body: unknown): Promise<T> {
+async function call<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
   const res = await fetch(BASE + path, {
     method: 'POST',
+    signal,
     headers: { 'Content-Type': 'application/json', apikey: config.supabase.anonKey },
     body: JSON.stringify(body),
   })
@@ -52,9 +53,9 @@ export interface PlaceDetails {
   editorialSummary?: { text: string }
 }
 
-export async function lookupPlace(place: Place): Promise<PlaceDetails | null> {
+export async function lookupPlace(place: Place, signal?: AbortSignal): Promise<PlaceDetails | null> {
   const query = place.subtitle ? `${place.title}, ${place.subtitle}` : place.title
-  const data = await call<{ places?: PlaceDetails[] }>('/places/search', { query, near: { latitude: place.latitude, longitude: place.longitude } })
+  const data = await call<{ places?: PlaceDetails[] }>('/places/search', { query, near: { latitude: place.latitude, longitude: place.longitude } }, signal)
   const first = data.places?.[0]
   if (!first?.location) return null
   // Reject matches that landed somewhere else entirely (a same-named shop across town).
