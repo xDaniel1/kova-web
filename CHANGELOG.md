@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Restore Apple web sign-in alongside Google after the provider configuration was repaired. Show sign-in startup errors inline and keep the version visible.
+
 - Keep the posted-speed control above Layers so it cannot block airport Browse buttons.
 - Retry the posted-speed layer once the map becomes idle if tile/style loading delayed its initial request; no extra pan is required.
 
