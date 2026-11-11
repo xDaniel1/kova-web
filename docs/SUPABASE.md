@@ -45,3 +45,9 @@ The iOS SQL explicitly allows anon and authenticated reads for venues and speed 
 ## Regression checks
 
 Unit tests cover speed path/types, invalid/empty/missing data, bounded bbox queries, session headers and stale venue removal. Browser tests cover Tower maintenance/minimum/announcements, version reporting and feature gating, plus opt-in posted limits and failure-safe missing tables. CI also exercises Firefox/WebKit and phone/tablet projects. Keep the displayed version and build/commit identifiers.
+
+## Platform overrides and extended feature switches
+
+Web recognizes `features.speed_limits`, `traffic_coloring`, `transit`, `voice_guidance` (default on when absent). `platform_overrides.web.features` can disable but cannot re-enable a globally disabled feature. Web-only maintenance combines with global maintenance using OR, preferring the web message; a live web announcement takes precedence, otherwise the global announcement applies. Row order does not affect precedence. These shapes match current iOS `RemoteConfig.swift`.
+
+Disabled speed limits hide signs and the viewport control, abort overlay work and omit Mapbox maxspeed annotations. Disabled traffic coloring removes the traffic vector source, requests no congestion annotations and draws plain routes. Disabled transit hides its tab, cancels active route results and suppresses both primary and background mode-time transit requests. A shared transit URL explains the pause rather than requesting transit. Voice guidance is not implemented on web; false cancels any active browser speech. CarPlay/Android Auto switches do not apply.

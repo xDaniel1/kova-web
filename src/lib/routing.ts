@@ -74,9 +74,12 @@ function legSteps(leg: MBLeg): { steps: RouteStep[]; congestion: string[] } {
 
 export type RouteTime = { kind: 'now' } | { kind: 'depart' | 'arrive'; at: string }
 
-export async function fetchRoutes(points: { latitude: number; longitude: number }[], mode: TravelMode, signal?: AbortSignal, when: RouteTime = { kind: 'now' }): Promise<Route[]> {
+export async function fetchRoutes(points: { latitude: number; longitude: number }[], mode: TravelMode, signal?: AbortSignal, when: RouteTime = { kind: 'now' }, features = { speedLimits: true, trafficColoring: true, transit: true }): Promise<Route[]> {
   if (points.length < 2) throw new Error('Need at least two places')
-  if (mode === 'transit') return fetchTransit(points, when)
+  if (mode === 'transit') {
+    if (!features.transit) throw new Error('Transit is paused right now')
+    return fetchTransit(points, when)
+  }
   if (points.length > 25) throw new Error('Up to 25 stops are supported')
   const coords = points.map((p) => `${p.longitude.toFixed(6)},${p.latitude.toFixed(6)}`).join(';')
   const url = new URL(`https://api.mapbox.com/directions/v5/${profile[mode]}/${coords}`)
@@ -85,7 +88,10 @@ export async function fetchRoutes(points: { latitude: number; longitude: number 
   url.searchParams.set('overview', 'full')
   url.searchParams.set('steps', 'true')
   url.searchParams.set('language', 'en')
-  if (mode === 'driving') url.searchParams.set('annotations', 'congestion,maxspeed')
+  if (mode === 'driving') {
+    const annotations = [features.trafficColoring ? 'congestion' : '', features.speedLimits ? 'maxspeed' : ''].filter(Boolean)
+    if (annotations.length) url.searchParams.set('annotations', annotations.join(','))
+  }
   // Typical traffic for a future time (local time at the origin, no zone).
   if (mode === 'driving' && when.kind === 'depart') url.searchParams.set('depart_at', when.at.slice(0, 16))
   if (mode === 'driving' && when.kind === 'arrive') url.searchParams.set('arrive_by', when.at.slice(0, 16))

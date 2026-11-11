@@ -100,3 +100,32 @@ test('the web app reports its version to Tower', async ({ page }) => {
   expect(body!.app_version).toBe(version)
   expect(body!.install_id).toMatch(/^[0-9a-f-]{36}$/)
 })
+
+test('web override disables speed, traffic and transit controls and provider work', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: {
+      cancel: () => document.documentElement.dataset.voiceCancelled = 'true',
+    } })
+  })
+  const calls: string[] = []
+  page.on('request', (r) => calls.push(r.url()))
+  await mockTower(page, [{ key: 'platform_overrides', value: { web: { features: { speed_limits: false, traffic_coloring: false, transit: false, voice_guidance: false }, announcement: { enabled: true, title: 'Web switches active' } } } }])
+  await page.goto('/')
+  // Wait for fetched configuration, rather than assuming it beat the initial default-on render.
+  await expect(page.locator('.announce')).toContainText('Web switches active')
+  await expect(page.locator('html')).toHaveAttribute('data-voice-cancelled', 'true')
+  await expect(page.getByRole('button', { name: 'Posted limits', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: /Layers: show/ }).hover()
+  await expect(page.getByRole('button', { name: 'Traffic', exact: true })).toHaveCount(0)
+  await page.goto('/?from=40.750504,-73.993439&to=40.748441,-73.985664&q=Madison%20Square%20Garden|Empire%20State%20Building')
+  await expect(page.locator('.announce')).toContainText('Web switches active')
+  await expect(page.getByRole('tab', { name: 'Transit', exact: true })).toHaveCount(0)
+  // New work after the applied config must respect switches (initial defaults may have sent requests).
+  calls.length = 0
+  await page.getByRole('tab', { name: 'Walking', exact: true }).click()
+  await expect(page.getByRole('tab', { name: 'Walking', exact: true })).toHaveAttribute('aria-selected', 'true')
+  await page.getByRole('tab', { name: 'Driving', exact: true }).click()
+  await expect.poll(() => calls.filter((url) => url.includes('/directions/v5/')).length).toBeGreaterThan(0)
+  for (const url of calls.filter((url) => url.includes('/directions/v5/'))) expect(new URL(url).searchParams.has('annotations')).toBe(false)
+  expect(calls.some((url) => url.includes('/speed_limit_segments') || url.includes('/transit'))).toBe(false)
+})

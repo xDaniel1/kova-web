@@ -21,6 +21,7 @@ export interface ResultPin {
 interface Props {
   base: BaseMap
   dark: boolean
+  trafficColoring: boolean
   traffic: boolean
   selected: Place | null
   results: ResultPin[]
@@ -103,23 +104,14 @@ export function MapView(p: Props) {
     if (!map || !map.getSource('route')) return
     const { routes, selectedRoute, traffic } = props.current
     const route = routes[selectedRoute] ?? null
-    ;(map.getSource('route') as mapboxgl.GeoJSONSource | undefined)?.setData(routeFeatures(route))
+    ;(map.getSource('route') as mapboxgl.GeoJSONSource | undefined)?.setData(routeFeatures(route && !props.current.trafficColoring ? { ...route, congestion: undefined } : route))
     ;(map.getSource('transit') as mapboxgl.GeoJSONSource | undefined)?.setData(transitFeatures(route))
     ;(map.getSource('alternatives') as mapboxgl.GeoJSONSource | undefined)?.setData({
       type: 'FeatureCollection',
       features: routes.map((r, index) => ({ type: 'Feature' as const, properties: { index }, geometry: r.geometry })).filter((f) => f.properties.index !== selectedRoute),
     })
-    if (map.getLayer('traffic-flow')) map.setLayoutProperty('traffic-flow', 'visibility', traffic ? 'visible' : 'none')
-  }
-
-  const addCustomLayers = () => {
-    const map = mapRef.current!
-    applyMapDetail(map, props.current.base === 'satellite', props.current.dark)
-    const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
-    // Live traffic, Mapbox's own feed. Drawn under labels.
-    // Above every road and bridge, below road names and POI labels.
     const firstSymbol = ['road-label-simple', 'road-label', 'road-number-shield', 'poi-label'].find((id) => map.getLayer(id))
-    if (!map.getSource('mapbox-traffic')) {
+    if (traffic && !map.getSource('mapbox-traffic')) {
       map.addSource('mapbox-traffic', { type: 'vector', url: 'mapbox://mapbox.mapbox-traffic-v1' })
       map.addLayer({
         id: 'traffic-flow', type: 'line', source: 'mapbox-traffic', 'source-layer': 'traffic',
@@ -131,6 +123,20 @@ export function MapView(p: Props) {
         },
       }, firstSymbol)
     }
+    if (!traffic && map.getSource('mapbox-traffic')) {
+      if (map.getLayer('traffic-flow')) map.removeLayer('traffic-flow')
+      map.removeSource('mapbox-traffic')
+    }
+    if (map.getLayer('traffic-flow')) map.setLayoutProperty('traffic-flow', 'visibility', traffic ? 'visible' : 'none')
+  }
+
+  const addCustomLayers = () => {
+    const map = mapRef.current!
+    applyMapDetail(map, props.current.base === 'satellite', props.current.dark)
+    const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
+    // Live traffic, Mapbox's own feed. Drawn under labels.
+    // Above every road and bridge, below road names and POI labels.
+    const firstSymbol = ['road-label-simple', 'road-label', 'road-number-shield', 'poi-label'].find((id) => map.getLayer(id))
     for (const id of ['alternatives', 'route', 'transit']) if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: empty })
     map.addLayer({ id: 'alt-casing', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#5f6368', 'line-width': 9, 'line-opacity': 0.5 } }, firstSymbol)
     map.addLayer({ id: 'alt-line', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#bcc5d3', 'line-width': 6 } }, firstSymbol)
@@ -229,7 +235,7 @@ export function MapView(p: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.base, p.dark])
 
-  useEffect(syncLayers, [p.routes, p.selectedRoute, p.traffic]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(syncLayers, [p.routes, p.selectedRoute, p.traffic, p.trafficColoring]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fit a new set of routes once.
   useEffect(() => {

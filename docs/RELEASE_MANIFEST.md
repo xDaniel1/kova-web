@@ -36,8 +36,9 @@ Snapshot JSON: favorites use `id,title,subtitle,latitude,longitude,customTitle?,
 - `maintenance`: `enabled,message`; blocking overlay and feature network gates.
 - `min_version`: `web,message`; blocking update overlay.
 - `latest_version`: `web,message,store_urls.web`; update nudge; web reloads to update.
-- `features`: `indoor_maps,traffic_reports,sync` actively gate their paths. `feedback,incident_feeds` decode, but corresponding product features are absent, so do not count as implemented controls.
+- `features`: `indoor_maps,traffic_reports,sync,speed_limits,traffic_coloring,transit` actively gate their paths. `voice_guidance=false` cancels browser speech; web has no spoken navigation feature yet. New switches default on when absent or malformed. `feedback,incident_feeds` decode, but corresponding product features are absent, so do not count as implemented controls.
 - `announcement`: `enabled,title,body,level,url,starts_at,ends_at`; validated HTTP(S) link and active window, dismissible presentation.
+- `platform_overrides.web`: features combine as global AND web (explicit false only); global OR web maintenance, with web message preferred when enabled; live web announcement overrides global, otherwise falls back to global. Other platform overrides ignored.
 - Unknown keys ignored; other platforms' version fields ignored. Launch/foreground refresh and cached/default behavior on failures. Config and messages use authenticated headers when signed in. Candidate cancels queued snapshot writes when sign-out, maintenance or sync-off revokes permission; it cannot retract an HTTP request already sent.
 
 ## Parity and evidence
@@ -60,6 +61,6 @@ Production RLS exercised with an existing Apple-backed authenticated session: ow
 - Successful Apple login also needs real account interaction; provider setup and cancellation callback only are proven. Secret rotation belongs to Control (expiry 2027-05-10); web did not access/change it.
 - Nationwide indoor/speed datasets and missing CDN cells remain coverage gaps. Feedback and external incident feeds missing; favorite home/work editing incomplete.
 - Lazy Mapbox vendor chunk remains ~1.93 MB raw / 545 kB gzip. CPU-throttled functional smoke passed; physical cheap-laptop GPU/FPS/memory certification is still outstanding. No new DEM source or 3D terrain was added.
-- Existing tests: 63 unit checks pass after compatibility changes; build passes; Apple chooser Chrome checks pass. Updated full cross-browser CI remains the merge gate.
+- Existing tests: 69 unit checks pass after compatibility changes; build passes; Apple chooser Chrome checks pass. 45 remote-control browser checks pass across Chrome, WebKit, tablet and both phone projects. Local Firefox cannot launch ("Could not find profile folder"), including with a fresh temporary directory; its required Linux CI check remains enabled. Updated full cross-browser CI remains the merge gate.
 
 **Tag verdict: no.** Require updated-head CI, merge/deployment and served-version confirmation, full Google round trip, and Control's shared-version decision. Do not re-tag the existing `web-v1.0.1`.

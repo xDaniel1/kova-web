@@ -8,6 +8,9 @@ import { StopField } from './StopField'
 export type When = { kind: 'now' } | { kind: 'depart'; at: string } | { kind: 'arrive'; at: string }
 
 interface Props {
+  transitAvailable: boolean
+  speedLimitsAvailable: boolean
+  trafficAvailable: boolean
   stops: Stop[]
   routes: Route[]
   selectedRoute: number
@@ -91,7 +94,7 @@ export function DirectionsPanel(p: Props) {
   return (
     <div className="panel-body directions">
       <div className="mode-tabs" role="tablist">
-        {MODES.map((m) => (
+        {MODES.filter((m) => m.id !== 'transit' || p.transitAvailable).map((m) => (
           <button key={m.id} role="tab" aria-selected={mode === m.id} aria-label={m.label} title={m.label} className={mode === m.id ? 'on' : ''} onClick={() => { onMode(m.id); setDetails(false) }}>
             <Icon name={m.icon} fill={mode === m.id} />
             <span>{p.modeTimes[m.id] !== undefined ? formatDuration(p.modeTimes[m.id]!) : ''}</span>
@@ -151,7 +154,7 @@ export function DirectionsPanel(p: Props) {
       {!busy && !details && routes.length > 0 && (
         <ul className="route-options">
           {routes.map((r, i) => {
-            const delay = delayLabel(r)
+            const delay = p.trafficAvailable ? delayLabel(r) : null
             return (
               <li key={i} className={i === selectedRoute ? 'on' : ''}>
                 <button className="route-option" onClick={() => onSelectRoute(i)}>
@@ -175,7 +178,7 @@ export function DirectionsPanel(p: Props) {
                     {i === selectedRoute && <button className="link-plain details-link" onClick={(e) => { e.stopPropagation(); setDetails(true) }}>Details</button>}
                   </div>
                   <div className="route-time">
-                    <strong className={r.mode === 'driving' && delayLabel(r) === 'Heavy traffic' ? 'closed' : r.mode === 'driving' && delayLabel(r) === 'Some traffic' ? 'warn' : 'open'}>{formatDuration(r.durationSeconds)}</strong>
+                    <strong className={p.trafficAvailable && r.mode === 'driving' && delayLabel(r) === 'Heavy traffic' ? 'closed' : p.trafficAvailable && r.mode === 'driving' && delayLabel(r) === 'Some traffic' ? 'warn' : 'open'}>{formatDuration(r.durationSeconds)}</strong>
                     <span className="muted small">{formatDistance(r.distanceMeters)}</span>
                   </div>
                 </button>
@@ -213,10 +216,10 @@ export function DirectionsPanel(p: Props) {
                         <span className="step-icon"><Icon name={route.mode === 'transit' ? 'directions_walk' : maneuverIcon(s)} /></span>
                         <div className="step-text">
                           <div>{s.instruction}</div>
-                          {(s.lanes || s.speedLimit) && (
+                          {(s.lanes || (p.speedLimitsAvailable && s.speedLimit)) && (
                             <div className="step-extras">
                               {s.lanes && <LaneBar lanes={s.lanes} />}
-                              {s.speedLimit && <span className="speed-sign" title="Posted speed limit"><small>LIMIT</small>{s.speedLimit.replace(/ (mph|km\/h)$/, '')}</span>}
+                              {p.speedLimitsAvailable && s.speedLimit && <span className="speed-sign" title="Posted speed limit"><small>LIMIT</small>{s.speedLimit.replace(/ (mph|km\/h)$/, '')}</span>}
                             </div>
                           )}
                           {s.distanceMeters > 0 && <div className="muted small step-dist">{formatDistance(s.distanceMeters)}</div>}

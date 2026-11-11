@@ -22,8 +22,9 @@ export interface RemoteConfig {
   maintenance: { enabled: boolean; message: string }
   minimumVersion: { web: string | null; message: string }
   latestVersion: { web: string | null; message: string; storeURL: string | null }
-  features: { indoorMaps: boolean; trafficReports: boolean; feedback: boolean; incidentFeeds: boolean; sync: boolean }
+  features: { indoorMaps: boolean; trafficReports: boolean; feedback: boolean; incidentFeeds: boolean; sync: boolean; speedLimits: boolean; trafficColoring: boolean; transit: boolean; voiceGuidance: boolean }
   announcement: Announcement
+  platformAnnouncement?: Announcement
 }
 
 export interface RemoteMessage {
@@ -39,7 +40,7 @@ export const NORMAL: RemoteConfig = {
   maintenance: { enabled: false, message: '' },
   minimumVersion: { web: null, message: '' },
   latestVersion: { web: null, message: '', storeURL: null },
-  features: { indoorMaps: true, trafficReports: true, feedback: true, incidentFeeds: true, sync: true },
+  features: { indoorMaps: true, trafficReports: true, feedback: true, incidentFeeds: true, sync: true, speedLimits: true, trafficColoring: true, transit: true, voiceGuidance: true },
   announcement: { enabled: false, title: '', body: '', level: 'info', url: null, startsAt: null, endsAt: null },
 }
 
@@ -60,6 +61,12 @@ export function webURL(v: unknown): string | null {
 const isoDate = (v: unknown): string | null => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : null)
 
 /** Builds a config from `[{key, value}]` rows. Unknown keys are ignored; each key decodes alone. */
+const FEATURE_KEYS = { indoorMaps: 'indoor_maps', trafficReports: 'traffic_reports', feedback: 'feedback', incidentFeeds: 'incident_feeds', sync: 'sync', speedLimits: 'speed_limits', trafficColoring: 'traffic_coloring', transit: 'transit', voiceGuidance: 'voice_guidance' } as const
+
+export function effectiveAnnouncement(c: RemoteConfig, now = Date.now()): Announcement {
+  return c.platformAnnouncement && announcementLive(c.platformAnnouncement, now) ? c.platformAnnouncement : c.announcement
+}
+
 export function parseConfig(rows: unknown): RemoteConfig | null {
   if (!Array.isArray(rows)) return null
   const c: RemoteConfig = structuredClone(NORMAL)
@@ -77,12 +84,8 @@ export function parseConfig(rows: unknown): RemoteConfig | null {
         c.latestVersion = { web: version(v.web), message: str(v.message), storeURL: webURL(isObj(v.store_urls) ? v.store_urls.web : null) }
         break
       case 'features':
-        c.features = {
-          indoorMaps: bool(v.indoor_maps, true),
-          trafficReports: bool(v.traffic_reports, true),
-          feedback: bool(v.feedback, true),
-          incidentFeeds: bool(v.incident_feeds, true),
-          sync: bool(v.sync, true),
+        for (const [feature, key] of Object.entries(FEATURE_KEYS)) {
+          c.features[feature as Feature] = bool(v[key], true)
         }
         break
       case 'announcement':
@@ -96,6 +99,22 @@ export function parseConfig(rows: unknown): RemoteConfig | null {
           endsAt: isoDate(v.ends_at),
         }
         break
+    }
+  }
+  // Apply after decoding globals so REST row order cannot change precedence.
+  const overrideRow = rows.find((r) => isObj(r) && r.key === 'platform_overrides')
+  const value = isObj(overrideRow) && isObj(overrideRow.value) ? overrideRow.value.web : null
+  if (isObj(value)) {
+    if (isObj(value.features)) {
+      for (const [feature, key] of Object.entries(FEATURE_KEYS)) {
+        if (value.features[key] === false) c.features[feature as Feature] = false
+      }
+    }
+    if (isObj(value.maintenance) && value.maintenance.enabled === true) {
+      c.maintenance = { enabled: true, message: str(value.maintenance.message) || c.maintenance.message }
+    }
+    if (isObj(value.announcement)) {
+      c.platformAnnouncement = parseConfig([{ key: 'announcement', value: value.announcement }])!.announcement
     }
   }
   return c
@@ -179,7 +198,10 @@ function put(key: string, value: string) {
 export function cachedConfig(): RemoteConfig {
   try {
     const raw = get(K.config)
-    if (raw) return { ...structuredClone(NORMAL), ...(JSON.parse(raw) as RemoteConfig) }
+    if (raw) {
+      const cached = JSON.parse(raw) as RemoteConfig
+      return { ...structuredClone(NORMAL), ...cached, features: { ...NORMAL.features, ...cached.features } }
+    }
   } catch {
     /* fall through */
   }

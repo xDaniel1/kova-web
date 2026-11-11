@@ -1,8 +1,10 @@
 # Changelog
 
-- Release compatibility audit: support iOS Speed Trap reports, use text-only report popups, revoke deferred sync on sign-out/control changes, and omit query/fragment from error URLs.
-
 ## Unreleased
+
+- Honor Tower web platform overrides and extended speed, traffic, transit and voice switches; default missing switches on, gate provider work and test override precedence.
+
+- Release compatibility audit: support iOS Speed Trap reports, use text-only report popups, revoke deferred sync on sign-out/control changes, and omit query/fragment from error URLs.
 
 - Restore Apple web sign-in alongside Google after the provider configuration was repaired. Show sign-in startup errors inline and keep the version visible.
 - Improve minor-road contrast, named local-road labels, small-town labels, terrain/water contrast and explicitly mapped unpaved surfaces without new tile sources.

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  announcementKey, announcementLive, cacheConfig, cachedConfig, dismissAnnouncement, dismissUpdate, dismissedAnnouncement,
+  announcementKey, announcementLive, effectiveAnnouncement, cacheConfig, cachedConfig, dismissAnnouncement, dismissUpdate, dismissedAnnouncement,
   dismissedUpdate, fetchConfig, fetchMessages, markSeen, recordRead, reportClient, requiresUpdate, seenMessages, updateAvailable,
   type RemoteConfig, type RemoteMessage,
 } from '../lib/remote'
@@ -52,7 +52,7 @@ export function useRemoteControls(userID: string | null) {
     void refresh(true)
   }, [userID, refresh])
 
-  const ann = config.announcement
+  const ann = effectiveAnnouncement(config)
   return {
     config,
     checking,
