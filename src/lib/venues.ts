@@ -1,6 +1,7 @@
 // The venues Kova maps inside: the list bundled with the app plus the `venues` table in Kova
 // Tower's Supabase project. Mirrors KnownVenue.swift and VenueDirectory.swift in the iPhone app,
 // so a venue added in the dashboard reaches the web without a deploy.
+import { supabase } from './supabase'
 import { config } from './config'
 import { metresBetween } from './mapboxIndoor'
 
@@ -78,9 +79,10 @@ export function parseVenueRows(rows: unknown): Venue[] {
   if (!Array.isArray(rows)) return []
   const out: Venue[] = []
   for (const r of rows as Row[]) {
-    const lat = Number(r?.latitude), lon = Number(r?.longitude), radius = Number(r?.radius_m)
+    if (!r || r.latitude == null || r.longitude == null || r.radius_m == null || typeof r.latitude === 'boolean' || typeof r.longitude === 'boolean' || typeof r.radius_m === 'boolean') continue
+    const lat = Number(r.latitude), lon = Number(r.longitude), radius = Number(r.radius_m)
     if (typeof r?.short_name !== 'string' || typeof r?.name !== 'string') continue
-    if (!(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180) || !(radius > 0)) continue
+    if (!(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180) || !Number.isFinite(radius) || radius < 50 || radius > 5000) continue
     const kind = ['airport', 'station', 'mall'].includes(String(r.kind)) ? (r.kind as VenueKind) : 'other'
     out.push({ name: r.name, shortName: r.short_name, latitude: lat, longitude: lon, radius, kind })
   }
@@ -96,6 +98,8 @@ export function mergeVenues(remote: Venue[]): Venue[] {
 
 const STORE = 'kova.venues.v1'
 let loading: Promise<Venue[]> | null = null
+let refreshedAt = 0
+let latest: Venue[] | null = null
 
 /** The last downloaded list straight away (or the bundle), for use before the fetch returns. */
 export function storedVenues(): Venue[] {
@@ -106,22 +110,29 @@ export function storedVenues(): Venue[] {
   return BUNDLED_VENUES
 }
 
-/** Fetches the table once per page load. Any failure leaves the stored or bundled list in place. */
-export function loadVenues(): Promise<Venue[]> {
-  loading ??= (async () => {
+/** Refresh on launch/foreground, at most once per minute; errors keep the last good list. */
+export function loadVenues(force = false): Promise<Venue[]> {
+  if (loading) return loading
+  if (!force && latest && Date.now() - refreshedAt < 60_000) return Promise.resolve(latest)
+  loading = (async () => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 8000)
     try {
+      const { data } = await supabase.auth.getSession()
       const res = await fetch(`${config.supabase.url}/rest/v1/venues?select=short_name,name,latitude,longitude,radius_m,kind&enabled=eq.true`, {
-        headers: { apikey: config.supabase.anonKey, Authorization: `Bearer ${config.supabase.anonKey}` },
+        signal: controller.signal,
+        headers: { apikey: config.supabase.anonKey, Authorization: `Bearer ${data.session?.access_token ?? config.supabase.anonKey}` },
       })
-      if (!res.ok) return storedVenues()
+      if (!res.ok) return latest ?? storedVenues()
       const rows = await res.json()
+      if (!Array.isArray(rows)) return storedVenues()
       const remote = parseVenueRows(rows)
-      if (!remote.length) return storedVenues()
       try { localStorage.setItem(STORE, JSON.stringify(rows)) } catch { /* ignore */ }
-      return mergeVenues(remote)
-    } catch {
-      return storedVenues()
-    }
-  })()
+      latest = mergeVenues(remote)
+      refreshedAt = Date.now()
+      return latest
+    } catch { return latest ?? storedVenues() }
+    finally { clearTimeout(timer) }
+  })().finally(() => { loading = null })
   return loading
 }

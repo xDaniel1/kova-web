@@ -79,7 +79,7 @@ describe('venues', () => {
       { short_name: 'JFK', name: 'JFK moved', latitude: 40.65, longitude: -73.78, radius_m: 1800, kind: 'airport' },
       { short_name: 'LAX', name: 'Los Angeles International Airport', latitude: 33.94, longitude: -118.4, radius_m: 2000, kind: 'airport' },
       { short_name: 'bad', name: 'x', latitude: 999, longitude: 0, radius_m: 10, kind: 'mall' },
-      { short_name: 'odd', name: 'x', latitude: 1, longitude: 1, radius_m: 10, kind: 'castle' },
+      { short_name: 'odd', name: 'x', latitude: 1, longitude: 1, radius_m: 100, kind: 'castle' },
     ])
     expect(rows.map((r) => r.shortName)).toEqual(['JFK', 'LAX', 'odd'])
     expect(rows[2].kind).toBe('other')

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Read published Supabase speed-limit segments in an opt-in, bounded viewport layer.
+- Refresh venue metadata on foreground, clear stale remote rows after an empty success, use session auth, and stop indoor requests when Tower disables the feature.
+- Document the shared data contract and live read/OAuth checks; keep broken Apple OAuth hidden pending upstream setup.
+
 - Start new map sessions at a U.S. overview and remember the last map area instead of resetting to Manhattan.
 - Add a repeatable 50-state plus D.C. audit for search, driving, walking and nearby places, with explicit untested rural/transit/indoor status.
 

@@ -88,7 +88,14 @@ export function IndoorLayer({ map, enabled, dark, left }: Props) {
   const darkRef = useRef(dark)
   darkRef.current = dark
 
-  useEffect(() => { loadVenues().then(setVenues) }, [])
+  useEffect(() => {
+    if (!enabled) return
+    let active = true
+    const refresh = () => { if (document.visibilityState === 'visible') void loadVenues().then(rows => { if (active) setVenues(rows) }) }
+    refresh()
+    document.addEventListener('visibilitychange', refresh)
+    return () => { active = false; document.removeEventListener('visibilitychange', refresh) }
+  }, [enabled])
 
   // ---------- airports: which building is on screen and which floors to draw
   const structure = useMemo(() => (center ? structureNear(center, structures) : null), [center, structures])
@@ -159,6 +166,7 @@ export function IndoorLayer({ map, enabled, dark, left }: Props) {
     map.on('moveend', refresh)
     refresh()
     return () => {
+      ++gen
       map.off('moveend', refresh)
     }
   }, [map, enabled])
@@ -173,6 +181,7 @@ export function IndoorLayer({ map, enabled, dark, left }: Props) {
   useEffect(() => {
     if (!map) return
     const setup = () => {
+      if (!enabledRef.current) return
       const below = ['road-label-simple', 'road-label', 'road-number-shield', 'poi-label'].find((id) => map.getLayer(id))
       const overlay = map.getLayer('alt-line') ? 'alt-line' : below
 
@@ -275,7 +284,7 @@ export function IndoorLayer({ map, enabled, dark, left }: Props) {
     return () => {
       map.off('style.load', safe)
     }
-  }, [map])
+  }, [map, enabled])
 
   // Chosen floors and the Tower switch.
   useEffect(() => {
