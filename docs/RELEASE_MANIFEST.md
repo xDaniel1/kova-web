@@ -8,7 +8,7 @@ Status: **candidate, not ready for a new tag**. This snapshot precedes the updat
 - Main deployment workflow: [43093783520](https://github.com/xDaniel1/kova-web/actions/runs/43093783520), success, build 36. Build configuration embeds package version `1.0.1`, build and commit. This identifies the successfully deployed artifact; the exact served footer has not been re-read after this deployment.
 - Production: https://app.kovamaps.com/.
 - Open PR: [#29](https://github.com/xDaniel1/kova-web/pull/29). Original head `210f9473fe196cdb71363945c53860d43b83beff` passed build and cross-browser checks; deploy is correctly skipped on PRs. Updated candidate includes main, Apple UI, Speed Trap compatibility, safe report popup DOM and pending-sync revocation. Updated-head CI is required.
-- Existing `web-v1.0.1` points to `49c5ee744664a3020ffe47ff3dbac04d2d940cc0`. Do not move it. A new coordinated semantic version is needed before another release tag.
+- Existing `web-v1.0.1` points to `49c5ee744664a3020ffe47ff3dbac04d2d940cc0`. Do not move it. Control approved web 1.0.2. Platforms share major.minor 1.0 and keep independent patch/build counters. Candidate package and lockfile are 1.0.2.
 
 ## Supabase contract inventory
 
@@ -63,4 +63,4 @@ Production RLS exercised with an existing Apple-backed authenticated session: ow
 - Lazy Mapbox vendor chunk remains ~1.93 MB raw / 545 kB gzip. CPU-throttled functional smoke passed; physical cheap-laptop GPU/FPS/memory certification is still outstanding. No new DEM source or 3D terrain was added.
 - Existing tests: 69 unit checks pass after compatibility changes; build passes; Apple chooser Chrome checks pass. 45 remote-control browser checks pass across Chrome, WebKit, tablet and both phone projects. Local Firefox cannot launch ("Could not find profile folder"), including with a fresh temporary directory; its required Linux CI check remains enabled. Updated full cross-browser CI remains the merge gate.
 
-**Tag verdict: no.** Require updated-head CI, merge/deployment and served-version confirmation, full Google round trip, and Control's shared-version decision. Do not re-tag the existing `web-v1.0.1`.
+**Tag verdict: pending CI/deployment verification.** Control approved `web-v1.0.2` after updated-head CI, merge/deployment and a served footer showing 1.0.2 plus the new build/commit. Full Google/Apple login remains unverified and assigned to Daniel; Control explicitly states it is not a tag blocker. Do not move the existing `web-v1.0.1`.

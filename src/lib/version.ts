@@ -1,5 +1,4 @@
-// The web app's version. Kova shares one semantic version across iOS, Android and web
-// (1.0.0 today); each platform adds its own build. On the web the build is the CI run number
+// The web app version. Platforms share major.minor; each has its own patch and build. On the web the build is the CI run number
 // and the commit identifies the exact deploy.
 export const APP_VERSION = __APP_VERSION__
 export const APP_BUILD = __APP_BUILD__
