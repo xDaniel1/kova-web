@@ -1,0 +1,28 @@
+name: Cross-browser tests
+
+# Runs the end-to-end suite in Chrome, Firefox, Safari (WebKit) and tablet and phone sizes.
+# Kept apart from the deploy so a flaky browser download never blocks a release.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+      - run: npx playwright install --with-deps
+      - run: npm run e2e:all
+        env:
+          CI: true

@@ -13,11 +13,11 @@ interface Props {
   onHome: () => void
 }
 
-/** Google Maps' left icon rail: menu, Saved, Recents, and a "Get app" link at the bottom. */
+/** Navigation for saved places and recent explorations. */
 export function Rail({ active, savedCount, onSelect, onMenu, onHome }: Props) {
   return (
     <nav className="rail" aria-label="Main">
-      <button className="rail-logo" onClick={onHome} aria-label="Kova Maps home" title="Kova Maps"><LogoMark size={36} /></button>
+      <button className="rail-logo" onClick={onHome} aria-label="Kova Maps home" title="Kova Maps"><LogoMark size={36} /><span className="rail-brand">Kova</span></button>
       <button className="rail-menu" onClick={onMenu} aria-label="Toggle side panel" title="Toggle side panel"><Icon name="menu" /></button>
       <button className={'rail-item' + (active === 'saved' ? ' on' : '')} onClick={() => onSelect('saved')}>
         <Icon name="bookmark" fill={active === 'saved'} />
@@ -33,7 +33,7 @@ export function Rail({ active, savedCount, onSelect, onMenu, onHome }: Props) {
         <Icon name="smartphone" />
         <span>Get app</span>
       </a>
-      <span className="rail-version" title={`Kova Maps for web ${VERSION_LABEL}`}>v{APP_VERSION}</span>
+      <span className="rail-version" title={`Kova Maps for web ${VERSION_LABEL}`}>v{APP_VERSION}<small>{VERSION_LABEL.slice(APP_VERSION.length + 2, -1)}</small></span>
     </nav>
   )
 }

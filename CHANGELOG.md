@@ -1,6 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- Bound map tile caches and indoor cell history; use shorter map effects on modest hardware and respect reduced motion. Coalesce pointer hit tests to one per animation frame and avoid them during map movement.
+
+- Fix a blank map caused by the deferred Mapbox stylesheet overriding the map container position.
+- Make search suggestions work with touch and keyboard activation, cancel outdated requests, and explain suggestion failures.
+- Add Mapbox airport floor plans, floor selection and a searchable venue directory using the iPhone app's indoor data approach.
+- Begin the Kova web styling refresh with teal navigation, a visible wordmark and revised search controls; show the build and commit beside the version.
+
+
 Kova shares one semantic version across iOS, Android and web. Web releases are tagged `web-vX.Y.Z`; the build number is the GitHub Actions run and the commit is shown next to it (Account menu, Saved, Recents and the rail).
+
+## 1.0.1 — 2026-11-09
+Speed and quality pass.
+- First load is much lighter: the icon font is cut from 1,085 KB to 18 KB, the map engine loads on its own after the page shell, and the code is split so browsers cache React, Supabase and Mapbox separately
+- The search bar and map background paint straight from the HTML; fonts no longer block the first paint
+- A service worker caches the app's files, fonts and map glyphs, so repeat visits start fast
+- The Layers tile uses a bundled thumbnail instead of a Mapbox image request
+- Tests now also run in Firefox, Safari, tablet and phone sizes (`npm run e2e:all`)
+- Fix: browsers without WebGL showed a blank page. The app now stays usable and explains why the map is missing
+- Added robots.txt; the Layers button's accessible name now matches its label
 
 ## 1.0.0 — 2026-11-09
 First public release of Kova Maps for the web, aligned with iPhone 1.0.0.

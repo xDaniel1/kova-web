@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { config } from '../lib/config'
 import type { BaseMap } from './MapView'
 import { Icon } from './Icon'
 
@@ -20,7 +19,7 @@ export function LayersControl(p: Props) {
   const other: BaseMap = p.base === 'default' ? 'satellite' : 'default'
   return (
     <div className="layers" onMouseLeave={() => setOpen(false)}>
-      <button className={'layers-tile ' + other} style={{ backgroundImage: `url(https://api.mapbox.com/styles/v1/mapbox/${other === 'satellite' ? 'satellite-v9' : 'streets-v12'}/static/-73.9857,40.7484,14,0/160x160@2x?attribution=false&logo=false&access_token=${config.mapbox.token})` }} onClick={() => p.onBase(other)} onMouseEnter={() => setOpen(true)} aria-label={other === 'satellite' ? 'Show satellite imagery' : 'Show default map'}>
+      <button className={'layers-tile ' + other} style={{ backgroundImage: `url(/layer-${other}.webp)` }} onClick={() => p.onBase(other)} onMouseEnter={() => setOpen(true)} aria-label={other === 'satellite' ? 'Layers: show satellite imagery' : 'Layers: show default map'}>
         <span className="layers-label"><Icon name="layers" size={16} /> Layers</span>
       </button>
       {open && (

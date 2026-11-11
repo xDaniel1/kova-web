@@ -24,6 +24,21 @@ export default defineConfig({
     __APP_BUILD__: JSON.stringify(process.env.GITHUB_RUN_NUMBER ?? 'dev'),
     __APP_COMMIT__: JSON.stringify(commit()),
   },
+  build: {
+    target: 'es2022',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 1800,
+    rollupOptions: {
+      output: {
+        // Long-lived vendor chunks: an app change doesn't make returning visitors re-download Mapbox.
+        manualChunks(id) {
+          if (id.includes('node_modules/mapbox-gl')) return 'mapbox'
+          if (id.includes('node_modules/@supabase')) return 'supabase'
+          if (id.includes('node_modules/react')) return 'react'
+        },
+      },
+    },
+  },
   test: {
     // Unit tests live next to the code; e2e/ is Playwright's and must not run under Vitest.
     include: ['src/**/*.test.ts'],

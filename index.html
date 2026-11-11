@@ -14,12 +14,34 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block" rel="stylesheet" />
+    <link rel="preconnect" href="https://api.mapbox.com" crossorigin />
+    <link rel="preconnect" href="https://fbumdslhguoytlhlrkyr.supabase.co" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&icon_names=add,add_circle,add_road,arrow_back,arrow_left,arrow_right,bookmark,call,category,chevron_left,chevron_right,close,cloud_done,cloud_off,delete,directions,directions_bike,directions_boat,directions_bus,directions_car,directions_transit,directions_walk,edit,error,ev_station,expand_less,expand_more,flight_takeoff,fork_left,fork_right,history,home_pin,hotel,info,layers,local_atm,local_bar,local_cafe,local_gas_station,local_grocery_store,local_mall,local_parking,local_pharmacy,location_city,location_on,location_searching,luggage,markunread_mailbox,menu,merge,my_location,navigation,park,photo_camera,public,radar,ramp_left,ramp_right,refresh,remove,restaurant,roundabout_right,satellite_alt,schedule,search,security,send_to_mobile,share,smartphone,star,straight,subway,swap_vert,system_update,traffic,trip_origin,turn_left,turn_right,turn_sharp_left,turn_sharp_right,turn_slight_left,turn_slight_right,u_turn_left,warning,wc&display=block" rel="stylesheet" media="print" onload="this.media='all'" />
+    <style>
+      .boot { position: fixed; inset: 0; background: #f2efe9; }
+      .boot-search { position: absolute; top: 12px; left: 84px; width: 376px; height: 48px; padding: 0 20px; border-radius: 24px; background: #fff; color: #5f6368; font: 15px/48px Inter, system-ui, sans-serif; box-shadow: 0 2px 6px rgba(60, 64, 67, 0.3); }
+      @media (max-width: 759px) { .boot-search { left: 8px; right: 8px; top: 8px; width: auto; } }
+      @media (prefers-color-scheme: dark) { .boot { background: #2a2c30; } .boot-search { background: #1f1f1f; color: #a8abaf; } }
+      html:not(.icons-ready) .msym { visibility: hidden; }
+    </style>
+    <script>
+      (function () {
+        var done = function () { document.documentElement.classList.add('icons-ready') }
+        if (!document.fonts || !document.fonts.load) return done()
+        var tries = 0
+        var check = function () {
+          document.fonts.load('24px "Material Symbols Outlined"').then(function (f) {
+            if (f.length || ++tries > 40) done(); else setTimeout(check, 150)
+          }, done)
+        }
+        check()
+      })()
+    </script>
     <title>Kova Maps</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot" aria-hidden="true"><div class="boot-search">Search Kova Maps</div></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

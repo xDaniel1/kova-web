@@ -1,4 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
+
+const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
 
 // Kova Tower controls, per kova-admin docs/app-controls-contract.md. The real endpoints are
 // mocked so each control can be exercised without touching production config.
@@ -94,6 +97,6 @@ test('the web app reports its version to Tower', async ({ page }) => {
   })
   await page.goto('/')
   await expect.poll(() => body?.platform).toBe('web')
-  expect(body!.app_version).toBe('1.0.0')
+  expect(body!.app_version).toBe(version)
   expect(body!.install_id).toMatch(/^[0-9a-f-]{36}$/)
 })

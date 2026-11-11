@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { suggest, type Suggestion } from '../lib/mapbox'
 import type { FavoritePlace, RecentSearch } from '../lib/types'
 import { Icon } from './Icon'
@@ -22,8 +22,10 @@ interface Props {
 
 const KIND_ICON: Record<string, string> = { poi: 'location_on', address: 'home_pin', street: 'add_road', place: 'location_city', neighborhood: 'location_city', postcode: 'markunread_mailbox', category: 'search' }
 
-/** The floating search box with its suggestion dropdown, as in Google Maps. */
+/** Kova search, with pointer and keyboard accessible suggestions. */
 export function SearchCard(p: Props) {
+  const listId = useId()
+  const [status, setStatus] = useState('')
   const [focused, setFocused] = useState(false)
   const [items, setItems] = useState<Suggestion[]>([])
   const [active, setActive] = useState(-1)
@@ -34,19 +36,28 @@ export function SearchCard(p: Props) {
     const q = p.value.trim()
     abort.current?.abort()
     setActive(-1)
+    setItems([])
+    setStatus('')
     if (!focused || q.length < 2) {
       setItems([])
       return
     }
     const c = new AbortController()
     abort.current = c
+    setStatus('Searching…')
     const t = setTimeout(() => {
-      suggest(q, p.near ?? undefined, c.signal).then((r) => !c.signal.aborted && setItems(r)).catch(() => {})
+      suggest(q, p.near ?? undefined, c.signal).then((r) => {
+        if (c.signal.aborted) return
+        setItems(r)
+        setStatus(r.length ? '' : 'No suggestions. Press Search to find places.')
+      }).catch(() => {
+        if (!c.signal.aborted) setStatus('Suggestions unavailable. Press Search to try a full search.')
+      })
     }, 180)
-    return () => clearTimeout(t)
+    return () => { clearTimeout(t); c.abort() }
   }, [p.value, focused, p.near])
 
-  // "/" focuses search, like Google Maps.
+  // "/" focuses search.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
@@ -76,14 +87,15 @@ export function SearchCard(p: Props) {
   const showDropdown = focused && (typing ? items.length > 0 : p.favorites.length + p.recents.length > 0)
 
   return (
-    <div className={'search-card' + (showDropdown ? ' open' : '')}>
+    <div className={'search-card' + (showDropdown ? ' open' : '')} onBlur={(e) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false)
+    }}>
       <form className="search-row" role="search" onSubmit={(e) => { e.preventDefault(); submit() }}>
         <input
           ref={input}
           value={p.value}
           onChange={(e) => p.onValue(e.target.value)}
           onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 150)}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(items.length - 1, a + 1)) }
             if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(-1, a - 1)) }
@@ -93,6 +105,8 @@ export function SearchCard(p: Props) {
           aria-label="Search Kova Maps"
           role="combobox"
           aria-expanded={showDropdown}
+          aria-controls={listId}
+          aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
           autoComplete="off"
         />
         <button type="submit" className="icon-btn" aria-label="Search"><Icon name="search" /></button>
@@ -103,12 +117,13 @@ export function SearchCard(p: Props) {
         )}
         {p.accessory}
       </form>
+      {focused && typing && status && <p className="search-status" role="status">{status}</p>}
       {showDropdown && (
-        <ul className="suggestions" role="listbox">
+        <ul id={listId} className="suggestions" role="listbox" aria-label="Search suggestions">
           {typing
             ? items.map((s, i) => (
-                <li key={s.id} role="option" aria-selected={i === active}>
-                  <button className={i === active ? 'active' : ''} onMouseDown={(e) => { e.preventDefault(); choose(s) }}>
+                <li id={`${listId}-${i}`} key={s.id} role="option" aria-selected={i === active}>
+                  <button className={i === active ? 'active' : ''} onPointerDown={(e) => e.preventDefault()} onClick={() => choose(s)}>
                     <span className="sug-icon"><Icon name={KIND_ICON[s.kind] ?? 'location_on'} /></span>
                     <span className="sug-text"><strong>{s.name}</strong><small>{s.address}</small></span>
                   </button>
@@ -118,7 +133,7 @@ export function SearchCard(p: Props) {
               <>
                 {p.favorites.slice(0, 4).map((f) => (
                   <li key={f.id}>
-                    <button onMouseDown={(e) => { e.preventDefault(); setFocused(false); p.onFavorite(f) }}>
+                    <button onPointerDown={(e) => e.preventDefault()} onClick={() => { setFocused(false); p.onFavorite(f) }}>
                       <span className="sug-icon fav" style={{ background: f.colorHex ?? undefined }}>{f.emoji ?? <Icon name="star" fill />}</span>
                       <span className="sug-text"><strong>{f.customTitle || f.title}</strong><small>{f.subtitle}</small></span>
                     </button>
@@ -126,7 +141,7 @@ export function SearchCard(p: Props) {
                 ))}
                 {p.recents.slice(0, 5).map((r) => (
                   <li key={r.id}>
-                    <button onMouseDown={(e) => { e.preventDefault(); setFocused(false); p.onRecent(r) }}>
+                    <button onPointerDown={(e) => e.preventDefault()} onClick={() => { setFocused(false); p.onRecent(r) }}>
                       <span className="sug-icon"><Icon name="history" /></span>
                       <span className="sug-text"><strong>{r.title}</strong><small>{r.subtitle}</small></span>
                     </button>
