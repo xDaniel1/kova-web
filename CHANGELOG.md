@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep the posted-speed control above Layers so it cannot block airport Browse buttons.
 - Retry the posted-speed layer once the map becomes idle if tile/style loading delayed its initial request; no extra pan is required.
 
 - Read published Supabase speed-limit segments in an opt-in, bounded viewport layer.

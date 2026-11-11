@@ -32,3 +32,17 @@ test('posted speed data is opt-in and missing data leaves the map usable', async
   await expect(page.getByLabel('Search Kova Maps')).toBeVisible()
   expect(errors).toEqual([])
 })
+
+
+test('airport Browse remains clickable beside the speed control', async ({ page }) => {
+  await page.goto('/?place=28.4265,-81.3085&q=MCO')
+  await expect(page.locator('.map.mapboxgl-map, .map.map-failed')).toBeVisible()
+  if (await page.locator('.map.map-failed').count()) {
+    await expect(page.getByLabel('Search Kova Maps')).toBeVisible()
+    return
+  }
+  await expect(page.locator('.indoor-browse')).toContainText('MCO', { timeout: 30000 })
+  await page.getByRole('button', { name: 'Close', exact: true }).click()
+  await page.locator('.indoor-browse').click()
+  await expect(page.locator('.indoor-directory')).toBeVisible()
+})
