@@ -31,6 +31,9 @@ export function SearchCard(p: Props) {
   const [active, setActive] = useState(-1)
   const abort = useRef<AbortController | null>(null)
   const input = useRef<HTMLInputElement>(null)
+  // Map load/resize must not replace the list while keyboard focus is inside it.
+  const near = useRef(p.near)
+  near.current = p.near
 
   useEffect(() => {
     const q = p.value.trim()
@@ -46,7 +49,7 @@ export function SearchCard(p: Props) {
     abort.current = c
     setStatus('Searching…')
     const t = setTimeout(() => {
-      suggest(q, p.near ?? undefined, c.signal).then((r) => {
+      suggest(q, near.current ?? undefined, c.signal).then((r) => {
         if (c.signal.aborted) return
         setItems(r)
         setStatus(r.length ? '' : 'No suggestions. Press Search to find places.')
@@ -55,7 +58,7 @@ export function SearchCard(p: Props) {
       })
     }, 180)
     return () => { clearTimeout(t); c.abort() }
-  }, [p.value, focused, p.near])
+  }, [p.value, focused])
 
   // "/" focuses search.
   useEffect(() => {

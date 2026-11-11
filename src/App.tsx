@@ -524,6 +524,7 @@ export default function App() {
         </div>
       </div>
 
+      {base !== 'satellite' && camera && camera.zoom >= 11 && <div className="surface-key" title="Only roads explicitly tagged unpaved by the map provider are marked. Other surfaces may be unknown."><i />Mapped unpaved roads</div>}
       <div className="layers-wrap" style={{ left: (isNarrow ? 8 : leftInset + 16) }}>
         <LayersControl speedLimits={speedLimits} onSpeedLimits={setSpeedLimits} base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
       </div>

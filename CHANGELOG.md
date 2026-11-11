@@ -3,6 +3,9 @@
 ## Unreleased
 
 - Restore Apple web sign-in alongside Google after the provider configuration was repaired. Show sign-in startup errors inline and keep the version visible.
+- Improve minor-road contrast, named local-road labels, small-town labels, terrain/water contrast and explicitly mapped unpaved surfaces without new tile sources.
+- Make thin place details and failed photos usable; do not label unknown opening status as closed. Abort stale/stalled place detail requests.
+- Preserve focused search suggestions during map load/resize instead of reissuing proximity requests.
 
 - Keep the posted-speed control above Layers so it cannot block airport Browse buttons.
 - Retry the posted-speed layer once the map becomes idle if tile/style loading delayed its initial request; no extra pan is required.
