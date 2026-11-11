@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep the posted-speed control above Layers so it cannot block airport Browse buttons.
+- Retry the posted-speed layer once the map becomes idle if tile/style loading delayed its initial request; no extra pan is required.
+
 - Read published Supabase speed-limit segments in an opt-in, bounded viewport layer.
 - Refresh venue metadata on foreground, clear stale remote rows after an empty success, use session auth, and stop indoor requests when Tower disables the feature.
 - Document the shared data contract and live read/OAuth checks; keep broken Apple OAuth hidden pending upstream setup.
