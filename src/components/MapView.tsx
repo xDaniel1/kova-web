@@ -1,6 +1,7 @@
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useEffect, useRef, useState } from 'react'
+import { initialCamera, rememberCamera } from '../lib/camera'
 import { browserMapBudget } from '../lib/performance'
 import { config } from '../lib/config'
 import { REPORT_KINDS, ageLabel, type Bounds, type TrafficReport } from '../lib/reports'
@@ -144,11 +145,12 @@ export function MapView(p: Props) {
   useEffect(() => {
     if (!container.current || mapRef.current) return
     const budget = browserMapBudget()
+    const camera = initialCamera()
     const map = new mapboxgl.Map({
       container: container.current,
       style: styleKey(p.base, p.dark),
-      center: [-73.9857, 40.7484],
-      zoom: 13,
+      center: [camera.longitude, camera.latitude],
+      zoom: camera.zoom,
       attributionControl: false,
       projection: 'mercator',
       maxTileCacheSize: budget.maxTileCacheSize,
@@ -164,6 +166,7 @@ export function MapView(p: Props) {
     const emit = () => {
       const b = map.getBounds()!
       const c = map.getCenter()
+      rememberCamera({ longitude: c.lng, latitude: c.lat, zoom: map.getZoom() })
       props.current.onMoveEnd?.({ south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() }, { latitude: c.lat, longitude: c.lng }, map.getZoom())
     }
     map.on('moveend', emit)

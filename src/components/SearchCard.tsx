@@ -20,7 +20,7 @@ interface Props {
   accessory?: ReactNode
 }
 
-const KIND_ICON: Record<string, string> = { poi: 'location_on', address: 'home_pin', street: 'add_road', place: 'location_city', neighborhood: 'location_city', postcode: 'markunread_mailbox', category: 'search' }
+const KIND_ICON: Record<string, string> = { poi: 'location_on', address: 'home_pin', street: 'add_road', place: 'location_city', locality: 'location_city', neighborhood: 'location_city', postcode: 'markunread_mailbox', category: 'search' }
 
 /** Kova search, with pointer and keyboard accessible suggestions. */
 export function SearchCard(p: Props) {

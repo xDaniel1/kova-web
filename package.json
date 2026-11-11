@@ -10,6 +10,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "e2e": "playwright test",
+    "audit:us": "node scripts/audit-us.mjs",
     "e2e:all": "E2E_ALL=1 playwright test"
   },
   "dependencies": {

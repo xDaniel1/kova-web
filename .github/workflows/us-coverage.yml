@@ -1,0 +1,38 @@
+name: U.S. coverage audit
+on:
+  workflow_dispatch:
+    inputs:
+      states:
+        description: 'Comma-separated state codes; blank checks all states plus D.C.'
+        required: false
+        type: string
+      small_towns:
+        description: 'Check the smaller-town samples instead of capitals'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check provider coverage
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+          AUDIT_STATES: ${{ inputs.states }}
+          AUDIT_SMALL_TOWNS: ${{ inputs.small_towns }}
+        run: |
+          args=(--output=coverage/audit-result.json)
+          if [ -n "$AUDIT_STATES" ]; then args+=("--states=$AUDIT_STATES"); fi
+          if [ "$AUDIT_SMALL_TOWNS" = true ]; then args+=(--small-towns); fi
+          node scripts/audit-us.mjs "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: us-coverage-results
+          path: coverage/audit-result.json

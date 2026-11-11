@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Start new map sessions at a U.S. overview and remember the last map area instead of resetting to Manhattan.
+- Add a repeatable 50-state plus D.C. audit for search, driving, walking and nearby places, with explicit untested rural/transit/indoor status.
+
 - Bound map tile caches and indoor cell history; use shorter map effects on modest hardware and respect reduced motion. Coalesce pointer hit tests to one per animation frame and avoid them during map movement.
 
 - Fix a blank map caused by the deferred Mapbox stylesheet overriding the map container position.

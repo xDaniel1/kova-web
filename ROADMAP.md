@@ -32,3 +32,17 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done. Each open item has a GitH
 - [x] ~~Evaluate MapKit JS~~ decided on Mapbox, matching the iPhone Mapbox edition
 - [x] Playwright smoke test in CI against the production build
 - [x] Error reporting into `public.client_errors` (insert-only; admins read it)
+
+## U.S. coverage expansion
+
+Tracked in [#24](https://github.com/xDaniel1/kova-web/issues/24).
+
+- [x] Add repeatable capital-city checks for all 50 states and D.C.
+- [x] Add one smaller-town sample per state, including Alaska and Hawaii.
+- [x] Replace Manhattan-only startup with a U.S. overview and last-area restoration.
+- [ ] Validate real street-address pairs, cross-state trips, disconnected-road/ferry cases and rural destinations beyond town centers.
+- [ ] Audit cycling and transit separately; missing transit service must not be confused with a broken request.
+- [ ] Inventory airport indoor floors and directory contents by venue, with confirmed/partial/unavailable status.
+- [ ] Add state-specific browser journeys and checks on physical low-end hardware.
+
+See [the state-by-state results](coverage/README.md). Provider samples are not comprehensive statewide certification.

@@ -1,0 +1,307 @@
+[
+  {
+    "code": "AL",
+    "state": "Alabama",
+    "city": "Montgomery",
+    "smallTown": "Selma"
+  },
+  {
+    "code": "AK",
+    "state": "Alaska",
+    "city": "Juneau",
+    "smallTown": "Bethel"
+  },
+  {
+    "code": "AZ",
+    "state": "Arizona",
+    "city": "Phoenix",
+    "smallTown": "Page"
+  },
+  {
+    "code": "AR",
+    "state": "Arkansas",
+    "city": "Little Rock",
+    "smallTown": "Mountain View"
+  },
+  {
+    "code": "CA",
+    "state": "California",
+    "city": "Sacramento",
+    "smallTown": "Bishop"
+  },
+  {
+    "code": "CO",
+    "state": "Colorado",
+    "city": "Denver",
+    "smallTown": "Leadville"
+  },
+  {
+    "code": "CT",
+    "state": "Connecticut",
+    "city": "Hartford",
+    "smallTown": "Kent"
+  },
+  {
+    "code": "DE",
+    "state": "Delaware",
+    "city": "Dover",
+    "smallTown": "Georgetown"
+  },
+  {
+    "code": "FL",
+    "state": "Florida",
+    "city": "Tallahassee",
+    "smallTown": "Apalachicola"
+  },
+  {
+    "code": "GA",
+    "state": "Georgia",
+    "city": "Atlanta",
+    "smallTown": "Dahlonega"
+  },
+  {
+    "code": "HI",
+    "state": "Hawaii",
+    "city": "Honolulu",
+    "smallTown": "Hana"
+  },
+  {
+    "code": "ID",
+    "state": "Idaho",
+    "city": "Boise",
+    "smallTown": "McCall"
+  },
+  {
+    "code": "IL",
+    "state": "Illinois",
+    "city": "Springfield",
+    "smallTown": "Galena"
+  },
+  {
+    "code": "IN",
+    "state": "Indiana",
+    "city": "Indianapolis",
+    "smallTown": "Nashville"
+  },
+  {
+    "code": "IA",
+    "state": "Iowa",
+    "city": "Des Moines",
+    "smallTown": "Decorah"
+  },
+  {
+    "code": "KS",
+    "state": "Kansas",
+    "city": "Topeka",
+    "smallTown": "Colby"
+  },
+  {
+    "code": "KY",
+    "state": "Kentucky",
+    "city": "Frankfort",
+    "smallTown": "Pikeville"
+  },
+  {
+    "code": "LA",
+    "state": "Louisiana",
+    "city": "Baton Rouge",
+    "smallTown": "Natchitoches"
+  },
+  {
+    "code": "ME",
+    "state": "Maine",
+    "city": "Augusta",
+    "smallTown": "Rangeley"
+  },
+  {
+    "code": "MD",
+    "state": "Maryland",
+    "city": "Annapolis",
+    "smallTown": "Oakland"
+  },
+  {
+    "code": "MA",
+    "state": "Massachusetts",
+    "city": "Boston",
+    "smallTown": "Great Barrington"
+  },
+  {
+    "code": "MI",
+    "state": "Michigan",
+    "city": "Lansing",
+    "smallTown": "Munising"
+  },
+  {
+    "code": "MN",
+    "state": "Minnesota",
+    "city": "Saint Paul",
+    "smallTown": "Ely"
+  },
+  {
+    "code": "MS",
+    "state": "Mississippi",
+    "city": "Jackson",
+    "smallTown": "Natchez"
+  },
+  {
+    "code": "MO",
+    "state": "Missouri",
+    "city": "Jefferson City",
+    "smallTown": "Hermann"
+  },
+  {
+    "code": "MT",
+    "state": "Montana",
+    "city": "Helena",
+    "smallTown": "Glasgow"
+  },
+  {
+    "code": "NE",
+    "state": "Nebraska",
+    "city": "Lincoln",
+    "smallTown": "Valentine"
+  },
+  {
+    "code": "NV",
+    "state": "Nevada",
+    "city": "Carson City",
+    "smallTown": "Ely"
+  },
+  {
+    "code": "NH",
+    "state": "New Hampshire",
+    "city": "Concord",
+    "smallTown": "Littleton"
+  },
+  {
+    "code": "NJ",
+    "state": "New Jersey",
+    "city": "Trenton",
+    "smallTown": "Newton"
+  },
+  {
+    "code": "NM",
+    "state": "New Mexico",
+    "city": "Santa Fe",
+    "smallTown": "Taos"
+  },
+  {
+    "code": "NY",
+    "state": "New York",
+    "city": "Albany",
+    "smallTown": "Saranac Lake"
+  },
+  {
+    "code": "NC",
+    "state": "North Carolina",
+    "city": "Raleigh",
+    "smallTown": "Boone"
+  },
+  {
+    "code": "ND",
+    "state": "North Dakota",
+    "city": "Bismarck",
+    "smallTown": "Devils Lake"
+  },
+  {
+    "code": "OH",
+    "state": "Ohio",
+    "city": "Columbus",
+    "smallTown": "Marietta"
+  },
+  {
+    "code": "OK",
+    "state": "Oklahoma",
+    "city": "Oklahoma City",
+    "smallTown": "Guymon"
+  },
+  {
+    "code": "OR",
+    "state": "Oregon",
+    "city": "Salem",
+    "smallTown": "Burns"
+  },
+  {
+    "code": "PA",
+    "state": "Pennsylvania",
+    "city": "Harrisburg",
+    "smallTown": "Wellsboro"
+  },
+  {
+    "code": "RI",
+    "state": "Rhode Island",
+    "city": "Providence",
+    "smallTown": "New Shoreham"
+  },
+  {
+    "code": "SC",
+    "state": "South Carolina",
+    "city": "Columbia",
+    "smallTown": "Beaufort"
+  },
+  {
+    "code": "SD",
+    "state": "South Dakota",
+    "city": "Pierre",
+    "smallTown": "Custer"
+  },
+  {
+    "code": "TN",
+    "state": "Tennessee",
+    "city": "Nashville",
+    "smallTown": "Paris"
+  },
+  {
+    "code": "TX",
+    "state": "Texas",
+    "city": "Austin",
+    "smallTown": "Marfa"
+  },
+  {
+    "code": "UT",
+    "state": "Utah",
+    "city": "Salt Lake City",
+    "smallTown": "Kanab"
+  },
+  {
+    "code": "VT",
+    "state": "Vermont",
+    "city": "Montpelier",
+    "smallTown": "Stowe"
+  },
+  {
+    "code": "VA",
+    "state": "Virginia",
+    "city": "Richmond",
+    "smallTown": "Abingdon"
+  },
+  {
+    "code": "WA",
+    "state": "Washington",
+    "city": "Olympia",
+    "smallTown": "Forks"
+  },
+  {
+    "code": "WV",
+    "state": "West Virginia",
+    "city": "Charleston",
+    "smallTown": "Elkins"
+  },
+  {
+    "code": "WI",
+    "state": "Wisconsin",
+    "city": "Madison",
+    "smallTown": "Bayfield"
+  },
+  {
+    "code": "WY",
+    "state": "Wyoming",
+    "city": "Cheyenne",
+    "smallTown": "Cody"
+  },
+  {
+    "code": "DC",
+    "state": "District of Columbia",
+    "city": "Washington"
+  }
+]
