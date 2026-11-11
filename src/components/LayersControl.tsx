@@ -3,6 +3,8 @@ import type { BaseMap } from './MapView'
 import { Icon } from './Icon'
 
 interface Props {
+  speedLimits: boolean
+  onSpeedLimits: (enabled: boolean) => void
   base: BaseMap
   traffic: boolean
   reports: boolean
@@ -22,6 +24,7 @@ export function LayersControl(p: Props) {
       <button className={'layers-tile ' + other} style={{ backgroundImage: `url(/layer-${other}.webp)` }} onClick={() => p.onBase(other)} onMouseEnter={() => setOpen(true)} aria-label={other === 'satellite' ? 'Layers: show satellite imagery' : 'Layers: show default map'}>
         <span className="layers-label"><Icon name="layers" size={16} /> Layers</span>
       </button>
+      <button className={'posted-limits-toggle' + (p.speedLimits ? ' on' : '')} aria-pressed={p.speedLimits} onClick={() => p.onSpeedLimits(!p.speedLimits)} title="Published road limits where available. Zoom in to see up to 500 segments; missing roads have no posted value here.">Posted limits</button>
       {open && (
         <div className="layers-panel">
           <button className={p.traffic ? 'on' : ''} onClick={() => p.onTraffic(!p.traffic)}><span className="layer-ic traffic"><Icon name="traffic" /></span>Traffic</button>

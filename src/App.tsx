@@ -5,6 +5,7 @@ import { AccountButton } from './components/AccountButton'
 import { CATEGORIES, CategoryChips } from './components/CategoryChips'
 import { DirectionsPanel, type When } from './components/DirectionsPanel'
 import { Icon } from './components/Icon'
+import { SpeedLimitsLayer } from './components/SpeedLimitsLayer'
 import { LayersControl } from './components/LayersControl'
 import type { BaseMap, ResultPin } from './components/MapView'
 
@@ -84,6 +85,7 @@ export default function App() {
   const [when, setWhen] = useState<When>({ kind: 'now' })
   const [base, setBase] = useState<BaseMap>('default')
   const [traffic, setTraffic] = useState(false)
+  const [speedLimits, setSpeedLimits] = useState(false)
   const [showReports, setShowReports] = useState(true)
   const [reports, setReports] = useState<TrafficReport[]>([])
   const [camera, setCamera] = useState<{ bounds: Bounds; center: { latitude: number; longitude: number }; zoom: number } | null>(null)
@@ -404,6 +406,7 @@ export default function App() {
         }}
         onReady={setMapInstance}
       />
+      {mapInstance && <SpeedLimitsLayer map={mapInstance} enabled={speedLimits && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} dark={dark && base !== 'satellite'} left={(isNarrow ? 8 : leftInset + 16) + (isNarrow ? 72 : 92)} />}
       </Suspense>
       </MapBoundary>
@@ -522,7 +525,7 @@ export default function App() {
       </div>
 
       <div className="layers-wrap" style={{ left: (isNarrow ? 8 : leftInset + 16) }}>
-        <LayersControl base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
+        <LayersControl speedLimits={speedLimits} onSpeedLimits={setSpeedLimits} base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
       </div>
 
       <div className="banners" style={{ left: isNarrow ? 8 : leftInset + 16 }}>
