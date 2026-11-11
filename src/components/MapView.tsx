@@ -339,10 +339,18 @@ export function MapView(p: Props) {
       el.style.background = meta.color
       el.textContent = meta.icon
       const mine = p.currentUserID === r.userID
-      const popup = new mapboxgl.Popup({ offset: 16, closeButton: false }).setHTML(
-        `<strong>${r.kind}</strong><br><span class="muted">${ageLabel(r.createdAt)}</span><br>` +
-          (mine ? `<button class="link" data-act="delete">Remove my report</button>` : `<button class="link" data-act="flag">Flag as wrong</button>`),
-      )
+      const content = document.createElement('div')
+      const title = document.createElement('strong')
+      title.textContent = r.kind
+      const age = document.createElement('span')
+      age.className = 'muted'
+      age.textContent = ageLabel(r.createdAt)
+      const action = document.createElement('button')
+      action.className = 'link'
+      action.dataset.act = mine ? 'delete' : 'flag'
+      action.textContent = mine ? 'Remove my report' : 'Flag as wrong'
+      content.append(title, document.createElement('br'), age, document.createElement('br'), action)
+      const popup = new mapboxgl.Popup({ offset: 16, closeButton: false }).setDOMContent(content)
       popup.on('open', () => {
         popup.getElement()?.querySelector('[data-act]')?.addEventListener('click', (e) => {
           const act = (e.currentTarget as HTMLElement).dataset.act

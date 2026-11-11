@@ -105,6 +105,12 @@ export default function App() {
   const indoorOn = can('indoorMaps')
   const geo = useGeolocation()
   const pushTimer = useRef<number | null>(null)
+  const syncIdentity = useRef<string | null>(null)
+  syncIdentity.current = syncOn ? user?.id ?? null : null
+  useEffect(() => () => {
+    if (pushTimer.current !== null) window.clearTimeout(pushTimer.current)
+    pushTimer.current = null
+  }, [user?.id, syncOn])
 
   useEffect(() => {
     const on = () => setIsNarrow(window.innerWidth < 760)
@@ -175,6 +181,8 @@ export default function App() {
       if (user && syncOn) {
         if (pushTimer.current) window.clearTimeout(pushTimer.current)
         pushTimer.current = window.setTimeout(() => {
+          pushTimer.current = null
+          if (syncIdentity.current !== user.id) return
           setSyncState('syncing')
           pushRemote(user.id, next).then(() => setSyncState('idle')).catch(() => setSyncState('error'))
         }, 800)

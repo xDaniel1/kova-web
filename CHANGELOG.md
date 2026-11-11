@@ -1,5 +1,7 @@
 # Changelog
 
+- Release compatibility audit: support iOS Speed Trap reports, use text-only report popups, revoke deferred sync on sign-out/control changes, and omit query/fragment from error URLs.
+
 ## Unreleased
 
 - Restore Apple web sign-in alongside Google after the provider configuration was repaired. Show sign-in startup errors inline and keep the version visible.
