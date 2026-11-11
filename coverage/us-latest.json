@@ -1,0 +1,1487 @@
+{
+  "checkedAt": "2026-11-11T06:57:36.366Z",
+  "scope": "Representative capital-city provider checks only. No claim of statewide, rural, transit or indoor coverage.",
+  "statesChecked": 51,
+  "statesWithGaps": 0,
+  "results": [
+    {
+      "code": "AL",
+      "state": "Alabama",
+      "city": "Montgomery",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 429
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2003,
+        "durationSeconds": 255,
+        "elapsedMs": 94
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2000,
+        "durationSeconds": 1476,
+        "elapsedMs": 55
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 435
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "AK",
+      "state": "Alaska",
+      "city": "Juneau",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 319
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1851,
+        "durationSeconds": 432,
+        "elapsedMs": 105
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1993,
+        "durationSeconds": 1708,
+        "elapsedMs": 53
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 461
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "AZ",
+      "state": "Arizona",
+      "city": "Phoenix",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 215
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2331,
+        "durationSeconds": 398,
+        "elapsedMs": 215
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2045,
+        "durationSeconds": 1492,
+        "elapsedMs": 97
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 425
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "AR",
+      "state": "Arkansas",
+      "city": "Little Rock",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 195
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2311,
+        "durationSeconds": 255,
+        "elapsedMs": 110
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2062,
+        "durationSeconds": 1430,
+        "elapsedMs": 87
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 368
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "CA",
+      "state": "California",
+      "city": "Sacramento",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 190
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2713,
+        "durationSeconds": 382,
+        "elapsedMs": 100
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2156,
+        "durationSeconds": 1550,
+        "elapsedMs": 84
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 441
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "CO",
+      "state": "Colorado",
+      "city": "Denver",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 199
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1742,
+        "durationSeconds": 267,
+        "elapsedMs": 191
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1742,
+        "durationSeconds": 1254,
+        "elapsedMs": 132
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 414
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "CT",
+      "state": "Connecticut",
+      "city": "Hartford",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 204
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 5548,
+        "durationSeconds": 530,
+        "elapsedMs": 96
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1957,
+        "durationSeconds": 1392,
+        "elapsedMs": 87
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 417
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "DE",
+      "state": "Delaware",
+      "city": "Dover",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 198
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2298,
+        "durationSeconds": 261,
+        "elapsedMs": 157
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1794,
+        "durationSeconds": 1267,
+        "elapsedMs": 92
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 957
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "FL",
+      "state": "Florida",
+      "city": "Tallahassee",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 178
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2083,
+        "durationSeconds": 270,
+        "elapsedMs": 115
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1812,
+        "durationSeconds": 1308,
+        "elapsedMs": 81
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 409
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "GA",
+      "state": "Georgia",
+      "city": "Atlanta",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 266
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2900,
+        "durationSeconds": 307,
+        "elapsedMs": 132
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1981,
+        "durationSeconds": 1407,
+        "elapsedMs": 80
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 408
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "HI",
+      "state": "Hawaii",
+      "city": "Honolulu",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 185
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2383,
+        "durationSeconds": 421,
+        "elapsedMs": 100
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1626,
+        "durationSeconds": 1243,
+        "elapsedMs": 144
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 522
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "ID",
+      "state": "Idaho",
+      "city": "Boise",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 189
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1687,
+        "durationSeconds": 290,
+        "elapsedMs": 121
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1608,
+        "durationSeconds": 1186,
+        "elapsedMs": 101
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 345
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "IL",
+      "state": "Illinois",
+      "city": "Springfield",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 184
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1973,
+        "durationSeconds": 216,
+        "elapsedMs": 109
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1917,
+        "durationSeconds": 1398,
+        "elapsedMs": 90
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 436
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "IN",
+      "state": "Indiana",
+      "city": "Indianapolis",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 171
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1840,
+        "durationSeconds": 265,
+        "elapsedMs": 124
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1708,
+        "durationSeconds": 1262,
+        "elapsedMs": 85
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 352
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "IA",
+      "state": "Iowa",
+      "city": "Des Moines",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 203
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1909,
+        "durationSeconds": 254,
+        "elapsedMs": 114
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1860,
+        "durationSeconds": 1351,
+        "elapsedMs": 89
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 433
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "KS",
+      "state": "Kansas",
+      "city": "Topeka",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 193
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2131,
+        "durationSeconds": 254,
+        "elapsedMs": 94
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1916,
+        "durationSeconds": 1324,
+        "elapsedMs": 78
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 492
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "KY",
+      "state": "Kentucky",
+      "city": "Frankfort",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 263
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2869,
+        "durationSeconds": 264,
+        "elapsedMs": 93
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2564,
+        "durationSeconds": 1827,
+        "elapsedMs": 82
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 376
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "LA",
+      "state": "Louisiana",
+      "city": "Baton Rouge",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 194
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2965,
+        "durationSeconds": 294,
+        "elapsedMs": 114
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2263,
+        "durationSeconds": 1595,
+        "elapsedMs": 117
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 376
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "ME",
+      "state": "Maine",
+      "city": "Augusta",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 220
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1834,
+        "durationSeconds": 199,
+        "elapsedMs": 90
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1720,
+        "durationSeconds": 1315,
+        "elapsedMs": 128
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 319
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MD",
+      "state": "Maryland",
+      "city": "Annapolis",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 188
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1526,
+        "durationSeconds": 300,
+        "elapsedMs": 82
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1347,
+        "durationSeconds": 915,
+        "elapsedMs": 77
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 413
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MA",
+      "state": "Massachusetts",
+      "city": "Boston",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 271
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 4380,
+        "durationSeconds": 417,
+        "elapsedMs": 119
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 4331,
+        "durationSeconds": 1754,
+        "elapsedMs": 111
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 508
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MI",
+      "state": "Michigan",
+      "city": "Lansing",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 240
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1887,
+        "durationSeconds": 228,
+        "elapsedMs": 109
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1784,
+        "durationSeconds": 1300,
+        "elapsedMs": 84
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 346
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MN",
+      "state": "Minnesota",
+      "city": "Saint Paul",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 230
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2062,
+        "durationSeconds": 287,
+        "elapsedMs": 104
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1933,
+        "durationSeconds": 1397,
+        "elapsedMs": 84
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 619
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MS",
+      "state": "Mississippi",
+      "city": "Jackson",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 192
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1971,
+        "durationSeconds": 256,
+        "elapsedMs": 95
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1917,
+        "durationSeconds": 1419,
+        "elapsedMs": 71
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 373
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MO",
+      "state": "Missouri",
+      "city": "Jefferson City",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 188
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 3729,
+        "durationSeconds": 345,
+        "elapsedMs": 131
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 4409,
+        "durationSeconds": 3061,
+        "elapsedMs": 77
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 442
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MT",
+      "state": "Montana",
+      "city": "Helena",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 187
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1600,
+        "durationSeconds": 217,
+        "elapsedMs": 147
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1455,
+        "durationSeconds": 971,
+        "elapsedMs": 76
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 335
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NE",
+      "state": "Nebraska",
+      "city": "Lincoln",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 304
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2383,
+        "durationSeconds": 280,
+        "elapsedMs": 98
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2141,
+        "durationSeconds": 1524,
+        "elapsedMs": 92
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 458
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NV",
+      "state": "Nevada",
+      "city": "Carson City",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 193
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1999,
+        "durationSeconds": 286,
+        "elapsedMs": 94
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1892,
+        "durationSeconds": 1357,
+        "elapsedMs": 114
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 609
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NH",
+      "state": "New Hampshire",
+      "city": "Concord",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 187
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1790,
+        "durationSeconds": 229,
+        "elapsedMs": 91
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1778,
+        "durationSeconds": 1248,
+        "elapsedMs": 69
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 447
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NJ",
+      "state": "New Jersey",
+      "city": "Trenton",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 246
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1650,
+        "durationSeconds": 247,
+        "elapsedMs": 149
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1658,
+        "durationSeconds": 1204,
+        "elapsedMs": 76
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 355
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NM",
+      "state": "New Mexico",
+      "city": "Santa Fe",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 186
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1737,
+        "durationSeconds": 222,
+        "elapsedMs": 83
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1736,
+        "durationSeconds": 1347,
+        "elapsedMs": 123
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 421
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NY",
+      "state": "New York",
+      "city": "Albany",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 182
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1801,
+        "durationSeconds": 242,
+        "elapsedMs": 140
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1784,
+        "durationSeconds": 1244,
+        "elapsedMs": 79
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 343
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NC",
+      "state": "North Carolina",
+      "city": "Raleigh",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 179
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1900,
+        "durationSeconds": 269,
+        "elapsedMs": 99
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1902,
+        "durationSeconds": 1312,
+        "elapsedMs": 128
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 377
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "ND",
+      "state": "North Dakota",
+      "city": "Bismarck",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 293
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2027,
+        "durationSeconds": 252,
+        "elapsedMs": 96
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2008,
+        "durationSeconds": 1509,
+        "elapsedMs": 76
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 336
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "OH",
+      "state": "Ohio",
+      "city": "Columbus",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 181
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1946,
+        "durationSeconds": 256,
+        "elapsedMs": 116
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1969,
+        "durationSeconds": 1462,
+        "elapsedMs": 100
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 387
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "OK",
+      "state": "Oklahoma",
+      "city": "Oklahoma City",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 285
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1994,
+        "durationSeconds": 246,
+        "elapsedMs": 100
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1867,
+        "durationSeconds": 1367,
+        "elapsedMs": 87
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 430
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "OR",
+      "state": "Oregon",
+      "city": "Salem",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 184
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1911,
+        "durationSeconds": 230,
+        "elapsedMs": 119
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1773,
+        "durationSeconds": 1250,
+        "elapsedMs": 129
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 384
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "PA",
+      "state": "Pennsylvania",
+      "city": "Harrisburg",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 187
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1638,
+        "durationSeconds": 191,
+        "elapsedMs": 99
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1663,
+        "durationSeconds": 1262,
+        "elapsedMs": 77
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 328
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "RI",
+      "state": "Rhode Island",
+      "city": "Providence",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 179
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2293,
+        "durationSeconds": 363,
+        "elapsedMs": 175
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1878,
+        "durationSeconds": 1485,
+        "elapsedMs": 91
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 430
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "SC",
+      "state": "South Carolina",
+      "city": "Columbia",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 181
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1990,
+        "durationSeconds": 280,
+        "elapsedMs": 110
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2064,
+        "durationSeconds": 1473,
+        "elapsedMs": 80
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 380
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "SD",
+      "state": "South Dakota",
+      "city": "Pierre",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 180
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1863,
+        "durationSeconds": 146,
+        "elapsedMs": 114
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1905,
+        "durationSeconds": 1504,
+        "elapsedMs": 75
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 348
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "TN",
+      "state": "Tennessee",
+      "city": "Nashville",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 182
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 3565,
+        "durationSeconds": 326,
+        "elapsedMs": 104
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1857,
+        "durationSeconds": 1272,
+        "elapsedMs": 76
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 353
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "TX",
+      "state": "Texas",
+      "city": "Austin",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 177
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1924,
+        "durationSeconds": 356,
+        "elapsedMs": 116
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1935,
+        "durationSeconds": 1442,
+        "elapsedMs": 148
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 417
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "UT",
+      "state": "Utah",
+      "city": "Salt Lake City",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 220
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2070,
+        "durationSeconds": 292,
+        "elapsedMs": 119
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1953,
+        "durationSeconds": 1557,
+        "elapsedMs": 86
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 415
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "VT",
+      "state": "Vermont",
+      "city": "Montpelier",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 186
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1564,
+        "durationSeconds": 145,
+        "elapsedMs": 126
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1572,
+        "durationSeconds": 1277,
+        "elapsedMs": 120
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 403
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "VA",
+      "state": "Virginia",
+      "city": "Richmond",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 187
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 3624,
+        "durationSeconds": 354,
+        "elapsedMs": 119
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2107,
+        "durationSeconds": 1523,
+        "elapsedMs": 89
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 333
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "WA",
+      "state": "Washington",
+      "city": "Olympia",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 198
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2420,
+        "durationSeconds": 369,
+        "elapsedMs": 124
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2241,
+        "durationSeconds": 1720,
+        "elapsedMs": 99
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 425
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "WV",
+      "state": "West Virginia",
+      "city": "Charleston",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 184
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2607,
+        "durationSeconds": 202,
+        "elapsedMs": 93
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2056,
+        "durationSeconds": 1448,
+        "elapsedMs": 77
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 540
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "WI",
+      "state": "Wisconsin",
+      "city": "Madison",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 229
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1715,
+        "durationSeconds": 224,
+        "elapsedMs": 88
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1584,
+        "durationSeconds": 1101,
+        "elapsedMs": 75
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 331
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "WY",
+      "state": "Wyoming",
+      "city": "Cheyenne",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 200
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2078,
+        "durationSeconds": 336,
+        "elapsedMs": 97
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1853,
+        "durationSeconds": 1415,
+        "elapsedMs": 92
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 481
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "DC",
+      "state": "District of Columbia",
+      "city": "Washington",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 217
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2082,
+        "durationSeconds": 416,
+        "elapsedMs": 131
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1755,
+        "durationSeconds": 1332,
+        "elapsedMs": 100
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 734
+      },
+      "rural": "not-tested",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    }
+  ]
+}

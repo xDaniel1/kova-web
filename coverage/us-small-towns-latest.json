@@ -1,0 +1,1508 @@
+{
+  "checkedAt": "2026-11-11T07:00:17.044Z",
+  "scope": "One small-town provider sample per state. No claim of comprehensive rural, transit or indoor coverage.",
+  "statesChecked": 50,
+  "statesWithGaps": 0,
+  "results": [
+    {
+      "code": "AL",
+      "state": "Alabama",
+      "city": "Selma",
+      "smallTown": "Selma",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 416
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2698,
+        "durationSeconds": 227,
+        "elapsedMs": 91
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2020,
+        "durationSeconds": 1401,
+        "elapsedMs": 50
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 460
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "AK",
+      "state": "Alaska",
+      "city": "Bethel",
+      "smallTown": "Bethel",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 281
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1407,
+        "durationSeconds": 242,
+        "elapsedMs": 98
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1407,
+        "durationSeconds": 997,
+        "elapsedMs": 52
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 302
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "AZ",
+      "state": "Arizona",
+      "city": "Page",
+      "smallTown": "Page",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 256
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1371,
+        "durationSeconds": 169,
+        "elapsedMs": 77
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1371,
+        "durationSeconds": 920,
+        "elapsedMs": 52
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 309
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "AR",
+      "state": "Arkansas",
+      "city": "Mountain View",
+      "smallTown": "Mountain View",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 187
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1951,
+        "durationSeconds": 180,
+        "elapsedMs": 78
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1952,
+        "durationSeconds": 1433,
+        "elapsedMs": 55
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 278
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "CA",
+      "state": "California",
+      "city": "Bishop",
+      "smallTown": "Bishop",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 267
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1750,
+        "durationSeconds": 189,
+        "elapsedMs": 90
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1938,
+        "durationSeconds": 1359,
+        "elapsedMs": 142
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 290
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "CO",
+      "state": "Colorado",
+      "city": "Leadville",
+      "smallTown": "Leadville",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 263
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1841,
+        "durationSeconds": 266,
+        "elapsedMs": 80
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1846,
+        "durationSeconds": 1446,
+        "elapsedMs": 75
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 325
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "CT",
+      "state": "Connecticut",
+      "city": "Kent",
+      "smallTown": "Kent",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 203
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1597,
+        "durationSeconds": 165,
+        "elapsedMs": 89
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1595,
+        "durationSeconds": 1251,
+        "elapsedMs": 53
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 291
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "DE",
+      "state": "Delaware",
+      "city": "Georgetown",
+      "smallTown": "Georgetown",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 250
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1802,
+        "durationSeconds": 261,
+        "elapsedMs": 128
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 3805,
+        "durationSeconds": 2716,
+        "elapsedMs": 59
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 270
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "FL",
+      "state": "Florida",
+      "city": "Apalachicola",
+      "smallTown": "Apalachicola",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 267
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1692,
+        "durationSeconds": 119,
+        "elapsedMs": 76
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 224,
+        "durationSeconds": 154,
+        "elapsedMs": 54
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 326
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "GA",
+      "state": "Georgia",
+      "city": "Dahlonega",
+      "smallTown": "Dahlonega",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 215
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1604,
+        "durationSeconds": 165,
+        "elapsedMs": 82
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1600,
+        "durationSeconds": 1020,
+        "elapsedMs": 52
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 258
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "HI",
+      "state": "Hawaii",
+      "city": "Hana",
+      "smallTown": "Hana",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 187
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 4498,
+        "durationSeconds": 508,
+        "elapsedMs": 84
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 3049,
+        "durationSeconds": 2172,
+        "elapsedMs": 169
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 299
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "ID",
+      "state": "Idaho",
+      "city": "McCall",
+      "smallTown": "McCall",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 224
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1665,
+        "durationSeconds": 162,
+        "elapsedMs": 77
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2267,
+        "durationSeconds": 1577,
+        "elapsedMs": 55
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 395
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "IL",
+      "state": "Illinois",
+      "city": "Galena",
+      "smallTown": "Galena",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 194
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1718,
+        "durationSeconds": 186,
+        "elapsedMs": 80
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1687,
+        "durationSeconds": 1441,
+        "elapsedMs": 61
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 319
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "IN",
+      "state": "Indiana",
+      "city": "Nashville",
+      "smallTown": "Nashville",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 245
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2148,
+        "durationSeconds": 194,
+        "elapsedMs": 147
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2148,
+        "durationSeconds": 1522,
+        "elapsedMs": 49
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 269
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "IA",
+      "state": "Iowa",
+      "city": "Decorah",
+      "smallTown": "Decorah",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 279
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2109,
+        "durationSeconds": 214,
+        "elapsedMs": 81
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2531,
+        "durationSeconds": 2004,
+        "elapsedMs": 53
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 317
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "KS",
+      "state": "Kansas",
+      "city": "Colby",
+      "smallTown": "Colby",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 182
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1987,
+        "durationSeconds": 189,
+        "elapsedMs": 94
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1935,
+        "durationSeconds": 1351,
+        "elapsedMs": 67
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 264
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "KY",
+      "state": "Kentucky",
+      "city": "Pikeville",
+      "smallTown": "Pikeville",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 237
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1500,
+        "durationSeconds": 124,
+        "elapsedMs": 90
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1498,
+        "durationSeconds": 1100,
+        "elapsedMs": 117
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 315
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "LA",
+      "state": "Louisiana",
+      "city": "Natchitoches",
+      "smallTown": "Natchitoches",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 207
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2300,
+        "durationSeconds": 277,
+        "elapsedMs": 90
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2316,
+        "durationSeconds": 1624,
+        "elapsedMs": 52
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 383
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "ME",
+      "state": "Maine",
+      "city": "Rangeley",
+      "smallTown": "Rangeley",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 222
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1818,
+        "durationSeconds": 131,
+        "elapsedMs": 74
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1867,
+        "durationSeconds": 1331,
+        "elapsedMs": 50
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 309
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MD",
+      "state": "Maryland",
+      "city": "Oakland",
+      "smallTown": "Oakland",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 263
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2332,
+        "durationSeconds": 208,
+        "elapsedMs": 131
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2361,
+        "durationSeconds": 1756,
+        "elapsedMs": 55
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 372
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MA",
+      "state": "Massachusetts",
+      "city": "Great Barrington",
+      "smallTown": "Great Barrington",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 203
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1566,
+        "durationSeconds": 133,
+        "elapsedMs": 85
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1473,
+        "durationSeconds": 1028,
+        "elapsedMs": 53
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 354
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MI",
+      "state": "Michigan",
+      "city": "Munising",
+      "smallTown": "Munising",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 238
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2130,
+        "durationSeconds": 162,
+        "elapsedMs": 80
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2163,
+        "durationSeconds": 1504,
+        "elapsedMs": 131
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 290
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MN",
+      "state": "Minnesota",
+      "city": "Ely",
+      "smallTown": "Ely",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 238
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1615,
+        "durationSeconds": 124,
+        "elapsedMs": 78
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1592,
+        "durationSeconds": 1091,
+        "elapsedMs": 54
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 261
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MS",
+      "state": "Mississippi",
+      "city": "Natchez",
+      "smallTown": "Natchez",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 216
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2305,
+        "durationSeconds": 247,
+        "elapsedMs": 82
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1887,
+        "durationSeconds": 1329,
+        "elapsedMs": 56
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 298
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MO",
+      "state": "Missouri",
+      "city": "Hermann",
+      "smallTown": "Hermann",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 224
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2634,
+        "durationSeconds": 348,
+        "elapsedMs": 83
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2650,
+        "durationSeconds": 1894,
+        "elapsedMs": 51
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 299
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "MT",
+      "state": "Montana",
+      "city": "Glasgow",
+      "smallTown": "Glasgow",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 199
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2030,
+        "durationSeconds": 286,
+        "elapsedMs": 91
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1819,
+        "durationSeconds": 1434,
+        "elapsedMs": 104
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 287
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NE",
+      "state": "Nebraska",
+      "city": "Valentine",
+      "smallTown": "Valentine",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 234
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2166,
+        "durationSeconds": 118,
+        "elapsedMs": 83
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2037,
+        "durationSeconds": 1452,
+        "elapsedMs": 53
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 271
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NV",
+      "state": "Nevada",
+      "city": "Ely",
+      "smallTown": "Ely",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 197
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2179,
+        "durationSeconds": 291,
+        "elapsedMs": 91
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1953,
+        "durationSeconds": 1484,
+        "elapsedMs": 53
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 304
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NH",
+      "state": "New Hampshire",
+      "city": "Littleton",
+      "smallTown": "Littleton",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 184
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1687,
+        "durationSeconds": 191,
+        "elapsedMs": 89
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1686,
+        "durationSeconds": 1275,
+        "elapsedMs": 60
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 508
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NJ",
+      "state": "New Jersey",
+      "city": "Newton",
+      "smallTown": "Newton",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 283
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1752,
+        "durationSeconds": 145,
+        "elapsedMs": 97
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1498,
+        "durationSeconds": 1004,
+        "elapsedMs": 60
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 315
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NM",
+      "state": "New Mexico",
+      "city": "Taos",
+      "smallTown": "Taos",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 260
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1480,
+        "durationSeconds": 170,
+        "elapsedMs": 75
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1509,
+        "durationSeconds": 1122,
+        "elapsedMs": 50
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 510
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NY",
+      "state": "New York",
+      "city": "Saranac Lake",
+      "smallTown": "Saranac Lake",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 211
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1614,
+        "durationSeconds": 142,
+        "elapsedMs": 84
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1541,
+        "durationSeconds": 1100,
+        "elapsedMs": 59
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 388
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "NC",
+      "state": "North Carolina",
+      "city": "Boone",
+      "smallTown": "Boone",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 230
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 3161,
+        "durationSeconds": 465,
+        "elapsedMs": 81
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 3329,
+        "durationSeconds": 3481,
+        "elapsedMs": 128
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 3236
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "ND",
+      "state": "North Dakota",
+      "city": "Devils Lake",
+      "smallTown": "Devils Lake",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 308
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1937,
+        "durationSeconds": 227,
+        "elapsedMs": 125
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1936,
+        "durationSeconds": 1348,
+        "elapsedMs": 57
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 336
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "OH",
+      "state": "Ohio",
+      "city": "Marietta",
+      "smallTown": "Marietta",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 222
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1603,
+        "durationSeconds": 169,
+        "elapsedMs": 93
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2165,
+        "durationSeconds": 1698,
+        "elapsedMs": 56
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 1529
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "OK",
+      "state": "Oklahoma",
+      "city": "Guymon",
+      "smallTown": "Guymon",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 325
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2009,
+        "durationSeconds": 208,
+        "elapsedMs": 91
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1842,
+        "durationSeconds": 1290,
+        "elapsedMs": 52
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 382
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "OR",
+      "state": "Oregon",
+      "city": "Burns",
+      "smallTown": "Burns",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 192
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1589,
+        "durationSeconds": 155,
+        "elapsedMs": 77
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1785,
+        "durationSeconds": 1250,
+        "elapsedMs": 47
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 300
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "PA",
+      "state": "Pennsylvania",
+      "city": "Wellsboro",
+      "smallTown": "Wellsboro",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 203
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2089,
+        "durationSeconds": 289,
+        "elapsedMs": 80
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2090,
+        "durationSeconds": 1701,
+        "elapsedMs": 54
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 374
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "RI",
+      "state": "Rhode Island",
+      "city": "New Shoreham",
+      "smallTown": "New Shoreham",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 330
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 358,
+        "durationSeconds": 62,
+        "elapsedMs": 74
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 240,
+        "durationSeconds": 161,
+        "elapsedMs": 68
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 364
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "SC",
+      "state": "South Carolina",
+      "city": "Beaufort",
+      "smallTown": "Beaufort",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 186
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 16210,
+        "durationSeconds": 1099,
+        "elapsedMs": 92
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 7955,
+        "durationSeconds": 5629,
+        "elapsedMs": 181
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 314
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "SD",
+      "state": "South Dakota",
+      "city": "Custer",
+      "smallTown": "Custer",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 286
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1858,
+        "durationSeconds": 145,
+        "elapsedMs": 76
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1841,
+        "durationSeconds": 1371,
+        "elapsedMs": 54
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 316
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "TN",
+      "state": "Tennessee",
+      "city": "Paris",
+      "smallTown": "Paris",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 203
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1793,
+        "durationSeconds": 169,
+        "elapsedMs": 73
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1774,
+        "durationSeconds": 1250,
+        "elapsedMs": 51
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 304
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "TX",
+      "state": "Texas",
+      "city": "Marfa",
+      "smallTown": "Marfa",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 230
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1997,
+        "durationSeconds": 247,
+        "elapsedMs": 79
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1991,
+        "durationSeconds": 1422,
+        "elapsedMs": 109
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 332
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "UT",
+      "state": "Utah",
+      "city": "Kanab",
+      "smallTown": "Kanab",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 281
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1814,
+        "durationSeconds": 170,
+        "elapsedMs": 77
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1768,
+        "durationSeconds": 1318,
+        "elapsedMs": 60
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 373
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "VT",
+      "state": "Vermont",
+      "city": "Stowe",
+      "smallTown": "Stowe",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 196
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1945,
+        "durationSeconds": 139,
+        "elapsedMs": 76
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1956,
+        "durationSeconds": 1386,
+        "elapsedMs": 49
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 365
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "VA",
+      "state": "Virginia",
+      "city": "Abingdon",
+      "smallTown": "Abingdon",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 291
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1926,
+        "durationSeconds": 200,
+        "elapsedMs": 78
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1920,
+        "durationSeconds": 1339,
+        "elapsedMs": 52
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 392
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "WA",
+      "state": "Washington",
+      "city": "Forks",
+      "smallTown": "Forks",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 217
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 2103,
+        "durationSeconds": 304,
+        "elapsedMs": 75
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 2105,
+        "durationSeconds": 1514,
+        "elapsedMs": 51
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 353
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "WV",
+      "state": "West Virginia",
+      "city": "Elkins",
+      "smallTown": "Elkins",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 189
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1906,
+        "durationSeconds": 270,
+        "elapsedMs": 164
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1762,
+        "durationSeconds": 1321,
+        "elapsedMs": 57
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 305
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "WI",
+      "state": "Wisconsin",
+      "city": "Bayfield",
+      "smallTown": "Bayfield",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 239
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1491,
+        "durationSeconds": 195,
+        "elapsedMs": 78
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1520,
+        "durationSeconds": 1095,
+        "elapsedMs": 54
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 315
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    },
+    {
+      "code": "WY",
+      "state": "Wyoming",
+      "city": "Cody",
+      "smallTown": "Cody",
+      "search": {
+        "status": "pass",
+        "elapsedMs": 283
+      },
+      "driving": {
+        "status": "pass",
+        "distanceMeters": 1943,
+        "durationSeconds": 218,
+        "elapsedMs": 78
+      },
+      "walking": {
+        "status": "pass",
+        "distanceMeters": 1856,
+        "durationSeconds": 1228,
+        "elapsedMs": 53
+      },
+      "places": {
+        "status": "pass",
+        "count": 1,
+        "elapsedMs": 358
+      },
+      "rural": "single-town-sample",
+      "transit": "not-tested",
+      "indoor": "not-tested"
+    }
+  ]
+}
