@@ -437,3 +437,9 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 
 .posted-limits-toggle { position: absolute; left: 0; bottom: calc(100% + 8px); white-space: nowrap; display: block; margin-top: 6px; padding: 8px 10px; border-radius: 9px; background: var(--surface); box-shadow: var(--shadow); font-size: 11px; font-weight: 600; }
 .posted-limits-toggle.on { color: var(--accent); background: var(--accent-soft); }
+
+.photo-unavailable { height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface-2); color: var(--muted); }
+
+.surface-key { position: absolute; z-index: 2; right: 72px; bottom: 66px; display: flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 7px; font-size: 11px; background: var(--surface); color: var(--muted); pointer-events: none; }
+.surface-key i { display: inline-block; width: 23px; border-top: 2px dashed #99723d; }
+@media (prefers-color-scheme: dark) { .surface-key i { border-color: #d1ad79; } }

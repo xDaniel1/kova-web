@@ -19,7 +19,9 @@ test('a suggestion can be activated with keyboard focus', async ({ page }) => {
   const suggestion = page.locator('.suggestions button').first()
   await expect(suggestion).toContainText('Test Coffee')
   await suggestion.focus()
-  // Moving focus into the list must keep it mounted, including after a pause.
+  // A map resize updates proximity; that must not replace the focused option.
+  const viewport = page.viewportSize()!
+  await page.setViewportSize({ width: viewport.width, height: viewport.height - 40 })
   await expect(suggestion).toBeFocused()
   await suggestion.press('Enter')
   await expect(page).toHaveURL(/place=40.7484/)
