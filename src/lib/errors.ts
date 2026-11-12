@@ -17,7 +17,7 @@ export async function reportError(message: string, stack?: string): Promise<void
       app: 'web',
       message: message.slice(0, 2000),
       stack: stack?.slice(0, 8000) ?? null,
-      url: window.location.href.slice(0, 2000),
+      url: `${window.location.origin}${window.location.pathname}`.slice(0, 2000),
       user_agent: navigator.userAgent.slice(0, 500),
       user_id: data.session?.user.id ?? null,
     })

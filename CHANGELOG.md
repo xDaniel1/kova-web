@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.0.2 — 2026-11-11
 
+- Honor Tower web platform overrides and extended speed, traffic, transit and voice switches; default missing switches on, gate provider work and test override precedence.
+
+- Release compatibility audit: support iOS Speed Trap reports, use text-only report popups, revoke deferred sync on sign-out/control changes, and omit query/fragment from error URLs.
+
+- Restore Apple web sign-in alongside Google after the provider configuration was repaired. Show sign-in startup errors inline and keep the version visible.
 - Improve minor-road contrast, named local-road labels, small-town labels, terrain/water contrast and explicitly mapped unpaved surfaces without new tile sources.
 - Make thin place details and failed photos usable; do not label unknown opening status as closed. Abort stale/stalled place detail requests.
 - Preserve focused search suggestions during map load/resize instead of reissuing proximity requests.
@@ -11,7 +16,7 @@
 
 - Read published Supabase speed-limit segments in an opt-in, bounded viewport layer.
 - Refresh venue metadata on foreground, clear stale remote rows after an empty success, use session auth, and stop indoor requests when Tower disables the feature.
-- Document the shared data contract and live read/OAuth checks; keep broken Apple OAuth hidden pending upstream setup.
+- Document the shared data contract and live read/OAuth checks; restore Apple OAuth after upstream provider setup.
 
 - Start new map sessions at a U.S. overview and remember the last map area instead of resetting to Manhattan.
 - Add a repeatable 50-state plus D.C. audit for search, driving, walking and nearby places, with explicit untested rural/transit/indoor status.
@@ -24,7 +29,7 @@
 - Begin the Kova web styling refresh with teal navigation, a visible wordmark and revised search controls; show the build and commit beside the version.
 
 
-Kova shares one semantic version across iOS, Android and web. Web releases are tagged `web-vX.Y.Z`; the build number is the GitHub Actions run and the commit is shown next to it (Account menu, Saved, Recents and the rail).
+Kova platforms share major.minor (currently 1.0); each platform maintains its own patch and increasing build counter. Web releases are tagged `web-vX.Y.Z`; the build number is the GitHub Actions run and the commit is shown next to it (Account menu, Saved, Recents and the rail).
 
 ## 1.0.1 — 2026-11-09
 Speed and quality pass.

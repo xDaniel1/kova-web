@@ -91,3 +91,31 @@ describe('reportClient', () => {
     expect(calls).toHaveLength(0)
   })
 })
+
+describe('web platform controls', () => {
+  it('defaults new switches on and ignores malformed values and other platforms', () => {
+    const c = parseConfig([{ key: 'features', value: { speed_limits: 'false', transit: null } },
+      { key: 'platform_overrides', value: { ios: { features: { transit: false } }, web: 'bad' } }])!
+    for (const feature of ['speedLimits', 'trafficColoring', 'transit', 'voiceGuidance'] as const) expect(allows(c, feature)).toBe(true)
+  })
+  it('applies global AND web switches regardless of row order', () => {
+    const rows = [{ key: 'features', value: { speed_limits: false, traffic_coloring: true, transit: true, voice_guidance: false } },
+      { key: 'platform_overrides', value: { web: { features: { speed_limits: true, traffic_coloring: false, transit: false, voice_guidance: true } } } }]
+    for (const data of [rows, [...rows].reverse()]) {
+      const c = parseConfig(data)!
+      for (const feature of ['speedLimits', 'trafficColoring', 'transit', 'voiceGuidance'] as const) expect(allows(c, feature)).toBe(false)
+    }
+  })
+  it('cannot override global maintenance off, and uses the web message when enabled', () => {
+    const global = { key: 'maintenance', value: { enabled: true, message: 'Global' } }
+    expect(parseConfig([global, { key: 'platform_overrides', value: { web: { maintenance: { enabled: false } } } }])!.maintenance.enabled).toBe(true)
+    expect(parseConfig([global, { key: 'platform_overrides', value: { web: { maintenance: { enabled: true, message: 'Web' } } } }])!.maintenance.message).toBe('Web')
+  })
+  it('uses a live web announcement with global fallback outside its window', async () => {
+    const { effectiveAnnouncement } = await import('./remote')
+    const c = parseConfig([{ key: 'announcement', value: { enabled: true, title: 'Global' } },
+      { key: 'platform_overrides', value: { web: { announcement: { enabled: true, title: 'Web', starts_at: '2026-11-11T10:00:00Z', ends_at: '2026-11-11T11:00:00Z' } } } }])!
+    expect(effectiveAnnouncement(c, Date.parse('2026-11-11T10:30:00Z')).title).toBe('Web')
+    expect(effectiveAnnouncement(c, Date.parse('2026-11-11T11:00:00Z')).title).toBe('Global')
+  })
+})

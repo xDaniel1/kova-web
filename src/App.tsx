@@ -103,8 +103,21 @@ export default function App() {
   const syncOn = can('sync')
   const reportsOn = can('trafficReports')
   const indoorOn = can('indoorMaps')
+  const speedOn = can('speedLimits')
+  const trafficOn = can('trafficColoring')
+  const transitOn = can('transit')
+  const voiceOn = can('voiceGuidance')
+  useEffect(() => {
+    if (!voiceOn) window.speechSynthesis?.cancel()
+  }, [voiceOn])
   const geo = useGeolocation()
   const pushTimer = useRef<number | null>(null)
+  const syncIdentity = useRef<string | null>(null)
+  syncIdentity.current = syncOn ? user?.id ?? null : null
+  useEffect(() => () => {
+    if (pushTimer.current !== null) window.clearTimeout(pushTimer.current)
+    pushTimer.current = null
+  }, [user?.id, syncOn])
 
   useEffect(() => {
     const on = () => setIsNarrow(window.innerWidth < 760)
@@ -175,6 +188,8 @@ export default function App() {
       if (user && syncOn) {
         if (pushTimer.current) window.clearTimeout(pushTimer.current)
         pushTimer.current = window.setTimeout(() => {
+          pushTimer.current = null
+          if (syncIdentity.current !== user.id) return
           setSyncState('syncing')
           pushRemote(user.id, next).then(() => setSyncState('idle')).catch(() => setSyncState('error'))
         }, 800)
@@ -294,10 +309,16 @@ export default function App() {
   const travel = view.kind === 'directions' ? view.travel : null
   useEffect(() => {
     if (!resolvedStops || !travel) return
+    if (travel === 'transit' && !transitOn) {
+      setRoutes([])
+      setRouteBusy(false)
+      setRouteError('Transit is paused right now')
+      return
+    }
     const controller = new AbortController()
     setRouteBusy(true)
     setRouteError(null)
-    fetchRoutes(resolvedStops, travel, controller.signal, when)
+    fetchRoutes(resolvedStops, travel, controller.signal, when, { speedLimits: speedOn, trafficColoring: trafficOn, transit: transitOn })
       .then((r) => {
         if (controller.signal.aborted) return
         setRoutes(r)
@@ -311,20 +332,20 @@ export default function App() {
       })
       .finally(() => !controller.signal.aborted && setRouteBusy(false))
     return () => controller.abort()
-  }, [resolvedStops, travel, when])
+  }, [resolvedStops, travel, when, speedOn, trafficOn, transitOn])
   // Times under each mode icon, like Google's mode row.
   useEffect(() => {
     if (!resolvedStops) return setModeTimes({})
     const controller = new AbortController()
     setModeTimes({})
     const modes: TravelMode[] = resolvedStops.length === 2 ? ['driving', 'transit', 'walking', 'cycling'] : ['driving', 'walking', 'cycling']
-    for (const m of modes) {
-      fetchRoutes(resolvedStops, m, controller.signal, when)
+    for (const m of modes.filter((m) => m !== 'transit' || transitOn)) {
+      fetchRoutes(resolvedStops, m, controller.signal, when, { speedLimits: speedOn, trafficColoring: trafficOn, transit: transitOn })
         .then((r) => !controller.signal.aborted && setModeTimes((t) => ({ ...t, [m]: r[0].durationSeconds })))
         .catch(() => {})
     }
     return () => controller.abort()
-  }, [resolvedStops, when])
+  }, [resolvedStops, when, speedOn, trafficOn, transitOn])
 
   const startDirections = (to?: Place) => {
     setCollapsed(false)
@@ -380,7 +401,7 @@ export default function App() {
       <MapView
         base={base}
         dark={dark}
-        traffic={traffic}
+        traffic={traffic && trafficOn} trafficColoring={trafficOn}
         selected={selected}
         results={resultPins}
         hoveredResult={hovered}
@@ -406,7 +427,7 @@ export default function App() {
         }}
         onReady={setMapInstance}
       />
-      {mapInstance && <SpeedLimitsLayer map={mapInstance} enabled={speedLimits && !remote.maintenance && !remote.updateRequired} />}
+      {mapInstance && <SpeedLimitsLayer map={mapInstance} enabled={speedLimits && speedOn && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} dark={dark && base !== 'satellite'} left={(isNarrow ? 8 : leftInset + 16) + (isNarrow ? 72 : 92)} />}
       </Suspense>
       </MapBoundary>
@@ -476,6 +497,9 @@ export default function App() {
           )}
           {view.kind === 'directions' && (
             <DirectionsPanel
+              transitAvailable={transitOn}
+              speedLimitsAvailable={speedOn}
+              trafficAvailable={trafficOn}
               stops={view.stops}
               routes={routes}
               selectedRoute={selectedRoute}
@@ -526,7 +550,7 @@ export default function App() {
 
       {base !== 'satellite' && camera && camera.zoom >= 11 && <div className="surface-key" title="Only roads explicitly tagged unpaved by the map provider are marked. Other surfaces may be unknown."><i />Mapped unpaved roads</div>}
       <div className="layers-wrap" style={{ left: (isNarrow ? 8 : leftInset + 16) }}>
-        <LayersControl speedLimits={speedLimits} onSpeedLimits={setSpeedLimits} base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
+        <LayersControl speedLimitsAvailable={speedOn} trafficAvailable={trafficOn} speedLimits={speedLimits} onSpeedLimits={setSpeedLimits} base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
       </div>
 
       <div className="banners" style={{ left: isNarrow ? 8 : leftInset + 16 }}>
