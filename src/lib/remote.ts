@@ -1,6 +1,6 @@
 import { config as appConfig } from './config'
 import { supabase } from './supabase'
-import { APP_BUILD, APP_VERSION } from './version'
+import { APP_BUILD, APP_CHANNEL, APP_VERSION } from './version'
 
 // Kova Tower's remote controls, per kova-admin docs/app-controls-contract.md. Mirrors the iOS
 // RemoteConfig.swift. Every failure means "the app works normally": only an explicit, well-formed
@@ -283,6 +283,10 @@ export async function recordRead(messageID: string, userID: string): Promise<voi
   }
 }
 
+/** The Tower keys and switches this build honours (sent as config_keys). Keep in step with parseConfig and App's gates. */
+export const CONFIG_KEYS = ['maintenance', 'min_version', 'latest_version', 'announcement', 'platform_overrides',
+  'features.indoor_maps', 'features.traffic_reports', 'features.sync', 'features.speed_limits', 'features.traffic_coloring', 'features.transit', 'features.voice_guidance']
+
 export async function reportClient(): Promise<void> {
   // Automated browsers (Playwright end-to-end runs, Lighthouse, crawlers) are not installs.
   if (typeof navigator !== 'undefined' && navigator.webdriver) return
@@ -293,7 +297,7 @@ export async function reportClient(): Promise<void> {
     await fetch(`${REST}/rpc/report_client`, {
       method: 'POST',
       headers: { ...(await headers()), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ install_id: installID(), platform: 'web', app_version: APP_VERSION, build: APP_BUILD.slice(0, 32), os_version: `${browser} on ${os}`.slice(0, 64) }),
+      body: JSON.stringify({ install_id: installID(), platform: 'web', app_version: APP_VERSION, build: APP_BUILD.slice(0, 32), os_version: `${browser} on ${os}`.slice(0, 64), channel: APP_CHANNEL, config_keys: CONFIG_KEYS }),
     })
   } catch {
     /* fire and forget */

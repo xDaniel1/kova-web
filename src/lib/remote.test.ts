@@ -90,6 +90,20 @@ describe('reportClient', () => {
     try { await reportClient() } finally { globalThis.fetch = realFetch }
     expect(calls).toHaveLength(0)
   })
+
+  it('sends channel and the config keys this build honours', async () => {
+    const { reportClient, CONFIG_KEYS } = await import('./remote')
+    const bodies: Record<string, unknown>[] = []
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async (url: string, init?: RequestInit) => { if (String(url).includes('report_client')) bodies.push(JSON.parse(String(init?.body))); return new Response('{}') }) as typeof fetch
+    Object.defineProperty(globalThis, 'navigator', { value: { webdriver: false, userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/130.0' }, configurable: true })
+    try { await reportClient() } finally { globalThis.fetch = realFetch }
+    expect(bodies).toHaveLength(1)
+    expect(['production', 'beta', 'test', 'dev']).toContain(bodies[0].channel)
+    expect(bodies[0].config_keys).toEqual(CONFIG_KEYS)
+    for (const k of CONFIG_KEYS) expect(k).toMatch(/^[a-z0-9_.]+$/)
+    expect(CONFIG_KEYS.length).toBeLessThanOrEqual(64)
+  })
 })
 
 describe('web platform controls', () => {

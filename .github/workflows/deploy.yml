@@ -30,6 +30,7 @@ jobs:
       - run: npm run build
         env:
           VITE_MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+          VITE_CHANNEL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'production' || 'test' }}
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
         env:
