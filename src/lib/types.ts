@@ -10,6 +10,7 @@ export interface FavoritePlace {
   longitude: number
   customTitle?: string | null
   emoji?: string | null
+  role?: 'home' | 'work' | null
   colorHex?: string | null
 }
 

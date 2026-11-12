@@ -1,3 +1,4 @@
+import { updateFavorite, type FavoritePatch } from './lib/favorites'
 import type { User } from '@supabase/supabase-js'
 import type { Map as MapboxMap } from 'mapbox-gl'
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -30,7 +31,7 @@ import { deleteReport, fetchReports, flagReport, type Bounds, type TrafficReport
 import { fetchRoutes } from './lib/routing'
 import { supabase } from './lib/supabase'
 import { fetchRemote, loadLocal, pushRemote, reconcile, saveLocal, type Snapshot } from './lib/sync'
-import { newUUID, type FavoritePlace, type Place, type RecentSearch, type Route, type TravelMode } from './lib/types'
+import { newUUID, type Place, type RecentSearch, type Route, type TravelMode } from './lib/types'
 import { decodeView, encodeView, type Stop } from './lib/url'
 
 type View =
@@ -283,10 +284,10 @@ export default function App() {
     }))
     notify(existing ? 'Removed from Saved' : user ? 'Saved. It will appear on your iPhone too.' : 'Saved on this device. Sign in to sync it.')
   }
-  const editFavorite = (place: Place, patch: Partial<Pick<FavoritePlace, 'customTitle' | 'emoji' | 'colorHex'>>) => {
+  const editFavorite = (place: Place, patch: FavoritePatch) => {
     const existing = favoriteOf(place)
     if (!existing) return
-    commit((s) => ({ favorites: s.favorites.map((f) => (f.id === existing.id ? { ...f, ...patch } : f)) }))
+    commit((s) => ({ favorites: updateFavorite(s.favorites, existing.id, patch) }))
   }
 
   // ---- directions
