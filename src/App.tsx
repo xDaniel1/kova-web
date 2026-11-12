@@ -107,6 +107,8 @@ export default function App() {
   const trafficOn = can('trafficColoring')
   const transitOn = can('transit')
   const voiceOn = can('voiceGuidance')
+  const placeLabelsOn = can('placeLabels')
+  const ruralOn = can('ruralDetail')
   useEffect(() => {
     if (!voiceOn) window.speechSynthesis?.cancel()
   }, [voiceOn])
@@ -402,6 +404,7 @@ export default function App() {
         base={base}
         dark={dark}
         traffic={traffic && trafficOn} trafficColoring={trafficOn}
+        ruralDetail={ruralOn} placeLabels={placeLabelsOn}
         selected={selected}
         results={resultPins}
         hoveredResult={hovered}
@@ -428,7 +431,7 @@ export default function App() {
         onReady={setMapInstance}
       />
       {mapInstance && <SpeedLimitsLayer map={mapInstance} enabled={speedLimits && speedOn && !remote.maintenance && !remote.updateRequired} />}
-      {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} dark={dark && base !== 'satellite'} left={(isNarrow ? 8 : leftInset + 16) + (isNarrow ? 72 : 92)} />}
+      {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} placeLabels={placeLabelsOn} dark={dark && base !== 'satellite'} left={(isNarrow ? 8 : leftInset + 16) + (isNarrow ? 72 : 92)} />}
       </Suspense>
       </MapBoundary>
 

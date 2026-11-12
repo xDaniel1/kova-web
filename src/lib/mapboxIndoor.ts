@@ -99,17 +99,17 @@ export function uniqueById<T extends { id: string }>(rows: T[]): T[] {
   return rows.filter((r) => !seen.has(r.id) && seen.add(r.id))
 }
 
-export type DirectoryCategory = 'food' | 'shops' | 'gates' | 'services' | 'travel' | 'security' | 'other'
+export type DirectoryCategory = 'food' | 'shops' | 'attractions' | 'gates' | 'services' | 'travel' | 'security' | 'other'
 
 export const DIRECTORY_TITLES: Record<DirectoryCategory, string> = {
-  food: 'Food & Drink', shops: 'Shops', gates: 'Gates', services: 'Services', travel: 'Travel', security: 'Security', other: 'Other',
+  food: 'Food & Drink', shops: 'Shops', attractions: 'Rides & Attractions', gates: 'Gates', services: 'Services', travel: 'Travel', security: 'Security', other: 'Other',
 }
-export const DIRECTORY_ORDER: DirectoryCategory[] = ['food', 'shops', 'gates', 'services', 'travel', 'security', 'other']
+export const DIRECTORY_ORDER: DirectoryCategory[] = ['food', 'shops', 'attractions', 'gates', 'services', 'travel', 'security', 'other']
 export const DIRECTORY_COLOR: Record<DirectoryCategory, string> = {
-  food: '#f57a33', shops: '#f2bd29', gates: '#f5c518', services: '#8c5cd9', travel: '#3373f2', security: '#e64554', other: '#8c8c8c',
+  food: '#f57a33', shops: '#f2bd29', attractions: '#e0457b', gates: '#f5c518', services: '#8c5cd9', travel: '#3373f2', security: '#e64554', other: '#8c8c8c',
 }
 export const DIRECTORY_ICON: Record<DirectoryCategory, string> = {
-  food: 'restaurant', shops: 'local_mall', gates: 'flight_takeoff', services: 'wc', travel: 'luggage', security: 'security', other: 'location_on',
+  food: 'restaurant', shops: 'local_mall', attractions: 'attractions', gates: 'flight_takeoff', services: 'wc', travel: 'luggage', security: 'security', other: 'location_on',
 }
 
 /** Groups a label the way the iPhone directory does. */

@@ -2,6 +2,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useEffect, useRef, useState } from 'react'
 import { applyMapDetail } from '../lib/mapDetail'
+import { syncStreetPlaceLabels } from '../lib/venuePlaces'
 import { initialCamera, rememberCamera } from '../lib/camera'
 import { browserMapBudget } from '../lib/performance'
 import { config } from '../lib/config'
@@ -22,6 +23,9 @@ interface Props {
   base: BaseMap
   dark: boolean
   trafficColoring: boolean
+  /** Tower switches features.rural_detail and features.place_labels. */
+  ruralDetail: boolean
+  placeLabels: boolean
   traffic: boolean
   selected: Place | null
   results: ResultPin[]
@@ -132,7 +136,8 @@ export function MapView(p: Props) {
 
   const addCustomLayers = () => {
     const map = mapRef.current!
-    applyMapDetail(map, props.current.base === 'satellite', props.current.dark)
+    if (props.current.ruralDetail) applyMapDetail(map, props.current.base === 'satellite', props.current.dark)
+    syncStreetPlaceLabels(map, props.current.placeLabels && props.current.base !== 'satellite', props.current.dark)
     const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
     // Live traffic, Mapbox's own feed. Drawn under labels.
     // Above every road and bridge, below road names and POI labels.
@@ -234,6 +239,13 @@ export function MapView(p: Props) {
     else map.once('idle', apply)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.base, p.dark])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.isStyleLoaded()) return
+    syncStreetPlaceLabels(map, p.placeLabels && p.base !== 'satellite', p.dark)
+    if (!p.ruralDetail) for (const id of ['kova-unpaved-roads', 'kova-local-road-labels']) if (map.getLayer(id)) map.removeLayer(id)
+  }, [p.placeLabels, p.ruralDetail]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(syncLayers, [p.routes, p.selectedRoute, p.traffic, p.trafficColoring]) // eslint-disable-line react-hooks/exhaustive-deps
 
