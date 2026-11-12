@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4 — 2026-11-12
+
+- Display and edit Home/Work favorites using the iOS role contract. Assigning a role moves it from its previous holder; Other clears it. Saved lists Home and Work first and preserves existing customizations.
+
+
 ## 1.0.3 — 2026-11-12
 
 - Level with iOS builds 7-10: venues with no floor plan (theme parks, malls, stations, districts and airports Mapbox does not map) get a Browse list and their places named on the map, from the map's own tiles. Rides and shows get a "Rides & Attractions" category. 66 of the 68 Florida venues now list places (was 10).

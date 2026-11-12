@@ -1,3 +1,4 @@
+import { roleLabel, type FavoritePatch } from '../lib/favorites'
 import { useEffect, useState } from 'react'
 import { lookupPlace, photoURL, type PlaceDetails } from '../lib/google'
 import type { FavoritePlace, Place } from '../lib/types'
@@ -9,7 +10,7 @@ interface Props {
   favorite: FavoritePlace | undefined
   onDirections: () => void
   onToggleFavorite: () => void
-  onEditFavorite: (patch: Partial<Pick<FavoritePlace, 'customTitle' | 'emoji' | 'colorHex'>>) => void
+  onEditFavorite: (patch: FavoritePatch) => void
   onNearby: (place: Place) => void
   onToast: (msg: string) => void
 }
@@ -110,6 +111,7 @@ export function PlacePanel(p: Props) {
       ) : null}
 
       <div className="place-head">
+        {roleLabel(favorite?.role) && <span className="favorite-role">{roleLabel(favorite?.role)}</span>}
         <h1>{favorite?.emoji && <span className="title-emoji">{favorite.emoji}</span>}{name}</h1>
         {d?.rating !== undefined && (
           <div className="rating-line">
@@ -146,6 +148,18 @@ export function PlacePanel(p: Props) {
               <button className="link-plain" onClick={() => setEditing((e) => !e)}><Icon name="edit" size={16} /> {editing ? 'Done editing' : 'Edit saved place'}</button>
               {editing && (
                 <div className="fav-editor">
+                  <fieldset className="favorite-role-picker">
+                    <legend>Use this place as</legend>
+                    <div className="favorite-role-options">
+                      {([null, 'home', 'work'] as const).map((role) => (
+                        <label key={role ?? 'none'}>
+                          <input type="radio" name="favorite-role" checked={role === null ? !roleLabel(favorite.role) : favorite.role === role} onChange={() => p.onEditFavorite({ role })} />
+                          {roleLabel(role) ?? 'Other'}
+                        </label>
+                      ))}
+                    </div>
+                    <p className="muted small">One Home and one Work. Choosing either moves it from your previous saved place.</p>
+                  </fieldset>
                   <label>Name<input value={favorite.customTitle ?? ''} placeholder={place.title} onChange={(e) => p.onEditFavorite({ customTitle: e.target.value || null })} /></label>
                   <div className="swatches" role="radiogroup" aria-label="Colour">
                     {COLORS.map((c) => (

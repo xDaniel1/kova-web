@@ -1,14 +1,15 @@
-# Web release manifest — November 11, 2026
+# Web release manifest — November 12, 2026
 
-Status: **candidate, not ready for a new tag**. This snapshot precedes the updated PR #29 CI/deploy. It must be updated after that merge; it is not a claim that candidate code is live.
+Status: **1.0.4 candidate** — Home/Work favorite display/edit parity. Pending full CI and deployment; these changes are not live yet.
 
 ## Source and deployment
 
-- Main HEAD: `52252869f7e97d2b9ceaad0542ffe9c45e97dd82` (PR #28 rural detail / thin place cards).
-- Main deployment workflow: [43093783520](https://github.com/xDaniel1/kova-web/actions/runs/43093783520), success, build 36. Build configuration embeds package version `1.0.1`, build and commit. This identifies the successfully deployed artifact; the exact served footer has not been re-read after this deployment.
-- Production: https://app.kovamaps.com/.
-- Open PR: [#29](https://github.com/xDaniel1/kova-web/pull/29). Original head `210f9473fe196cdb71363945c53860d43b83beff` passed build and cross-browser checks; deploy is correctly skipped on PRs. Updated candidate includes main, Apple UI, Speed Trap compatibility, safe report popup DOM and pending-sync revocation. Updated-head CI is required.
-- Existing `web-v1.0.1` points to `49c5ee744664a3020ffe47ff3dbac04d2d940cc0`. Do not move it. Control approved web 1.0.2. Platforms share major.minor 1.0 and keep independent patch/build counters. Candidate package and lockfile are 1.0.2.
+- Current main: `81b0edf515485525e8ba0d1bc5abf434cd90d9fe` (merged PR #31).
+- Last verified production release: **1.0.3 build 45**, commit `81b0edf`. Deployment [43241930545](https://github.com/xDaniel1/kova-web/actions/runs/43241930545) passed. Previous session verified version/commit in served assets. This candidate has not changed production.
+- Tags `web-v1.0.1`, `web-v1.0.2`, `web-v1.0.3` are historical releases and must not move.
+- Platforms share major.minor 1.0; patch and build counters are per platform. Candidate package/lockfile version: 1.0.4.
+- PR #29 shipped Apple provider selection and extended Tower controls. PR #31 shipped venue POIs without floor plans, street labels, `place_labels`/`rural_detail`, and check-in `channel`/`config_keys`. Full Google/Apple login remains unverified and assigned to Daniel, explicitly not a tag blocker.
+- Candidate closes issue #30: display/edit/clear Home/Work, move a role from its previous holder, show Home and Work first in Saved, preserve JSON fields and customizations. No database migration or iOS/Tower changes.
 
 ## Supabase contract inventory
 
@@ -29,7 +30,7 @@ Project `fbumdslhguoytlhlrkyr`. Browser uses the public publishable key and the 
 
 No other direct application-table access or SQL RPC is present. Supabase Auth uses its SDK endpoints. Google places/transit/photo requests use the existing `google` Edge Function, not direct database tables. Airport floor plans use Mapbox indoor vector tiles; mall/station cells use the published kovamaps.com indoor JSON CDN, not a nonexistent `indoor_cells` table. Missing plans render no invented geometry.
 
-Snapshot JSON: favorites use `id,title,subtitle,latitude,longitude,customTitle?,emoji?,colorHex?`; recents use `id,title,subtitle,latitude,longitude,date`. iOS additionally supports optional favorite `role` (home/work). Web lacks that UI/type; unchanged records retain extra JSON fields, but role editing/parity is incomplete. Last-writer-wins snapshots match the current iOS backend, not field-level merging. No iOS/Tower edits made.
+Snapshot JSON: favorites use `id,title,subtitle,latitude,longitude,customTitle?,emoji?,colorHex?`; recents use `id,title,subtitle,latitude,longitude,date`. iOS additionally supports optional favorite `role` (home/work). Candidate adds this UI/type, matching iOS uniqueness semantics and preserving extra JSON fields when editing. Last-writer-wins snapshots match the current iOS backend, not field-level merging. No iOS/Tower edits made.
 
 ## Tower keys and behavior
 
@@ -49,18 +50,18 @@ Snapshot JSON: favorites use `id,title,subtitle,latitude,longitude,customTitle?,
 | Speed limits | Partial | Shared bounded viewport overlay and route annotations; FL FDOT state-road coverage is not every road or nationwide coverage. No full iOS live driving speed matching/camera alerts. New regions can use same table without a web hardcode. |
 | Rural detail / place cards | Partial | PR #28 deployed by CI. Marfa TX, Custer SD, Ely MN compared at zoom 10/13/16 with Google, 18 screenshots; county/service/track styling, land/water/hillshade and thin-data fallbacks. Samples are not a nationwide completeness certification. See RURAL_QA.md. |
 | Sign-in | Partial | Google/Apple authorize redirects verified; Apple form_post cancellation returns to app host. Apple chooser restored in candidate. Successful fresh Google and Apple code exchange/session round trips not yet demonstrated. |
-| Sync | Partial | Matching snapshot fields; own-row reads and foreign-owner denial verified live. Candidate closes queued-write pause race. Full fresh-Google cross-device write/read not exercised; home/work role UI absent. |
+| Sync | Partial | Matching snapshot fields; own-row reads and foreign-owner denial verified live. Candidate closes queued-write pause race. Full fresh-Google cross-device write/read not exercised; Home/Work display/edit is included in this candidate. |
 | Remote controls | Partial | Core maintenance/minimum/latest/announcements/indoor/report/sync gates tested. Feedback and DOT incident feed product paths absent. |
 
 Production RLS exercised with an existing Apple-backed authenticated session: own snapshot 200/one row; unfiltered snapshots only own row; foreign UUID lookup 200/empty; foreign-owner insert rejected 403/42501 with no row created. Authenticated venues/speeds/config 200. Public venue projection 25 rows and Orlando speed query 500-row cap, valid paths; production Origin/CORS worked. This verifies those paths, not every policy operation. Public-key schema introspection is restricted; source SQL and live projections were compared instead.
 
 ## Bugs, limitations and blockers
 
-- Candidate fixes not live until updated PR #29 passes and merges: Apple chooser, Speed Trap handling, safe popup text, queued-sync pause and error URL redaction.
+- PR #29 fixes shipped in 1.0.2: Apple chooser, Speed Trap handling, safe popup text, queued-sync pause and error URL redaction.
 - Google fresh-password challenge requires user interaction through secure credential flow. The previous secure request timed out. A 302/account chooser is not a complete Google login test.
 - Successful Apple login also needs real account interaction; provider setup and cancellation callback only are proven. Secret rotation belongs to Control (expiry 2027-05-10); web did not access/change it.
-- Nationwide indoor/speed datasets and missing CDN cells remain coverage gaps. Feedback and external incident feeds missing; favorite home/work editing incomplete.
+- Nationwide indoor/speed datasets and missing CDN cells remain coverage gaps. Feedback and external incident feeds missing; Home/Work editing awaits candidate deployment.
 - Lazy Mapbox vendor chunk remains ~1.93 MB raw / 545 kB gzip. CPU-throttled functional smoke passed; physical cheap-laptop GPU/FPS/memory certification is still outstanding. No new DEM source or 3D terrain was added.
 - Existing tests: 69 unit checks pass after compatibility changes; build passes; Apple chooser Chrome checks pass. 45 remote-control browser checks pass across Chrome, WebKit, tablet and both phone projects. Local Firefox cannot launch ("Could not find profile folder"), including with a fresh temporary directory; its required Linux CI check remains enabled. Updated full cross-browser CI remains the merge gate.
 
-**Tag verdict: pending CI/deployment verification.** Control approved `web-v1.0.2` after updated-head CI, merge/deployment and a served footer showing 1.0.2 plus the new build/commit. Full Google/Apple login remains unverified and assigned to Daniel; Control explicitly states it is not a tag blocker. Do not move the existing `web-v1.0.1`.
+**Tag verdict: pending candidate CI and deployment.** Verify the new live version/build/commit before tagging `web-v1.0.4`. Full Google/Apple login remains assigned to Daniel and explicitly not a tag blocker. Never move existing release tags.

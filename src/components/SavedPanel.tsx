@@ -1,3 +1,4 @@
+import { roleLabel, sortedFavorites } from '../lib/favorites'
 import type { FavoritePlace, RecentSearch } from '../lib/types'
 import { Icon } from './Icon'
 import { VERSION_LABEL } from '../lib/version'
@@ -9,11 +10,11 @@ export function SavedPanel({ favorites, signedIn, onPick, onRemove }: { favorite
       <p className="muted small results-sub">{signedIn ? 'Synced with the Kova Maps iPhone app' : 'Kept on this device. Sign in to sync with your iPhone.'}</p>
       {favorites.length === 0 && <p className="muted pad">Places you save appear here. Open a place and tap Save.</p>}
       <ul className="results">
-        {favorites.map((f) => (
+        {sortedFavorites(favorites).map((f) => (
           <li key={f.id}>
             <button className="result" onClick={() => onPick(f)}>
-              <span className="sug-icon fav" style={{ background: f.colorHex ?? undefined }}>{f.emoji ?? <Icon name="star" fill />}</span>
-              <div className="result-text"><strong>{f.customTitle || f.title}</strong><span className="muted">{f.subtitle}</span></div>
+              <span className="sug-icon fav" style={{ background: f.colorHex ?? undefined }}>{f.emoji ?? <Icon name={f.role === 'home' ? 'home' : f.role === 'work' ? 'work' : 'star'} fill />}</span>
+              <div className="result-text"><strong>{f.customTitle || f.title}</strong>{roleLabel(f.role) && <span className="favorite-role">{roleLabel(f.role)}</span>}<span className="muted">{f.subtitle}</span></div>
             </button>
             <button className="result-dir" onClick={() => onRemove(f)} aria-label={`Remove ${f.title}`} title="Remove"><Icon name="delete" /></button>
           </li>

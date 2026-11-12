@@ -443,3 +443,12 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .surface-key { position: absolute; z-index: 2; right: 72px; bottom: 66px; display: flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 7px; font-size: 11px; background: var(--surface); color: var(--muted); pointer-events: none; }
 .surface-key i { display: inline-block; width: 23px; border-top: 2px dashed #99723d; }
 @media (prefers-color-scheme: dark) { .surface-key i { border-color: #d1ad79; } }
+
+.favorite-role { display: inline-flex; align-self: flex-start; width: fit-content; padding: 3px 9px; border-radius: 20px; background: var(--surface-2); color: var(--text); font-size: 12px; font-weight: 600; }
+.place > .favorite-role { margin: 12px 20px 0; }
+.favorite-role-picker { margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.favorite-role-picker legend { font-size: 13px; font-weight: 600; padding: 0 4px; }
+.favorite-role-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.fav-editor .favorite-role-options label { display: flex; flex-direction: row; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); color: var(--text); cursor: pointer; }
+.favorite-role-options input { accent-color: var(--accent); margin: 0; }
+.favorite-role-picker p { margin: 10px 0 0; line-height: 1.5; }
