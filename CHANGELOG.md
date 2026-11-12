@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.3 — 2026-11-12
+
+- Level with iOS builds 7-10: venues with no floor plan (theme parks, malls, stations, districts and airports Mapbox does not map) get a Browse list and their places named on the map, from the map's own tiles. Rides and shows get a "Rides & Attractions" category. 66 of the 68 Florida venues now list places (was 10).
+- At storefront zoom every street names its shops, cafés and attractions.
+- Honour Tower's place_labels and rural_detail switches.
+- Check-ins send channel (production only from the deploy-on-main build; test from CI; dev locally) and config_keys, per Tower's contract.
+
 ## 1.0.2 — 2026-11-11
 
 - Honor Tower web platform overrides and extended speed, traffic, transit and voice switches; default missing switches on, gate provider work and test override precedence.

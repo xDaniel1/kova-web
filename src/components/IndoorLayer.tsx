@@ -8,6 +8,7 @@ import {
 } from '../lib/mapboxIndoor'
 import { airportFromStructureName, browseName, loadVenues, storedVenues, venueAt, type Venue } from '../lib/venues'
 import { Icon } from './Icon'
+import { syncVenuePlaceLabels, venuePlaces, type VenuePlace } from '../lib/venuePlaces'
 
 interface Props {
   map: MapboxMap | null
@@ -16,6 +17,8 @@ interface Props {
   dark: boolean
   /** Left edge for the Browse button, clear of the side panel and the Layers tile. */
   left: number
+  /** Tower's place_labels switch: name a plan-less venue's places on the map. */
+  placeLabels?: boolean
 }
 
 // ---- OpenStreetMap plans (stations and malls), published at kovamaps.com/indoor
@@ -71,7 +74,7 @@ const FOOD = new Set(['🍽️', '☕', '🍔', '🍸', '🥤'])
  * OpenStreetMap plans inside stations and malls, a floor picker for the building under the
  * camera, and a Browse button that opens the venue's directory.
  */
-export function IndoorLayer({ map, enabled, dark, left }: Props) {
+export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Props) {
   const [features, setFeatures] = useState<GeoJSON.Feature[]>([])
   const [level, setLevel] = useState(0)
   const [floors, setFloors] = useState<IndoorFloor[]>([])
@@ -172,7 +175,17 @@ export function IndoorLayer({ map, enabled, dark, left }: Props) {
   }, [map, enabled])
 
   // Airports draw Mapbox's plans; the OpenStreetMap plan stays off them, as on iPhone.
-  const venue = useMemo(() => (center ? venueAt(center, venues) : null), [center, venues])
+  // The venue under the camera, or, zoomed in, the nearest one on screen: opening a place shifts
+  // the camera to clear the side panel, which can leave a small venue off-centre.
+  const venue = useMemo(() => {
+    if (!center) return null
+    const at = venueAt(center, venues)
+    if (at || !map || map.getZoom() < 15) return at
+    const b = map.getBounds()
+    if (!b) return null
+    const onScreen = venues.filter((v) => b.contains([v.longitude, v.latitude]))
+    return onScreen.reduce<Venue | null>((best, v) => (!best || Math.hypot(v.latitude - center.latitude, v.longitude - center.longitude) < Math.hypot(best.latitude - center.latitude, best.longitude - center.longitude) ? v : best), null)
+  }, [center, venues, map])
   const osmFeatures = airportShowing || venue?.kind === 'airport' ? [] : features
   const levels = [...new Set(osmFeatures.flatMap((f) => (f.properties?.levels as number[]) ?? []))].sort((a, b) => b - a)
   const active = levels.includes(level) ? level : levels.includes(0) ? 0 : levels[levels.length - 1] ?? 0
@@ -329,9 +342,35 @@ export function IndoorLayer({ map, enabled, dark, left }: Props) {
   // ---------- Browse
   const airportVenue = airportShowing ? (venue?.kind === 'airport' ? venue : structure ? airportFromStructureName(structure.name, structure) : null) ?? venue : null
   const osmHasPlaces = osmFeatures.some((f) => f.properties?.point && f.properties?.name)
+  // A venue with no floor plan (theme park, district, unmapped mall or airport): its places come
+  // from the map's own tiles, as iOS takes them from its place search.
+  const placeVenue = enabled && venue && !airportShowing && !osmHasPlaces ? venue : null
+  const [tilePlaces, setTilePlaces] = useState<VenuePlace[]>([])
+  useEffect(() => {
+    if (!map || !placeVenue) { setTilePlaces((cur) => (cur.length ? [] : cur)); return }
+    const read = () => {
+      const base = map.getLayer('poi-label')
+      if (!base || !('source' in base)) return
+      try {
+        const next = venuePlaces(map.querySourceFeatures(base.source as string, { sourceLayer: 'poi_label' }), placeVenue)
+        setTilePlaces((cur) => (cur.length === next.length && cur.every((p, i) => p.key === next[i].key) ? cur : next))
+      } catch { /* style mid-reload */ }
+    }
+    read()
+    map.on('idle', read)
+    return () => { map.off('idle', read) }
+  }, [map, placeVenue?.shortName]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!map) return
+    const apply = () => { try { syncVenuePlaceLabels(map, placeLabels && placeVenue ? placeVenue : null, dark) } catch { /* style mid-reload */ } }
+    apply()
+    map.on('style.load', apply)
+    return () => { map.off('style.load', apply) }
+  }, [map, placeLabels, placeVenue?.shortName, dark]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const browse = airportShowing
     ? { title: airportVenue?.name ?? structure?.name ?? 'Airport', short: airportVenue?.shortName ?? (structure?.name ? browseName(structure.name) : 'airport') }
-    : venue && osmHasPlaces
+    : venue && (osmHasPlaces || (placeVenue && tilePlaces.length > 0))
       ? { title: venue.name, short: venue.shortName }
       : null
 
@@ -354,6 +393,8 @@ export function IndoorLayer({ map, enabled, dark, left }: Props) {
         items.push({ key, name, category: directoryCategory(p), floorLabel: floor ? `Floor ${floor.name || floor.zIndex}` : '', latitude: lat, longitude: lng, floorId: floor?.id })
       }
       setDirectory(items)
+    } else if (!osmHasPlaces) {
+      setDirectory(tilePlaces.map((p) => ({ key: p.key, name: p.name, category: p.category, floorLabel: '', latitude: p.latitude, longitude: p.longitude })))
     } else {
       const seen = new Set<string>()
       const items: DirectoryItem[] = []
@@ -455,7 +496,7 @@ export function IndoorLayer({ map, enabled, dark, left }: Props) {
               </div>
             ))}
           </div>
-          <footer>{airportShowing ? 'Floor plans © Mapbox.' : 'Floor plans © OpenStreetMap contributors.'}</footer>
+          <footer>{airportShowing ? 'Floor plans © Mapbox.' : osmHasPlaces ? 'Floor plans © OpenStreetMap contributors.' : 'Places © Mapbox © OpenStreetMap contributors.'}</footer>
         </section>
       )}
     </>

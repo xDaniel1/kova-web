@@ -1,6 +1,6 @@
 import { config as appConfig } from './config'
 import { supabase } from './supabase'
-import { APP_BUILD, APP_VERSION } from './version'
+import { APP_BUILD, APP_CHANNEL, APP_VERSION } from './version'
 
 // Kova Tower's remote controls, per kova-admin docs/app-controls-contract.md. Mirrors the iOS
 // RemoteConfig.swift. Every failure means "the app works normally": only an explicit, well-formed
@@ -22,7 +22,7 @@ export interface RemoteConfig {
   maintenance: { enabled: boolean; message: string }
   minimumVersion: { web: string | null; message: string }
   latestVersion: { web: string | null; message: string; storeURL: string | null }
-  features: { indoorMaps: boolean; trafficReports: boolean; feedback: boolean; incidentFeeds: boolean; sync: boolean; speedLimits: boolean; trafficColoring: boolean; transit: boolean; voiceGuidance: boolean }
+  features: { indoorMaps: boolean; trafficReports: boolean; feedback: boolean; incidentFeeds: boolean; sync: boolean; speedLimits: boolean; trafficColoring: boolean; transit: boolean; voiceGuidance: boolean; placeLabels: boolean; ruralDetail: boolean }
   announcement: Announcement
   platformAnnouncement?: Announcement
 }
@@ -40,7 +40,7 @@ export const NORMAL: RemoteConfig = {
   maintenance: { enabled: false, message: '' },
   minimumVersion: { web: null, message: '' },
   latestVersion: { web: null, message: '', storeURL: null },
-  features: { indoorMaps: true, trafficReports: true, feedback: true, incidentFeeds: true, sync: true, speedLimits: true, trafficColoring: true, transit: true, voiceGuidance: true },
+  features: { indoorMaps: true, trafficReports: true, feedback: true, incidentFeeds: true, sync: true, speedLimits: true, trafficColoring: true, transit: true, voiceGuidance: true, placeLabels: true, ruralDetail: true },
   announcement: { enabled: false, title: '', body: '', level: 'info', url: null, startsAt: null, endsAt: null },
 }
 
@@ -61,7 +61,7 @@ export function webURL(v: unknown): string | null {
 const isoDate = (v: unknown): string | null => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : null)
 
 /** Builds a config from `[{key, value}]` rows. Unknown keys are ignored; each key decodes alone. */
-const FEATURE_KEYS = { indoorMaps: 'indoor_maps', trafficReports: 'traffic_reports', feedback: 'feedback', incidentFeeds: 'incident_feeds', sync: 'sync', speedLimits: 'speed_limits', trafficColoring: 'traffic_coloring', transit: 'transit', voiceGuidance: 'voice_guidance' } as const
+const FEATURE_KEYS = { indoorMaps: 'indoor_maps', trafficReports: 'traffic_reports', feedback: 'feedback', incidentFeeds: 'incident_feeds', sync: 'sync', speedLimits: 'speed_limits', trafficColoring: 'traffic_coloring', transit: 'transit', voiceGuidance: 'voice_guidance', placeLabels: 'place_labels', ruralDetail: 'rural_detail' } as const
 
 export function effectiveAnnouncement(c: RemoteConfig, now = Date.now()): Announcement {
   return c.platformAnnouncement && announcementLive(c.platformAnnouncement, now) ? c.platformAnnouncement : c.announcement
@@ -283,6 +283,10 @@ export async function recordRead(messageID: string, userID: string): Promise<voi
   }
 }
 
+/** The Tower keys and switches this build honours (sent as config_keys). Keep in step with parseConfig and App's gates. */
+export const CONFIG_KEYS = ['maintenance', 'min_version', 'latest_version', 'announcement', 'platform_overrides',
+  'features.indoor_maps', 'features.traffic_reports', 'features.sync', 'features.speed_limits', 'features.traffic_coloring', 'features.transit', 'features.voice_guidance', 'features.place_labels', 'features.rural_detail']
+
 export async function reportClient(): Promise<void> {
   // Automated browsers (Playwright end-to-end runs, Lighthouse, crawlers) are not installs.
   if (typeof navigator !== 'undefined' && navigator.webdriver) return
@@ -293,7 +297,7 @@ export async function reportClient(): Promise<void> {
     await fetch(`${REST}/rpc/report_client`, {
       method: 'POST',
       headers: { ...(await headers()), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ install_id: installID(), platform: 'web', app_version: APP_VERSION, build: APP_BUILD.slice(0, 32), os_version: `${browser} on ${os}`.slice(0, 64) }),
+      body: JSON.stringify({ install_id: installID(), platform: 'web', app_version: APP_VERSION, build: APP_BUILD.slice(0, 32), os_version: `${browser} on ${os}`.slice(0, 64), channel: APP_CHANNEL, config_keys: CONFIG_KEYS }),
     })
   } catch {
     /* fire and forget */

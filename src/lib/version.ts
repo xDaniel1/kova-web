@@ -3,6 +3,8 @@
 export const APP_VERSION = __APP_VERSION__
 export const APP_BUILD = __APP_BUILD__
 export const APP_COMMIT = __APP_COMMIT__
+/** production | beta | test | dev, for Tower's install counts. */
+export const APP_CHANNEL = __APP_CHANNEL__
 
 /** "1.0.0 (42 · a1b2c3d)" */
 export const VERSION_LABEL = `${APP_VERSION} (${APP_BUILD === 'dev' ? 'dev' : `build ${APP_BUILD}`} · ${APP_COMMIT})`

@@ -23,6 +23,8 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_BUILD__: JSON.stringify(process.env.GITHUB_RUN_NUMBER ?? 'dev'),
     __APP_COMMIT__: JSON.stringify(commit()),
+    // Tower counts only production and beta. Only the deploy-on-main build sets production; any other CI run is test, local is dev.
+    __APP_CHANNEL__: JSON.stringify(process.env.VITE_CHANNEL ?? (process.env.GITHUB_RUN_NUMBER ? 'test' : 'dev')),
   },
   build: {
     target: 'es2022',
