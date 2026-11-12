@@ -1,5 +1,5 @@
 export interface CameraPosition { longitude: number; latitude: number; zoom: number }
-export const US_OVERVIEW: CameraPosition = { longitude: -110, latitude: 43, zoom: 2 }
+export const FIRST_VISIT: CameraPosition = { longitude: -73.9857, latitude: 40.7484, zoom: 12 }
 export const CAMERA_KEY = 'kova.camera.v1'
 
 export function parseCamera(value: string | null): CameraPosition | null {
@@ -12,7 +12,7 @@ export function parseCamera(value: string | null): CameraPosition | null {
   } catch { return null }
 }
 export function initialCamera(): CameraPosition {
-  try { return parseCamera(localStorage.getItem(CAMERA_KEY)) ?? US_OVERVIEW } catch { return US_OVERVIEW }
+  try { return parseCamera(localStorage.getItem(CAMERA_KEY)) ?? FIRST_VISIT } catch { return FIRST_VISIT }
 }
 export function rememberCamera(camera: CameraPosition): void {
   // World copies may report longitude beyond ±180; normalize before saving.

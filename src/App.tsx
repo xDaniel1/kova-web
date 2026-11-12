@@ -16,7 +16,7 @@ import { MapBoundary } from './components/MapBoundary'
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })))
 const IndoorLayer = lazy(() => import('./components/IndoorLayer').then((m) => ({ default: m.IndoorLayer })))
 import { PlacePanel } from './components/PlacePanel'
-import { Rail, type RailItem } from './components/Rail'
+import { Dock, type RailItem } from './components/Rail'
 import { ResultsPanel } from './components/ResultsPanel'
 import { RecentsPanel, SavedPanel } from './components/SavedPanel'
 import { SearchCard } from './components/SearchCard'
@@ -24,6 +24,7 @@ import { useGeolocation } from './hooks/useGeolocation'
 import { useRemoteControls } from './hooks/useRemoteControls'
 import { AnnouncementBanner, Maintenance, MessageCard, UpdateNudge, UpdateRequired } from './components/RemoteGates'
 import { allows } from './lib/remote'
+import { VERSION_LABEL } from './lib/version'
 import { config } from './lib/config'
 import { listPlaces, toPlace, type NearbyPlace } from './lib/google'
 import { retrieve, reverseGeocode } from './lib/mapbox'
@@ -43,7 +44,7 @@ type View =
   | { kind: 'recents' }
 
 const PANEL_WIDTH = 408
-const RAIL_WIDTH = 72
+const EDGE = 16
 const samePoint = (a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) =>
   Math.abs(a.latitude - b.latitude) < 1e-5 && Math.abs(a.longitude - b.longitude) < 1e-5
 
@@ -386,7 +387,7 @@ export default function App() {
   }, [geo.fix])
 
   const panelOpen = view.kind !== 'home' && !collapsed
-  const leftInset = isNarrow ? 0 : RAIL_WIDTH + (panelOpen ? PANEL_WIDTH : 0)
+  const leftInset = isNarrow ? 0 : (panelOpen ? EDGE + PANEL_WIDTH : 0)
   const selected = view.kind === 'place' ? view.place : null
   const directionsError = routeError ?? (needsFix && !geo.fix && !geo.busy ? geo.error ?? 'Allow location access, or choose a starting point.' : null)
   const activeChip = view.kind === 'results' ? CATEGORIES.find((c) => c.query === view.query)?.label ?? null : null
@@ -436,10 +437,9 @@ export default function App() {
       </Suspense>
       </MapBoundary>
 
-      {!isNarrow && <Rail active={view.kind === 'saved' || view.kind === 'recents' ? (view.kind as RailItem) : null} savedCount={snapshot.favorites.length} onSelect={(item) => { setCollapsed(false); setRoutes([]); setView(view.kind === item ? { kind: 'home' } : { kind: item }) }} onMenu={() => setCollapsed((c) => !c)} onHome={closePanel} />}
 
       {view.kind !== 'directions' && (
-        <div className="search-wrap" style={{ left: isNarrow ? 8 : RAIL_WIDTH + 16 }}>
+        <div className="search-wrap" style={{ left: isNarrow ? 8 : EDGE + 16 }}>
           <SearchCard
             value={query}
             near={camera?.center ?? geo.fix}
@@ -456,19 +456,20 @@ export default function App() {
             onRecent={(r) => openPlace(r)}
             onDirections={() => startDirections()}
             onClose={closePanel}
+            onCategory={(label, q) => runSearch(q, label)}
             accessory={isNarrow ? <span className="search-account"><AccountButton user={user} syncState={syncState} syncOn={syncOn} /></span> : undefined}
           />
-        </div>
-      )}
-
-      {view.kind !== 'directions' && (
-        <div className="chips-wrap" style={{ left: isNarrow ? 8 : leftInset + (panelOpen ? 16 : 408 + 16) }}>
-          <CategoryChips active={activeChip} onPick={(label, q) => runSearch(q, label)} />
+          {!panelOpen && (
+            <div className="dock">
+              <Dock active={view.kind === 'saved' || view.kind === 'recents' ? (view.kind as RailItem) : null} savedCount={snapshot.favorites.length} onSelect={(item) => { setCollapsed(false); setRoutes([]); setView(view.kind === item ? { kind: 'home' } : { kind: item }) }} />
+              <CategoryChips active={activeChip} onPick={(label, q) => runSearch(q, label)} />
+            </div>
+          )}
         </div>
       )}
 
       {view.kind !== 'home' && (
-        <aside className={'side-panel' + (collapsed ? ' collapsed' : '') + (view.kind === 'directions' ? ' with-header' : '')} style={isNarrow ? undefined : { left: RAIL_WIDTH }} aria-label="Details">
+        <aside className={'side-panel' + (collapsed ? ' collapsed' : '') + (view.kind === 'directions' ? ' with-header' : '')} style={isNarrow ? undefined : { left: EDGE, width: PANEL_WIDTH }} aria-label="Details">
           {view.kind === 'directions' && (
             <div className="dir-header">
               <button className="icon-btn" onClick={goBack} aria-label="Close directions"><Icon name="close" /></button>
@@ -534,7 +535,7 @@ export default function App() {
         </aside>
       )}
       {view.kind !== 'home' && !isNarrow && (
-        <button className="collapse-tab" style={{ left: RAIL_WIDTH + (collapsed ? 0 : PANEL_WIDTH) }} onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? 'Expand side panel' : 'Collapse side panel'} title={collapsed ? 'Expand side panel' : 'Collapse side panel'}>
+        <button className="collapse-tab" style={{ left: collapsed ? 0 : EDGE + PANEL_WIDTH }} onClick={() => setCollapsed((c) => !c)} aria-label={collapsed ? 'Expand side panel' : 'Collapse side panel'} title={collapsed ? 'Expand side panel' : 'Collapse side panel'}>
           <Icon name={collapsed ? 'arrow_right' : 'arrow_left'} />
         </button>
       )}
@@ -552,9 +553,9 @@ export default function App() {
         </div>
       </div>
 
-      {base !== 'satellite' && camera && camera.zoom >= 11 && <div className="surface-key" title="Only roads explicitly tagged unpaved by the map provider are marked. Other surfaces may be unknown."><i />Mapped unpaved roads</div>}
+      {base !== 'satellite' && !isNarrow && camera && camera.zoom >= 14 && <div className="surface-key" title="Only roads explicitly tagged unpaved by the map provider are marked. Other surfaces may be unknown."><i />Mapped unpaved roads</div>}
       <div className="layers-wrap" style={{ left: (isNarrow ? 8 : leftInset + 16) }}>
-        <LayersControl speedLimitsAvailable={speedOn} trafficAvailable={trafficOn} speedLimits={speedLimits} onSpeedLimits={setSpeedLimits} base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
+        <LayersControl version={VERSION_LABEL} speedLimitsAvailable={speedOn} trafficAvailable={trafficOn} speedLimits={speedLimits} onSpeedLimits={setSpeedLimits} base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
       </div>
 
       <div className="banners" style={{ left: isNarrow ? 8 : leftInset + 16 }}>

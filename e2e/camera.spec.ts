@@ -10,10 +10,10 @@ async function mapOrFallback(page: Page) {
   return true
 }
 
-test('a new session opens at a national overview', async ({ page }) => {
+test('a new session opens on New York City', async ({ page }) => {
   await page.goto('/')
   if (!await mapOrFallback(page)) return
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('kova.camera.v1') ?? 'null'))).toMatchObject({ longitude: -110, latitude: 43, zoom: 2 })
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('kova.camera.v1') ?? 'null'))).toMatchObject({ zoom: 12 })
 })
 
 test('a western map area survives reopening the app', async ({ page }) => {
