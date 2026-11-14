@@ -150,9 +150,11 @@ export function shapes(trees: MapTree[]): GeoJSON.FeatureCollection {
 
 // ---- fetching: files on tiles.kovamaps.com first, then the table, like iPhone
 const FILE_HOST = 'https://tiles.kovamaps.com'
-// Off until the R2 bucket sends a CORS header for app.kovamaps.com; until then every browser read
-// fails (Safari reports each as a page error), so the web reads the table, which iPhone falls back to too.
-export const TREE_FILES_ENABLED = false
+// The kova-tiles R2 bucket allows GET from these origins only (CORS rule set 2026-11-14). Anywhere
+// else (local dev, CI) a read would be blocked, and Safari reports each one as a page error, so
+// those read the table, as iPhone does when a file is missing.
+export const TREE_FILE_ORIGINS = ['https://app.kovamaps.com', 'https://kovamaps.com']
+export const TREE_FILES_ENABLED = typeof location !== 'undefined' && TREE_FILE_ORIGINS.includes(location.origin)
 let filesBlocked = !TREE_FILES_ENABLED
 const grounds = new Map<string, Promise<Ground>>()
 const key = (x: number, y: number) => `${x},${y}`
