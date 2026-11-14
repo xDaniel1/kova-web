@@ -1,4 +1,5 @@
-import type { ExpressionSpecification, GeoJSONSource, Map as MapboxMap } from 'mapbox-gl'
+import { ensureStreetsProbe, isStandard } from '../lib/mapStyle'
+import type { ExpressionSpecification, GeoJSONSource, Map as MapboxMap, LayerSpecification } from 'mapbox-gl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { INDOOR_MIN_ZOOM, cellsIn, levelLabel, loadCell } from '../lib/indoor'
 import {
@@ -68,6 +69,19 @@ interface DirectoryItem {
 }
 
 const FOOD = new Set(['🍽️', '☕', '🍔', '🍸', '🥤'])
+
+/**
+ * A named OpenStreetMap place's directory group. Amenities (restrooms, ATMs, information) are
+ * services; a named room with no amenity tag is a ride or show at a park and "other" at an
+ * airport, never a restroom.
+ */
+export function osmCategory(p: { kind?: unknown; icon?: unknown }, airport: boolean): DirectoryCategory {
+  if (p.kind === 'gate') return 'gates'
+  if (p.kind === 'shop') return 'shops'
+  if (FOOD.has(p.icon as string)) return 'food'
+  if (p.kind === 'amenity') return 'services'
+  return airport ? 'other' : 'attractions'
+}
 
 /**
  * Indoor maps, matching the iPhone app: Mapbox's floor plans inside airports, the published
@@ -197,6 +211,11 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
       if (!enabledRef.current) return
       const below = ['road-label-simple', 'road-label', 'road-number-shield', 'poi-label'].find((id) => map.getLayer(id))
       const overlay = map.getLayer('alt-line') ? 'alt-line' : below
+      const standard = isStandard(map)
+      // Standard: plans above roads and under our route lines; names with the map's own labels.
+      const add = (layer: LayerSpecification, before?: string) => standard
+        ? map.addLayer({ ...layer, slot: layer.type === 'symbol' ? 'top' : 'middle' } as LayerSpecification, layer.type === 'symbol' ? undefined : map.getLayer('alt-casing') ? 'alt-casing' : undefined)
+        : map.addLayer(layer, before)
 
       if (!map.getSource(INDOOR_SOURCE)) map.addSource(INDOOR_SOURCE, { type: 'vector', url: INDOOR_TILESET })
       for (const id of AIRPORT_LAYERS) if (map.getLayer(id)) map.removeLayer(id)
@@ -205,9 +224,9 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
       const f = airportFilters(visibleRef.current)
       const vis = enabledRef.current ? 'visible' : 'none'
       // The terminal itself, under every floor.
-      map.addLayer({ id: 'kova-indoor-structure', type: 'fill', source: INDOOR_SOURCE, 'source-layer': 'indoor_structure', layout: { visibility: vis }, paint: { 'fill-color': p.structure, 'fill-outline-color': p.wall } }, overlay)
+      add({ id: 'kova-indoor-structure', type: 'fill', source: INDOOR_SOURCE, 'source-layer': 'indoor_structure', layout: { visibility: vis }, paint: { 'fill-color': p.structure, 'fill-outline-color': p.wall } }, overlay)
       // Concourses, then the rooms along them, then baggage carousels on top.
-      map.addLayer({
+      add({
         id: 'kova-indoor-floorplan', type: 'fill', source: INDOOR_SOURCE, 'source-layer': 'indoor_floorplan', filter: f['kova-indoor-floorplan'],
         layout: { visibility: vis, 'fill-sort-key': ['match', ['get', 'shape_type'], 'area', 0, 'carousel', 2, 1] },
         paint: {
@@ -218,12 +237,12 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
             p.room],
         },
       }, overlay)
-      map.addLayer({
+      add({
         id: 'kova-indoor-walls', type: 'line', source: INDOOR_SOURCE, 'source-layer': 'indoor_floorplan', filter: f['kova-indoor-walls'], layout: { visibility: vis },
         paint: { 'line-color': p.wall, 'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.4, 19, 1.2] },
       }, overlay)
       // A dot for every named place, coloured by kind; Mapbox hides the names that collide.
-      map.addLayer({
+      add({
         id: 'kova-indoor-dots', type: 'circle', source: INDOOR_SOURCE, 'source-layer': 'indoor_label', filter: f['kova-indoor-dots'], layout: { visibility: vis },
         paint: {
           'circle-color': ['match', ['get', 'class'],
@@ -238,11 +257,11 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
         },
       })
       // Lifts, stairs and escalators only once you are close.
-      map.addLayer({
+      add({
         id: 'kova-indoor-connectors', type: 'circle', source: INDOOR_SOURCE, 'source-layer': 'indoor_label', minzoom: 17.5, filter: f['kova-indoor-connectors'], layout: { visibility: vis },
         paint: { 'circle-color': '#3373f2', 'circle-radius': 3.5, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1 },
       })
-      map.addLayer({
+      add({
         id: 'kova-indoor-poi-names', type: 'symbol', source: INDOOR_SOURCE, 'source-layer': 'indoor_label', filter: f['kova-indoor-poi-names'],
         layout: {
           visibility: vis,
@@ -257,7 +276,7 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
         },
       })
       // Gate tags: black on airport yellow.
-      map.addLayer({
+      add({
         id: 'kova-indoor-poi-gates', type: 'symbol', source: INDOOR_SOURCE, 'source-layer': 'indoor_label', filter: f['kova-indoor-poi-gates'],
         layout: {
           visibility: vis,
@@ -269,19 +288,19 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
 
       if (map.getSource(OSM_SRC)) return
       map.addSource(OSM_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-      map.addLayer({
+      add({
         id: 'indoor-fill', type: 'fill', source: OSM_SRC, filter: ['==', ['geometry-type'], 'Polygon'],
         paint: { 'fill-color': ['match', ['get', 'kind'], ...Object.entries(FILL).flat(), '#eeeeee'] as never, 'fill-opacity': 0.92 },
       }, overlay)
-      map.addLayer({
+      add({
         id: 'indoor-outline', type: 'line', source: OSM_SRC, filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['get', 'kind'], 'wall']],
         paint: { 'line-color': '#9a9387', 'line-width': ['case', ['==', ['get', 'kind'], 'footprint'], 2, 1] },
       }, overlay)
-      map.addLayer({
+      add({
         id: 'indoor-stairs', type: 'line', source: OSM_SRC, filter: ['==', ['get', 'kind'], 'stairs'],
         paint: { 'line-color': '#7a7468', 'line-width': 3, 'line-dasharray': [0.5, 0.5] },
       }, overlay)
-      map.addLayer({
+      add({
         id: 'indoor-poi-labels', type: 'symbol', source: OSM_SRC, filter: ['==', ['geometry-type'], 'Point'], minzoom: 17,
         layout: {
           'text-field': ['concat', ['coalesce', ['get', 'icon'], ''], ' ', ['get', 'name']],
@@ -349,10 +368,10 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
   useEffect(() => {
     if (!map || !placeVenue) { setTilePlaces((cur) => (cur.length ? [] : cur)); return }
     const read = () => {
-      const base = map.getLayer('poi-label')
-      if (!base || !('source' in base)) return
+      const source = ensureStreetsProbe(map)
+      if (!source) return
       try {
-        const next = venuePlaces(map.querySourceFeatures(base.source as string, { sourceLayer: 'poi_label' }), placeVenue)
+        const next = venuePlaces(map.querySourceFeatures(source, { sourceLayer: 'poi_label' }), placeVenue)
         setTilePlaces((cur) => (cur.length === next.length && cur.every((p, i) => p.key === next[i].key) ? cur : next))
       } catch { /* style mid-reload */ }
     }
@@ -405,7 +424,7 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
         const key = `${p.name}|${lv.join(',')}`
         if (seen.has(key)) continue
         seen.add(key)
-        const category: DirectoryCategory = p.kind === 'gate' ? 'gates' : p.kind === 'shop' ? 'shops' : FOOD.has(p.icon as string) ? 'food' : 'services'
+        const category = osmCategory(p, airportShowing || venue?.kind === 'airport')
         const [lng, lat] = f.geometry.coordinates as [number, number]
         items.push({ key, name: String(p.name), category, floorLabel: lv.length ? 'Floor ' + lv.map(levelLabel).join(', ') : 'Floor not mapped', latitude: lat, longitude: lng, level: lv[0] })
       }

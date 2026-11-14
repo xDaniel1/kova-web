@@ -502,3 +502,6 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
   .search-wrap { width: auto; }
   .dock .chips-row { flex-wrap: nowrap; overflow-x: auto; }
 }
+
+.ctrl-3d { font: 700 13px/1 Manrope, Inter, sans-serif; color: var(--text); border-radius: var(--tile-sm); box-shadow: var(--shadow); }
+.ctrl-3d.on { background: var(--accent); color: #fff; }

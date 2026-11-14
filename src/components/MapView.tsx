@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { applyMapDetail } from '../lib/mapDetail'
 import { syncStreetPlaceLabels } from '../lib/venuePlaces'
 import { initialCamera, rememberCamera } from '../lib/camera'
+import { addBelowLabels, isStandard, placesAt, prefers3D, standardConfig } from '../lib/mapStyle'
 import { browserMapBudget } from '../lib/performance'
 import { config } from '../lib/config'
 import { REPORT_KINDS, ageLabel, type Bounds, type TrafficReport } from '../lib/reports'
@@ -50,7 +51,7 @@ interface Props {
   onReady?: (map: mapboxgl.Map) => void
 }
 
-const CONGESTION: Record<string, string> = { low: '#1d6fd1', moderate: '#f29900', heavy: '#d93025', severe: '#8c1d18', unknown: '#1d6fd1' }
+const CONGESTION: Record<string, string> = { low: '#0e809c', moderate: '#f29900', heavy: '#d93025', severe: '#8c1d18', unknown: '#0e809c' }
 
 /** Kova's place pin: the brand gradient teardrop with a white dot. */
 function kovaPin(): HTMLElement {
@@ -115,10 +116,9 @@ export function MapView(p: Props) {
       type: 'FeatureCollection',
       features: routes.map((r, index) => ({ type: 'Feature' as const, properties: { index }, geometry: r.geometry })).filter((f) => f.properties.index !== selectedRoute),
     })
-    const firstSymbol = ['road-label-simple', 'road-label', 'road-number-shield', 'poi-label'].find((id) => map.getLayer(id))
     if (traffic && !map.getSource('mapbox-traffic')) {
       map.addSource('mapbox-traffic', { type: 'vector', url: 'mapbox://mapbox.mapbox-traffic-v1' })
-      map.addLayer({
+      addBelowLabels(map, {
         id: 'traffic-flow', type: 'line', source: 'mapbox-traffic', 'source-layer': 'traffic',
         layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' },
         paint: {
@@ -126,7 +126,7 @@ export function MapView(p: Props) {
           'line-color': ['match', ['get', 'congestion'], 'low', '#34a853', 'moderate', '#fbbc04', 'heavy', '#ea4335', 'severe', '#a50e0e', '#34a853'],
           'line-offset': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 16, 2],
         },
-      }, firstSymbol)
+      }, 'alt-casing')
     }
     if (!traffic && map.getSource('mapbox-traffic')) {
       if (map.getLayer('traffic-flow')) map.removeLayer('traffic-flow')
@@ -137,22 +137,22 @@ export function MapView(p: Props) {
 
   const addCustomLayers = () => {
     const map = mapRef.current!
-    if (props.current.ruralDetail) applyMapDetail(map, props.current.base === 'satellite', props.current.dark)
+    if (isStandard(map)) map.setConfig('basemap', standardConfig(props.current.dark, props.current.base === 'satellite') as never)
+    else if (props.current.ruralDetail) applyMapDetail(map, props.current.base === 'satellite', props.current.dark)
     syncStreetPlaceLabels(map, props.current.placeLabels && props.current.base !== 'satellite', props.current.dark)
     const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
     // Live traffic, Mapbox's own feed. Drawn under labels.
     // Above every road and bridge, below road names and POI labels.
-    const firstSymbol = ['road-label-simple', 'road-label', 'road-number-shield', 'poi-label'].find((id) => map.getLayer(id))
     for (const id of ['alternatives', 'route', 'transit']) if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: empty })
-    map.addLayer({ id: 'alt-casing', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#5f6368', 'line-width': 9, 'line-opacity': 0.5 } }, firstSymbol)
-    map.addLayer({ id: 'alt-line', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#bcc5d3', 'line-width': 6 } }, firstSymbol)
-    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#0d3f7a', 'line-width': 10 } }, firstSymbol)
-    map.addLayer({
+    addBelowLabels(map, { id: 'alt-casing', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#5f6368', 'line-width': 9, 'line-opacity': 0.5 } })
+    addBelowLabels(map, { id: 'alt-line', type: 'line', source: 'alternatives', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#bcc5d3', 'line-width': 6 } })
+    addBelowLabels(map, { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#08576e', 'line-width': 10 } })
+    addBelowLabels(map, {
       id: 'route-line', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': ['match', ['get', 'congestion'], ...Object.entries(CONGESTION).flat(), '#1d6fd1'] as never, 'line-width': 6.5 },
-    }, firstSymbol)
-    map.addLayer({ id: 'transit-walk', type: 'line', source: 'transit', filter: ['==', ['get', 'kind'], 'walk'], layout: { 'line-cap': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 5, 'line-dasharray': [0.1, 1.8] } }, firstSymbol)
-    map.addLayer({ id: 'transit-ride', type: 'line', source: 'transit', filter: ['==', ['get', 'kind'], 'ride'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 7 } }, firstSymbol)
+      paint: { 'line-color': ['match', ['get', 'congestion'], ...Object.entries(CONGESTION).flat(), '#0e809c'] as never, 'line-width': 6.5 },
+    })
+    addBelowLabels(map, { id: 'transit-walk', type: 'line', source: 'transit', filter: ['==', ['get', 'kind'], 'walk'], layout: { 'line-cap': 'round' }, paint: { 'line-color': '#1a73e8', 'line-width': 5, 'line-dasharray': [0.1, 1.8] } })
+    addBelowLabels(map, { id: 'transit-ride', type: 'line', source: 'transit', filter: ['==', ['get', 'kind'], 'ride'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 7 } })
     syncLayers()
   }
 
@@ -163,8 +163,10 @@ export function MapView(p: Props) {
     const map = new mapboxgl.Map({
       container: container.current,
       style: styleKey(p.base, p.dark),
+      config: { basemap: standardConfig(p.dark, p.base === 'satellite') } as never,
       center: [camera.longitude, camera.latitude],
       zoom: camera.zoom,
+      pitch: prefers3D() ? 55 : 0,
       attributionControl: false,
       projection: 'mercator',
       maxTileCacheSize: budget.maxTileCacheSize,
@@ -184,6 +186,8 @@ export function MapView(p: Props) {
       props.current.onMoveEnd?.({ south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() }, { latitude: c.lat, longitude: c.lng }, map.getZoom())
     }
     map.on('moveend', emit)
+    // Report the camera as soon as the style is ready: Standard's 'load' waits for every 3D tile.
+    map.once('style.load', emit)
     map.on('load', () => {
       setReady(true)
       emit()
@@ -193,11 +197,10 @@ export function MapView(p: Props) {
       const alt = map.queryRenderedFeatures(e.point, { layers: ['alt-line'] })
       if (alt.length && props.current.onSelectRoute) return props.current.onSelectRoute(alt[0].properties!.index as number)
       // A named POI on the basemap opens like a search result, as in Google Maps.
-      const poiLayers = (map.getStyle().layers ?? []).filter((l) => l.type === 'symbol' && /poi|transit|airport/.test(l.id)).map((l) => l.id)
-      const poi = poiLayers.length ? map.queryRenderedFeatures([[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]], { layers: poiLayers }).find((f) => f.properties?.name) : undefined
+      const poi = placesAt(map, [[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]]).find((f) => f.properties?.name)
       if (poi && poi.geometry.type === 'Point') {
         const [lng, lat] = poi.geometry.coordinates as [number, number]
-        return props.current.onPoiClick({ title: String(poi.properties!.name), subtitle: '', latitude: lat, longitude: lng, kind: poi.properties!.class as string | undefined })
+        return props.current.onPoiClick({ title: String(poi.properties!.name), subtitle: '', latitude: lat, longitude: lng, kind: (poi.properties!.class ?? poi.properties!.group) as string | undefined })
       }
       props.current.onMapClick(e.lngLat.lat, e.lngLat.lng)
     })
@@ -210,8 +213,8 @@ export function MapView(p: Props) {
         hoverFrame = 0
         if (!hoverPoint || map.isMoving() || !map.isStyleLoaded()) return
         if (!map.getStyle()) return
-        const poiLayers = (map.getStyle().layers ?? []).filter((l) => l.type === 'symbol' && /poi|transit|airport/.test(l.id)).map((l) => l.id)
-        const hit = map.queryRenderedFeatures(hoverPoint, { layers: [...poiLayers, ...(map.getLayer('alt-line') ? ['alt-line'] : [])] }).length > 0
+        const box: [[number, number], [number, number]] = [[hoverPoint.x - 2, hoverPoint.y - 2], [hoverPoint.x + 2, hoverPoint.y + 2]]
+        const hit = placesAt(map, box).length > 0 || (!!map.getLayer('alt-line') && map.queryRenderedFeatures(hoverPoint, { layers: ['alt-line'] }).length > 0)
         map.getCanvas().style.cursor = hit ? 'pointer' : ''
       })
     }
@@ -228,6 +231,11 @@ export function MapView(p: Props) {
   const currentStyle = useRef(styleKey(p.base, p.dark))
   useEffect(() => {
     const next = styleKey(p.base, p.dark)
+    // Standard switches day and night with a config change, no reload.
+    if (mapRef.current && next === currentStyle.current && isStandard(mapRef.current)) {
+      try { mapRef.current.setConfig('basemap', standardConfig(p.dark, p.base === 'satellite') as never) } catch { /* style loading; style.load applies it */ }
+      return
+    }
     if (!mapRef.current || next === currentStyle.current) return
     currentStyle.current = next
     const map = mapRef.current

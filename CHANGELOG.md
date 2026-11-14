@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.6 — 2026-11-14
+
+Catches the web up with iPhone builds 11–20 and the new database tables.
+
+- **The iPhone's map.** Mapbox Standard with the iPhone's settings (CarPlayMapStyle): 3D buildings, landmarks and trees, gold motorways and trunks, day or night light from the system appearance without reloading. Satellite uses Standard Satellite. A 2D/3D button tilts the map and is remembered, like the iPhone Map View setting.
+- Routes in Kova teal. Our layers (routes, traffic, indoor plans, transit, speed limits) sit in Standard's slots under the map's names; clicking a place uses Standard's place data. Classic-style tweaks still apply if a classic style is ever loaded.
+- **Transit from our database.** A Transit layer draws rail lines, stations and street-level bus stops for Florida's 23 agencies from `transit_lines` and `transit_stops`, asked for in fixed squares as iPhone's TransitNetwork does. Honours Tower's `transit` switch.
+- **Speed limits like iPhone.** Posted limits come from `speed_limits_in_box` (state and city records first, then the federal highway inventory for the whole US). Federal estimates are drawn dashed and lighter.
+- **Fewer photo sizes.** Photos are requested at iPhone's three widths (400, 800, 1600), so the same photo is cached at fewer sizes.
+
 ## 1.0.5 — 2026-11-12
 
 - Kova's own look instead of a Google Maps layout, matching the iPhone app's Brand palette: teal accent, coral selection, rounded-square tiles instead of pills and circles.

@@ -127,5 +127,5 @@ test('web override disables speed, traffic and transit controls and provider wor
   await page.getByRole('tab', { name: 'Driving', exact: true }).click()
   await expect.poll(() => calls.filter((url) => url.includes('/directions/v5/')).length).toBeGreaterThan(0)
   for (const url of calls.filter((url) => url.includes('/directions/v5/'))) expect(new URL(url).searchParams.has('annotations')).toBe(false)
-  expect(calls.some((url) => url.includes('/speed_limit_segments') || url.includes('/transit'))).toBe(false)
+  expect(calls.some((url) => url.includes('/speed_limits_in_box') || url.includes('/speed_limit_segments') || url.includes('/transit'))).toBe(false)
 })

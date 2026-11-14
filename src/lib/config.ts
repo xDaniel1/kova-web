@@ -11,10 +11,11 @@ export const config = {
   mapbox: {
     // Injected at build time from the VITE_MAPBOX_TOKEN secret (GitHub Actions) or .env.local.
     token: import.meta.env.VITE_MAPBOX_TOKEN ?? '',
+    // Mapbox Standard, as on iPhone. Day and night are one style with a light preset (mapStyle.ts).
     styles: {
-      light: 'mapbox://styles/mapbox/streets-v12',
-      dark: 'mapbox://styles/mapbox/dark-v11',
-      satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+      light: 'mapbox://styles/mapbox/standard',
+      dark: 'mapbox://styles/mapbox/standard',
+      satellite: 'mapbox://styles/mapbox/standard-satellite',
     },
   },
   // Where the iPhone app lives.

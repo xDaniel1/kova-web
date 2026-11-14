@@ -1,3 +1,4 @@
+import { streetsSource } from './mapStyle'
 import type { DirectoryCategory } from './mapboxIndoor'
 
 // Places named on the map and listed in Browse for venues with no floor plan (theme parks, malls,
@@ -79,34 +80,36 @@ type GLMap = import('mapbox-gl').Map
 
 /** Name every shop, café and attraction at storefront zoom, under Mapbox's own (ranked) POI labels. */
 export function syncStreetPlaceLabels(map: GLMap, on: boolean, dark: boolean) {
-  const base = map.getLayer('poi-label')
-  if (!on || !base || !('source' in base)) {
+  const source = on ? streetsSource(map) : null
+  if (!source) {
     if (map.getLayer(STREET_LAYER)) map.removeLayer(STREET_LAYER)
     return
   }
   if (map.getLayer(STREET_LAYER)) return
   map.addLayer({
-    id: STREET_LAYER, type: 'symbol', source: base.source as string, 'source-layer': 'poi_label', minzoom: 17,
+    id: STREET_LAYER, type: 'symbol', source, 'source-layer': 'poi_label', minzoom: 17,
     filter: ['all', ['match', ['get', 'class'], STREET_PLACE_CLASSES, true, false], ['has', 'name']],
     layout: { 'text-field': ['coalesce', ['get', 'name_en'], ['get', 'name']], 'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'], 'text-size': 11, 'text-max-width': 8, 'text-padding': 2, 'text-optional': false },
     paint: { 'text-color': dark ? '#d8e2e6' : '#4a5a60', 'text-halo-color': dark ? '#18252c' : '#ffffff', 'text-halo-width': 1.2 },
-  }, 'poi-label')
+    ...(map.getLayer('poi-label') ? {} : { slot: 'top' }),
+  } as never, map.getLayer('poi-label') ? 'poi-label' : undefined)
 }
 
 const VENUE_LAYER = 'kova-venue-place-labels'
 
 /** At a venue with no floor plan, name every place inside it from zoom 15, as iOS does. */
 export function syncVenuePlaceLabels(map: GLMap, venue: { latitude: number; longitude: number; radius: number } | null, dark: boolean) {
-  const base = map.getLayer('poi-label')
-  if (!venue || !base || !('source' in base)) {
+  const source = venue ? streetsSource(map) : null
+  if (!venue || !source) {
     if (map.getLayer(VENUE_LAYER)) map.removeLayer(VENUE_LAYER)
     return
   }
   const filter = ['all', ['has', 'name'], ['match', ['get', 'class'], [...STREET_PLACE_CLASSES, 'landmark', 'historic', 'visitor_amenities'], true, false], ['within', venueCircle(venue)]] as never
   if (map.getLayer(VENUE_LAYER)) { map.setFilter(VENUE_LAYER, filter); return }
   map.addLayer({
-    id: VENUE_LAYER, type: 'symbol', source: base.source as string, 'source-layer': 'poi_label', minzoom: 15, filter,
+    id: VENUE_LAYER, type: 'symbol', source, 'source-layer': 'poi_label', minzoom: 15, filter,
     layout: { 'text-field': ['coalesce', ['get', 'name_en'], ['get', 'name']], 'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'], 'text-size': 11.5, 'text-max-width': 8, 'text-padding': 2 },
+    ...(map.getLayer('poi-label') ? {} : { slot: 'top' }),
     paint: { 'text-color': ['match', ['get', 'class'], ['food_and_drink', 'food_and_drink_stores'], dark ? '#ffab78' : '#b8501a', 'store_like', dark ? '#f5d26b' : '#8a6400', ['arts_and_entertainment', 'landmark', 'historic'], dark ? '#ff8db5' : '#b0245a', dark ? '#d8e2e6' : '#4a5a60'], 'text-halo-color': dark ? '#18252c' : '#ffffff', 'text-halo-width': 1.2 },
-  }, 'poi-label')
+  }, map.getLayer('poi-label') ? 'poi-label' : undefined)
 }

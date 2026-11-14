@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { Map, GeoJSONSource } from 'mapbox-gl'
 import { fetchSpeedSegments } from '../lib/speedLimits'
+import { addBelowLabels } from '../lib/mapStyle'
 
 /** Published road segments only. Does not assign a nearby road's speed to a route. */
 export function attachSpeedLimits(map: Map) {
@@ -32,13 +33,14 @@ export function attachSpeedLimits(map: Map) {
     if (!map.isStyleLoaded()) { map.once('idle', run); return }
     const data: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: rows.map(row => ({
       type: 'Feature', geometry: { type: 'LineString', coordinates: row.path },
-      properties: { mph: row.mph, label: `${row.mph} mph`, road: row.road, source: row.source },
+      properties: { mph: row.mph, label: `${row.mph} mph`, road: row.road, source: row.source, official: row.authoritative ? 1 : 0 },
     })) }
     if (map.getSource(source)) (map.getSource(source) as GeoJSONSource).setData(data)
     else {
       map.addSource(source, { type: 'geojson', data })
-      map.addLayer({ id: layers[0], type: 'line', source, paint: { 'line-color': '#b14d13', 'line-width': 3, 'line-opacity': 0.7 } })
-      map.addLayer({ id: layers[1], type: 'symbol', source, layout: { 'symbol-placement': 'line', 'symbol-spacing': 180, 'text-field': ['get', 'label'], 'text-size': 12, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'] }, paint: { 'text-color': '#63300f', 'text-halo-color': '#ffffff', 'text-halo-width': 2 } })
+      // State and city records solid; the federal highway inventory (not authoritative) dashed and lighter.
+      addBelowLabels(map, { id: layers[0], type: 'line', source, paint: { 'line-color': '#b14d13', 'line-width': 3, 'line-opacity': ['case', ['==', ['get', 'official'], 1], 0.7, 0.4], 'line-dasharray': ['case', ['==', ['get', 'official'], 1], ['literal', [1, 0]], ['literal', [2, 1.5]]] } } as never)
+      addBelowLabels(map, { id: layers[1], type: 'symbol', source, layout: { 'symbol-placement': 'line', 'symbol-spacing': 180, 'symbol-sort-key': ['-', 1, ['get', 'official']], 'text-field': ['get', 'label'], 'text-size': 12, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'] }, paint: { 'text-color': '#63300f', 'text-halo-color': '#ffffff', 'text-halo-width': 2 } }, undefined, 'top')
     }
   }
   const run = () => { void refresh() }

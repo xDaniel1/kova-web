@@ -65,7 +65,14 @@ export async function lookupPlace(place: Place, signal?: AbortSignal): Promise<P
   return meters < 400 ? first : null
 }
 
+/** The three widths iPhone asks for (400, 800, 1600), so each photo is fetched and cached at most three ways. */
+export const PHOTO_WIDTHS = [400, 800, 1600] as const
+export function photoWidth(wanted: number): number {
+  const dpr = typeof window === 'undefined' ? 1 : Math.min(2, window.devicePixelRatio || 1)
+  return PHOTO_WIDTHS.find((w) => w >= wanted * dpr) ?? PHOTO_WIDTHS[PHOTO_WIDTHS.length - 1]
+}
 export function photoURL(photo: PlacePhoto, maxWidth = 800): string {
+  maxWidth = photoWidth(maxWidth)
   const q = new URLSearchParams({ name: photo.name, maxWidth: String(maxWidth), apikey: config.supabase.anonKey })
   return `${BASE}/places/photo?${q}`
 }
