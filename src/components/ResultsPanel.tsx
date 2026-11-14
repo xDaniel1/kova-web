@@ -40,7 +40,7 @@ export function ResultsPanel({ title, results, hovered, onHover, onPick, onDirec
                       <span><span className={o.open ? 'open' : 'closed'}>{o.open ? 'Open' : 'Closed'}</span>{o.text && <span className="muted"> · {o.text}</span>}</span>
                     )}
                   </div>
-                  {r.photos?.[0] && <img className="result-thumb" src={photoURL(r.photos[0], 240)} alt="" loading="lazy" />}
+                  {r.photos?.[0] && <img className="result-thumb" src={photoURL(r.photos[0], 160)} alt="" loading="lazy" />}
                 </button>
                 <button className="result-dir" onClick={() => onDirections(r)} aria-label={`Directions to ${r.displayName?.text}`} title="Directions">
                   <Icon name="directions" />

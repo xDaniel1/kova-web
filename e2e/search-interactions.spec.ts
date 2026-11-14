@@ -57,7 +57,8 @@ test('the map keeps its viewport height after the deferred stylesheet loads', as
   const map = page.locator('.map.mapboxgl-map, .map.map-failed')
   await expect(map).toBeVisible()
   await expect(page.locator('link[href*="mapbox"][rel="stylesheet"]')).toHaveCount(1)
+  // Standard's 3D style keeps a software-rendered CI browser busy for its first seconds.
   await expect.poll(async () => map.evaluate(el => ({
     height: el.getBoundingClientRect().height / window.innerHeight, position: getComputedStyle(el).position,
-  }))).toEqual({ height: 1, position: 'absolute' })
+  })), { timeout: 15_000 }).toEqual({ height: 1, position: 'absolute' })
 })

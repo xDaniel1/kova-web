@@ -98,7 +98,7 @@ export function PlacePanel(p: Props) {
         <div className="hero skeleton" />
       ) : photos.length > 0 ? (
         <div className="hero">
-          <img src={photoURL(photos[photoIndex], 900)} alt={name} onError={() => setPhotoFailed(true)} style={photoFailed ? { display: 'none' } : undefined} />
+          <img src={photoURL(photos[photoIndex], 800)} alt={name} onError={() => setPhotoFailed(true)} style={photoFailed ? { display: 'none' } : undefined} />
           {photoFailed && <div className="photo-unavailable"><Icon name="location_on" />Photo unavailable</div>}
           {photos.length > 1 && (
             <div className="hero-nav">
@@ -216,7 +216,7 @@ export function PlacePanel(p: Props) {
               <div className="photo-grid">
                 {photos.slice(0, 9).map((ph, i) => (
                   <button key={ph.name} onClick={() => { setPhotoIndex(i); document.querySelector('.side-panel')?.scrollTo({ top: 0, behavior: 'smooth' }) }}>
-                    <img src={photoURL(ph, 300)} alt="" loading="lazy" />
+                    <img src={photoURL(ph, 200)} alt="" loading="lazy" />
                   </button>
                 ))}
               </div>

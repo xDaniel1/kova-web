@@ -4,6 +4,9 @@ import { Icon } from './Icon'
 
 interface Props {
   version: string
+  transitAvailable: boolean
+  transit: boolean
+  onTransit: (v: boolean) => void
   speedLimitsAvailable: boolean
   trafficAvailable: boolean
   speedLimits: boolean
@@ -36,6 +39,7 @@ export function LayersControl(p: Props) {
           {p.trafficAvailable && <button className={p.traffic ? 'on' : ''} onClick={() => p.onTraffic(!p.traffic)}><span className="layer-ic traffic"><Icon name="traffic" /></span>Traffic</button>}
           <button className={p.base === 'satellite' ? 'on' : ''} onClick={() => p.onBase(p.base === 'satellite' ? 'default' : 'satellite')}><span className="layer-ic sat"><Icon name="satellite_alt" /></span>Satellite</button>
           {p.reportsAvailable && <button className={p.reports ? 'on' : ''} disabled={!p.signedIn} title={p.signedIn ? '' : 'Sign in to see drivers’ reports'} onClick={() => p.onReports(!p.reports)}><span className="layer-ic reports"><Icon name="warning" /></span>Reports</button>}
+          {p.transitAvailable && <button className={p.transit ? 'on' : ''} aria-pressed={p.transit} onClick={() => p.onTransit(!p.transit)} title="Rail lines, stations and bus stops from Kova's transit data (Florida today)"><span className="layer-ic transit"><Icon name="directions_transit" /></span>Transit</button>}
           {p.speedLimitsAvailable && <button className={p.speedLimits ? 'on' : ''} aria-pressed={p.speedLimits} aria-label="Posted limits" onClick={() => p.onSpeedLimits(!p.speedLimits)} title="Published road limits where available. Zoom in to see them."><span className="layer-ic limits"><Icon name="speed" /></span>Limits</button>}
           <span className="layers-version">Kova Maps for web {p.version}</span>
         </div>

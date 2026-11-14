@@ -58,7 +58,8 @@ test('dark mode renders the map without errors', async ({ browser }) => {
   const page = await context.newPage()
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  const style = page.waitForResponse((r) => r.url().includes('dark-v11') && r.ok(), { timeout: 30_000 }).catch(() => null)
+  // Standard is one style for day and night; dark mode is its night light preset.
+  const style = page.waitForResponse((r) => r.url().includes('/styles/v1/mapbox/standard') && r.ok(), { timeout: 30_000 }).catch(() => null)
   await page.goto('/')
   test.skip(!(await hasWebGL(page)), 'no WebGL in this browser')
   expect(await style).not.toBeNull()

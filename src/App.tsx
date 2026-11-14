@@ -7,6 +7,7 @@ import { CATEGORIES, CategoryChips } from './components/CategoryChips'
 import { DirectionsPanel, type When } from './components/DirectionsPanel'
 import { Icon } from './components/Icon'
 import { SpeedLimitsLayer } from './components/SpeedLimitsLayer'
+import { TransitLayer } from './components/TransitLayer'
 import { LayersControl } from './components/LayersControl'
 import type { BaseMap, ResultPin } from './components/MapView'
 
@@ -24,6 +25,7 @@ import { useGeolocation } from './hooks/useGeolocation'
 import { useRemoteControls } from './hooks/useRemoteControls'
 import { AnnouncementBanner, Maintenance, MessageCard, UpdateNudge, UpdateRequired } from './components/RemoteGates'
 import { allows } from './lib/remote'
+import { prefers3D, setPrefers3D } from './lib/mapStyle'
 import { VERSION_LABEL } from './lib/version'
 import { config } from './lib/config'
 import { listPlaces, toPlace, type NearbyPlace } from './lib/google'
@@ -88,6 +90,7 @@ export default function App() {
   const [base, setBase] = useState<BaseMap>('default')
   const [traffic, setTraffic] = useState(false)
   const [speedLimits, setSpeedLimits] = useState(false)
+  const [transitMap, setTransitMap] = useState(false)
   const [showReports, setShowReports] = useState(true)
   const [reports, setReports] = useState<TrafficReport[]>([])
   const [camera, setCamera] = useState<{ bounds: Bounds; center: { latitude: number; longitude: number }; zoom: number } | null>(null)
@@ -98,6 +101,7 @@ export default function App() {
   const [fitTo, setFitTo] = useState<Bounds | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [mapInstance, setMapInstance] = useState<MapboxMap | null>(null)
+  const [is3D, setIs3D] = useState(prefers3D)
   const [isNarrow, setIsNarrow] = useState(() => window.innerWidth < 760)
   const dark = usePrefersDark()
   const remote = useRemoteControls(user?.id ?? null)
@@ -432,6 +436,7 @@ export default function App() {
         }}
         onReady={setMapInstance}
       />
+      {mapInstance && <TransitLayer map={mapInstance} enabled={transitMap && transitOn && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <SpeedLimitsLayer map={mapInstance} enabled={speedLimits && speedOn && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} placeLabels={placeLabelsOn} dark={dark && base !== 'satellite'} left={(isNarrow ? 8 : leftInset + 16) + (isNarrow ? 72 : 92)} />}
       </Suspense>
@@ -546,6 +551,12 @@ export default function App() {
       </div>
 
       <div className="map-controls">
+        <button className={'ctrl ctrl-3d' + (is3D ? ' on' : '')} aria-pressed={is3D} onClick={() => {
+          const next = !is3D
+          setIs3D(next)
+          setPrefers3D(next)
+          mapInstance?.easeTo({ pitch: next ? 55 : 0, duration: 600 })
+        }} aria-label={is3D ? 'Show the map flat (2D)' : 'Show buildings in 3D'} title={is3D ? '2D map' : '3D map'}>{is3D ? '2D' : '3D'}</button>
         <button className="ctrl" onClick={geo.locate} disabled={geo.busy} aria-label="Show your location" title="Show your location"><Icon name={geo.fix ? 'my_location' : 'location_searching'} /></button>
         <div className="ctrl-group">
           <button className="ctrl" onClick={() => mapInstance?.zoomIn()} aria-label="Zoom in"><Icon name="add" /></button>
@@ -553,9 +564,9 @@ export default function App() {
         </div>
       </div>
 
-      {base !== 'satellite' && !isNarrow && camera && camera.zoom >= 14 && <div className="surface-key" title="Only roads explicitly tagged unpaved by the map provider are marked. Other surfaces may be unknown."><i />Mapped unpaved roads</div>}
+      {base !== 'satellite' && !isNarrow && camera && camera.zoom >= 14 && !!mapInstance?.getLayer('kova-unpaved-roads') && <div className="surface-key" title="Only roads explicitly tagged unpaved by the map provider are marked. Other surfaces may be unknown."><i />Mapped unpaved roads</div>}
       <div className="layers-wrap" style={{ left: (isNarrow ? 8 : leftInset + 16) }}>
-        <LayersControl version={VERSION_LABEL} speedLimitsAvailable={speedOn} trafficAvailable={trafficOn} speedLimits={speedLimits} onSpeedLimits={setSpeedLimits} base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
+        <LayersControl version={VERSION_LABEL} transitAvailable={transitOn} transit={transitMap} onTransit={setTransitMap} speedLimitsAvailable={speedOn} trafficAvailable={trafficOn} speedLimits={speedLimits} onSpeedLimits={setSpeedLimits} base={base} traffic={traffic} reports={showReports && reportsOn} reportsAvailable={reportsOn} signedIn={!!user} onBase={setBase} onTraffic={setTraffic} onReports={setShowReports} />
       </div>
 
       <div className="banners" style={{ left: isNarrow ? 8 : leftInset + 16 }}>
