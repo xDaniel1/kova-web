@@ -12,8 +12,10 @@ export function attachTrees(map: Map) {
   let planted: { latitude: number; longitude: number } | null = null
   let generation = 0
   const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
+  // isStyleLoaded() stays false while any tile is still loading, which on a slow device with
+  // Standard's 3D tiles can be the whole visit. Adding a source only needs the style itself.
   const ensure = () => {
-    if (!map.isStyleLoaded()) return false
+    try { if (!map.getStyle()) return false } catch { return false }
     if (!map.getSource(SOURCE)) map.addSource(SOURCE, { type: 'geojson', data: empty, maxzoom: 16, tolerance: 0 })
     if (!map.getLayer(LAYER)) {
       map.addLayer({
@@ -31,7 +33,9 @@ export function attachTrees(map: Map) {
     return true
   }
   const refresh = async () => {
-    if (!ensure()) { map.once('idle', run); return }
+    let ready = false
+    try { ready = ensure() } catch { ready = false }
+    if (!ready) { map.once('style.load', run); return }
     const c = map.getCenter()
     const centre = { latitude: c.lat, longitude: c.lng }
     if (map.getZoom() < MIN_ZOOM - 0.5 || !inTreeRegion(centre.latitude, centre.longitude)) {
@@ -43,7 +47,8 @@ export function attachTrees(map: Map) {
     const current = ++generation
     try {
       const tiles = await loadGrounds(tileBlock(centre.latitude, centre.longitude))
-      if (current !== generation || !ensure()) return
+      if (current !== generation) return
+      try { if (!ensure()) return } catch { return }
       planted = centre
       const trees = plant(tiles, centre)
       map.getContainer().dataset.trees = String(trees.length)
@@ -57,7 +62,7 @@ export function attachTrees(map: Map) {
   run()
   return () => {
     ++generation
-    map.off('moveend', run); map.off('style.load', restyle); map.off('idle', run)
+    map.off('moveend', run); map.off('style.load', restyle); map.off('style.load', run)
     try { if (map.getLayer(LAYER)) map.removeLayer(LAYER); if (map.getSource(SOURCE)) map.removeSource(SOURCE) } catch { /* map gone */ }
   }
 }
