@@ -8,6 +8,7 @@ import { DirectionsPanel, type When } from './components/DirectionsPanel'
 import { Icon } from './components/Icon'
 import { SpeedLimitsLayer } from './components/SpeedLimitsLayer'
 import { TransitLayer } from './components/TransitLayer'
+import { TreeLayer } from './components/TreeLayer'
 import { LayersControl } from './components/LayersControl'
 import type { BaseMap, ResultPin } from './components/MapView'
 
@@ -115,6 +116,7 @@ export default function App() {
   const voiceOn = can('voiceGuidance')
   const placeLabelsOn = can('placeLabels')
   const ruralOn = can('ruralDetail')
+  const treesOn = can('mapTrees')
   useEffect(() => {
     if (!voiceOn) window.speechSynthesis?.cancel()
   }, [voiceOn])
@@ -436,6 +438,7 @@ export default function App() {
         }}
         onReady={setMapInstance}
       />
+      {mapInstance && <TreeLayer map={mapInstance} enabled={treesOn && base !== 'satellite' && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <TransitLayer map={mapInstance} enabled={transitMap && transitOn && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <SpeedLimitsLayer map={mapInstance} enabled={speedLimits && speedOn && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} placeLabels={placeLabelsOn} dark={dark && base !== 'satellite'} left={(isNarrow ? 8 : leftInset + 16) + (isNarrow ? 72 : 92)} />}

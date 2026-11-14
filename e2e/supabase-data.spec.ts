@@ -17,7 +17,8 @@ test('Tower disabling indoor maps prevents venue and cell requests', async ({ pa
 test('posted speed data is opt-in and missing data leaves the map usable', async ({ page }) => {
   let reads = 0
   const errors: string[] = []
-  page.on('pageerror', e => errors.push(e.message))
+  // GitHub Pages' 404 for an indoor cell with no plan has no CORS header; Safari reports that as an error.
+  page.on('pageerror', e => { if (!/kovamaps\.com\/indoor\/.*access control checks/.test(e.message)) errors.push(e.message) })
   await page.route('**/rest/v1/rpc/speed_limits_in_box**', r => { reads++; return r.fulfill({ status: 404, json: { code: 'PGRST205' } }) })
   await page.goto('/?place=28.5383,-81.3792&q=Orlando')
   await expect(page.locator('.map.mapboxgl-map, .map.map-failed')).toBeVisible()
