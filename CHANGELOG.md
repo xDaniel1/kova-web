@@ -4,7 +4,7 @@
 
 - **Kova's own 3D trees, as on iPhone (builds 19–20).** Mapbox only stands a tree where OpenStreetMap maps one, so woods and leafy streets drew as flat green. The web now reads `tree_cover_tiles` and plants trees around the middle of the map from zoom 15. Single trees stand at their measured spots and heights (1 m canopy height map); elsewhere trees are scattered over satellite tree cover. Each tree is a trunk, a six-sided crown and a cap. The planting hash matches iPhone bit for bit (checked against Swift), so both apps grow the same trees. Florida and New York today; the rest of the US answers "no trees" once per session.
 - Trees honour Tower's `features.map_trees` switch (now in `config_keys`) and are off on satellite.
-- Tiles are read from `tiles.kovamaps.com` first, like iPhone, and from the database when the file host is unavailable. The file host doesn't allow browser requests yet (no CORS header), so the web uses the database until it does.
+- Tiles are read from `tiles.kovamaps.com` first, like iPhone, and from the database when the file host is unavailable. The file host doesn't allow browser requests yet (no CORS header), so the web reads the database for now (`TREE_FILES_ENABLED` in `src/lib/trees.ts` turns the files on once Cloudflare allows it).
 
 ## 1.0.6 — 2026-11-14
 
