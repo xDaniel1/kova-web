@@ -22,6 +22,7 @@ test('posted speed data is opt-in and missing data leaves the map usable', async
   await page.goto('/?place=28.5383,-81.3792&q=Orlando')
   await expect(page.locator('.map.mapboxgl-map, .map.map-failed')).toBeVisible()
   await page.getByRole('button', { name: 'Close', exact: true }).click()
+  await page.getByRole('button', { name: /Layers: show/ }).hover()
   const toggle = page.getByRole('button', { name: 'Posted limits' })
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   expect(reads).toBe(0)

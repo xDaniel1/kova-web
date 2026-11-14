@@ -18,7 +18,14 @@ interface Props {
   onClose: () => void
   /** Extra control at the end of the row (the account button on phones). */
   accessory?: ReactNode
+  onCategory?: (label: string, query: string) => void
 }
+
+const TRY = [
+  { label: 'JFK Terminal 4', icon: 'flight_takeoff', query: 'JFK Terminal 4' },
+  { label: 'Coffee nearby', icon: 'local_cafe', query: 'coffee' },
+  { label: 'EV charging', icon: 'ev_station', query: 'EV charging station' },
+]
 
 const KIND_ICON: Record<string, string> = { poi: 'location_on', address: 'home_pin', street: 'add_road', place: 'location_city', locality: 'location_city', neighborhood: 'location_city', postcode: 'markunread_mailbox', category: 'search' }
 
@@ -87,7 +94,7 @@ export function SearchCard(p: Props) {
   }
 
   const typing = p.value.trim().length >= 2
-  const showDropdown = focused && (typing ? items.length > 0 : p.favorites.length + p.recents.length > 0)
+  const showDropdown = focused && (typing ? items.length > 0 : true)
 
   return (
     <div className={'search-card' + (showDropdown ? ' open' : '')} onBlur={(e) => {
@@ -139,6 +146,15 @@ export function SearchCard(p: Props) {
                     <button onPointerDown={(e) => e.preventDefault()} onClick={() => { setFocused(false); p.onFavorite(f) }}>
                       <span className="sug-icon fav" style={{ background: f.colorHex ?? undefined }}>{f.emoji ?? <Icon name="star" fill />}</span>
                       <span className="sug-text"><strong>{f.customTitle || f.title}</strong><small>{f.subtitle}</small></span>
+                    </button>
+                  </li>
+                ))}
+                {p.favorites.length + p.recents.length === 0 && <li className="sug-head" role="presentation">Try</li>}
+                {p.favorites.length + p.recents.length === 0 && TRY.map((t) => (
+                  <li key={t.label}>
+                    <button onPointerDown={(e) => e.preventDefault()} onClick={() => { setFocused(false); input.current?.blur(); p.onCategory ? p.onCategory(t.label, t.query) : p.onSubmit(t.query) }}>
+                      <span className="sug-icon"><Icon name={t.icon} /></span>
+                      <span className="sug-text"><strong>{t.label}</strong></span>
                     </button>
                   </li>
                 ))}

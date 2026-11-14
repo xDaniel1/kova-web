@@ -452,3 +452,53 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .fav-editor .favorite-role-options label { display: flex; flex-direction: row; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); color: var(--text); cursor: pointer; }
 .favorite-role-options input { accent-color: var(--accent); margin: 0; }
 .favorite-role-picker p { margin: 10px 0 0; line-height: 1.5; }
+
+/* ---------- Kova identity (matches Brand.swift on iPhone) ----------
+   Teal accent, warm coral for selection, and tiles (rounded squares) instead of pills and circles. */
+:root {
+  --accent: #0e809c;
+  --accent-2: #0e809c;
+  --accent-deep: #08576e;
+  --accent-soft: #dcf0f3;
+  --warm: #fa734d;
+  --brand: #0e809c;
+  --tile: 14px;
+  --tile-sm: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --accent: #6fcfe0; --accent-2: #4fbfd4; --accent-soft: #123f49; --brand: #0e809c; }
+}
+.search-wrap { width: 376px; }
+.dock { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.dock-tabs { display: flex; gap: 8px; }
+.tile-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: var(--tile-sm); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); font-weight: 600; font-size: 13px; color: var(--text); }
+.tile-btn:hover { background: var(--surface-2); }
+.tile-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tile-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-deep); font-size: 11px; display: grid; place-items: center; }
+.tile-btn.on .tile-count { background: #ffffff33; color: #fff; }
+.dock .chips-row { flex-wrap: wrap; overflow: visible; padding: 0; gap: 6px; }
+.dock .chip { height: 32px; border-radius: var(--tile-sm); background: var(--surface); box-shadow: var(--shadow); font-weight: 600; }
+.dock .chip .msym { color: var(--accent); }
+.sug-icon { border-radius: var(--tile-sm); }
+.sug-icon.fav { background: var(--accent); }
+.sug-head { padding: 8px 20px 2px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+/* The side panel floats as a card instead of a full-height sheet. */
+@media (min-width: 760px) {
+  .side-panel { top: 12px; bottom: 12px; border-radius: 18px; box-shadow: var(--shadow-lg); border: 1px solid var(--hairline); }
+  .collapse-tab { border-radius: 0 var(--tile-sm) var(--tile-sm) 0; }
+}
+.top-right .get-app-pill { border-radius: var(--tile-sm); border: 1px solid var(--border); }
+.map-controls > .ctrl, .ctrl-group { border-radius: var(--tile-sm); }
+.layers-tile { border-radius: var(--tile); }
+.layers-panel { border-radius: var(--tile); flex-wrap: wrap; max-width: 300px; }
+.layer-ic { border-radius: var(--tile-sm) !important; }
+.layers-version { flex-basis: 100%; padding: 6px 4px 0; font-size: 10px; color: var(--muted); border-top: 1px solid var(--hairline); margin-top: 4px; }
+/* Result pins: small teal kites with the place name. */
+.result-pin .dot { width: 16px; height: 16px; border-radius: 3px; transform: rotate(45deg); background: var(--accent); border: 2px solid #fff; }
+.result-pin.hover .dot { transform: rotate(45deg) scale(1.3); background: var(--warm); box-shadow: 0 0 0 4px #fa734d40; }
+.result-pin .label { color: var(--accent-deep); }
+@media (prefers-color-scheme: dark) { .result-pin .label { color: #bfeaf2; text-shadow: 0 0 2px #000, 0 0 3px #000; } }
+@media (max-width: 759px) {
+  .search-wrap { width: auto; }
+  .dock .chips-row { flex-wrap: nowrap; overflow-x: auto; }
+}

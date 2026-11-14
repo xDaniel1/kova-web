@@ -56,7 +56,8 @@ const CONGESTION: Record<string, string> = { low: '#1d6fd1', moderate: '#f29900'
 function kovaPin(): HTMLElement {
   const el = document.createElement('div')
   el.className = 'kova-pin'
-  el.innerHTML = '<svg viewBox="0 0 32 44" width="32" height="44" aria-hidden="true"><defs><linearGradient id="kp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b3fa0"/><stop offset="1" stop-color="#0099a8"/></linearGradient></defs><path d="M16 43c-1-6-14-14-14-27a14 14 0 0 1 28 0c0 13-13 21-14 27z" fill="url(#kp)" stroke="#fff" stroke-width="2"/><circle cx="16" cy="16" r="5.5" fill="#fff"/></svg>'
+  // The Kova kite (Brand.Kite on iPhone) in the warm selection colour.
+  el.innerHTML = '<svg viewBox="0 0 32 44" width="32" height="44" aria-hidden="true"><path d="M16 2 L30 25 L16 42 L2 25 Z" fill="#fa734d" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><path d="M16 14 L21 23 L16 29 L11 23 Z" fill="#fff"/></svg>'
   return el
 }
 

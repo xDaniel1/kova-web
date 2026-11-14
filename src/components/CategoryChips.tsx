@@ -18,7 +18,7 @@ export const CATEGORIES = [
 export function CategoryChips({ active, onPick }: { active: string | null; onPick: (label: string, query: string) => void }) {
   return (
     <div className="chips-row" role="toolbar" aria-label="Search this area">
-      {CATEGORIES.map((c) => (
+      {CATEGORIES.slice(0, 6).map((c) => (
         <button key={c.label} className={'chip' + (active === c.label ? ' on' : '')} onClick={() => onPick(c.label, c.query)}>
           <Icon name={c.icon} size={18} />
           {c.label}

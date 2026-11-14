@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.5 — 2026-11-12
+
+- Kova's own look instead of a Google Maps layout, matching the iPhone app's Brand palette: teal accent, coral selection, rounded-square tiles instead of pills and circles.
+- The dark side rail is gone. Saved, Recents and six categories sit under the search box; the side panel floats as a card.
+- Kite-shaped pins (teal for results, coral for the selected place), matching the iPhone position marker.
+- New visitors open on New York City instead of a world view. An empty search offers starting ideas (JFK Terminal 4, coffee, EV charging).
+- Posted limits and the version label moved into the Layers menu; the unpaved-road key shows only when zoomed in on larger screens. The Layers menu stays open while the pointer crosses into it.
+
 ## 1.0.4 — 2026-11-12
 
 - Display and edit Home/Work favorites using the iOS role contract. Assigning a role moves it from its previous holder; Other clears it. Saved lists Home and Work first and preserves existing customizations.

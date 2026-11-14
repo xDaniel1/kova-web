@@ -1,13 +1,13 @@
 # Web release manifest — November 12, 2026
 
-Status: **1.0.4 candidate** — Home/Work favorite display/edit parity. Pending full CI and deployment; these changes are not live yet.
+Status: **1.0.5 candidate** — Kova identity redesign (layout, palette, pins, first view). Pending full CI and deployment. 1.0.4 (Home/Work favorites) is merged to main.
 
 ## Source and deployment
 
 - Current main: `81b0edf515485525e8ba0d1bc5abf434cd90d9fe` (merged PR #31).
 - Last verified production release: **1.0.3 build 45**, commit `81b0edf`. Deployment [43241930545](https://github.com/xDaniel1/kova-web/actions/runs/43241930545) passed. Previous session verified version/commit in served assets. This candidate has not changed production.
 - Tags `web-v1.0.1`, `web-v1.0.2`, `web-v1.0.3` are historical releases and must not move.
-- Platforms share major.minor 1.0; patch and build counters are per platform. Candidate package/lockfile version: 1.0.4.
+- Platforms share major.minor 1.0; patch and build counters are per platform. Candidate package/lockfile version: 1.0.5.
 - PR #29 shipped Apple provider selection and extended Tower controls. PR #31 shipped venue POIs without floor plans, street labels, `place_labels`/`rural_detail`, and check-in `channel`/`config_keys`. Full Google/Apple login remains unverified and assigned to Daniel, explicitly not a tag blocker.
 - Candidate closes issue #30: display/edit/clear Home/Work, move a role from its previous holder, show Home and Work first in Saved, preserve JSON fields and customizations. No database migration or iOS/Tower changes.
 
@@ -64,4 +64,4 @@ Production RLS exercised with an existing Apple-backed authenticated session: ow
 - Lazy Mapbox vendor chunk remains ~1.93 MB raw / 545 kB gzip. CPU-throttled functional smoke passed; physical cheap-laptop GPU/FPS/memory certification is still outstanding. No new DEM source or 3D terrain was added.
 - Existing tests: 69 unit checks pass after compatibility changes; build passes; Apple chooser Chrome checks pass. 45 remote-control browser checks pass across Chrome, WebKit, tablet and both phone projects. Local Firefox cannot launch ("Could not find profile folder"), including with a fresh temporary directory; its required Linux CI check remains enabled. Updated full cross-browser CI remains the merge gate.
 
-**Tag verdict: pending candidate CI and deployment.** Verify the new live version/build/commit before tagging `web-v1.0.4`. Full Google/Apple login remains assigned to Daniel and explicitly not a tag blocker. Never move existing release tags.
+**Tag verdict: pending candidate CI and deployment.** Verify the new live version/build/commit before tagging `web-v1.0.5`. Full Google/Apple login remains assigned to Daniel and explicitly not a tag blocker. Never move existing release tags.
