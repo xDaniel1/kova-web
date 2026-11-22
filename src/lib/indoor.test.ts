@@ -48,4 +48,17 @@ describe('indoor relations', () => {
   it('still skips inner members', () => {
     expect(toFeatures([rel('inner')] as never)).toHaveLength(0)
   })
+  it('stitches open members into one closed ring, reversing where needed', () => {
+    const a = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }]
+    const b = [{ lat: 0, lon: 0 }, { lat: 1, lon: 0 }, { lat: 1, lon: 1 }] // runs the other way
+    const f = toFeatures([{ type: 'relation', id: 2, tags: { aeroway: 'terminal', name: 'T5' }, members: [{ role: 'outer', geometry: a }, { role: '', geometry: b }] }] as never)
+    expect(f).toHaveLength(1)
+    const ring = (f[0].geometry as GeoJSON.Polygon).coordinates[0]
+    expect(ring).toHaveLength(5)
+    expect(ring[0]).toEqual(ring[ring.length - 1])
+  })
+  it('drops an outline left open by a missing member', () => {
+    const open = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }, { lat: 1, lon: 0 }]
+    expect(toFeatures([{ type: 'relation', id: 3, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: open }] }] as never)).toHaveLength(0)
+  })
 })

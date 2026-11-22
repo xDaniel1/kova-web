@@ -148,7 +148,9 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
             if (last.lat === end.lat && last.lon === end.lon) { r = r.concat(s.slice(0, -1).reverse()); segments.splice(i, 1); grew = true; break }
           }
         }
-        if (r.length >= 4) rings.push(r)
+        // Only a closed ring is a polygon; a chain left open by missing members is dropped.
+        const closed = r[0].lat === r[r.length - 1].lat && r[0].lon === r[r.length - 1].lon
+        if (r.length >= 4 && closed) rings.push(r)
       }
       for (const r of rings) {
         features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })

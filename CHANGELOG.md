@@ -4,7 +4,7 @@
 
 Syncs with iPhone build 76.
 
-- Indoor maps: terminals and stations mapped as multipolygons draw their outlines. A member with a blank role now counts as outline (Penn Station), as on iPhone. Needs waypoint-site 1.1.1, whose nightly build now asks OpenStreetMap for relation members (JFK Terminals 5, 7 and 8, Grand Central and others came back as tags only).
+- Indoor maps: stations and terminals mapped as multipolygons (Penn Station, Grand Central and others) draw their outlines. A member with a blank role now counts as outline (Penn Station), as on iPhone, and an outline left open by a missing member is dropped instead of drawn as a broken shape. Needs waypoint-site 1.1.1, whose nightly build now asks OpenStreetMap for relation members; they came back as tags only. Airports with Mapbox plans (JFK and the other ten) keep drawing Mapbox's plan, as on iPhone.
 
 ## 1.0.8 — 2026-11-14
 
