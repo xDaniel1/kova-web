@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.9 — 2026-11-22
+
+Syncs with iPhone build 76.
+
+- Indoor maps: terminals and stations mapped as multipolygons draw their outlines. A member with a blank role now counts as outline (Penn Station), as on iPhone. Needs waypoint-site 1.1.1, whose nightly build now asks OpenStreetMap for relation members (JFK Terminals 5, 7 and 8, Grand Central and others came back as tags only).
+
 ## 1.0.8 — 2026-11-14
 
 - Trees are read from `tiles.kovamaps.com` (Cloudflare R2) first, as on iPhone, now that the `kova-tiles` bucket allows GET from app.kovamaps.com and kovamaps.com. This costs no database time. The database stays the fallback for tiles without a file, and for local and CI builds, whose origins the bucket does not allow.

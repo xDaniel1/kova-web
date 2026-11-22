@@ -36,3 +36,16 @@ describe('toFeatures', () => {
     expect(f[0].geometry.type).toBe('LineString')
   })
 })
+
+describe('indoor relations', () => {
+  const sq = (o: number) => [{ lat: 0, lon: o }, { lat: 0, lon: o + 1 }, { lat: 1, lon: o + 1 }, { lat: 1, lon: o }, { lat: 0, lon: o }]
+  const rel = (role: string | undefined) => ({ type: 'relation', id: 1, tags: { building: 'train_station', name: 'Penn Station' }, members: [{ role, geometry: sq(0) }] })
+  it('treats a blank member role as outline, like iPhone build 76 (Penn Station)', () => {
+    for (const role of ['', undefined, 'outer']) {
+      expect(toFeatures([rel(role)] as never).length, `role ${JSON.stringify(role)}`).toBeGreaterThan(0)
+    }
+  })
+  it('still skips inner members', () => {
+    expect(toFeatures([rel('inner')] as never)).toHaveLength(0)
+  })
+})

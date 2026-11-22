@@ -131,7 +131,7 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
     if (el.type === 'relation' && el.members) {
       const kind = kindFor(tags, true)
       if (!kind) continue
-      const outers = el.members.filter((m) => (m.role ?? 'outer') === 'outer' && m.geometry && m.geometry.length >= 2)
+      const outers = el.members.filter((m) => (m.role || 'outer') === 'outer' && m.geometry && m.geometry.length >= 2)
       // Stitch outer segments into rings, as the iOS parser does.
       const segments = outers.map((m) => m.geometry!)
       const rings: Point[][] = []
