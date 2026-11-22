@@ -308,7 +308,8 @@ export function crosses(a: Point[], b: Point[]): boolean {
   return false
 }
 
-/** Whether a point is strictly inside a closed ring (ray casting; points on the edge don't count). */
+/** Whether a point is strictly inside a closed ring (ray casting). A point on a corner counts as
+ *  outside; one lying along an edge may go either way. */
 export function inside(p: Point, r: Point[]): boolean {
   let hit = false
   for (let i = 0, j = r.length - 2; i < r.length - 1; j = i++) {
@@ -371,8 +372,6 @@ export function loopsOf(chain: Point[]): Point[][] {
 
 export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
   const features: GeoJSON.Feature[] = []
-  // Each feature is keyed by the element it came from, so one drawn in several cells (a relation
-  // near a cell edge is in each neighbouring cell) can be shown once: see mergeCells.
   let from = ''
   // Each feature carries the element it came from, so one found in several cells (a relation near
   // a cell edge is in each neighbouring cell) is shown once: see mergeCells.
@@ -461,7 +460,14 @@ export async function loadCell(cell: Cell): Promise<GeoJSON.Feature[] | null> {
     }
     if (!res.ok) return null // transient; try again on the next move
     const json = (await res.json()) as { elements: Element[]; osm_base?: string }
-    const features = toFeatures(json.elements ?? [])
+    let features: GeoJSON.Feature[]
+    try {
+      features = toFeatures(json.elements ?? [])
+    } catch {
+      // A malformed cell won't parse on the next move either; remember it as empty.
+      rememberCell(key, null)
+      return null
+    }
     // The OpenStreetMap snapshot the cell was built from, so mergeCells can prefer the newer cell.
     if (typeof json.osm_base === 'string') for (const f of features) f.properties = { ...f.properties, osmBase: json.osm_base }
     rememberCell(key, features)

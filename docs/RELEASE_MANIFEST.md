@@ -8,7 +8,7 @@ Status: **1.0.9 candidate** — indoor relation outlines (iPhone build 76 sync).
 - Last verified production release: **1.0.8 build 57**, commit `966cc30`, tagged `web-v1.0.8`.
 - Earlier `web-v1.0.x` tags (1.0.1–1.0.3 and 1.0.5–1.0.8; there is no `web-v1.0.4`) are historical releases and must not move.
 - Platforms share major.minor 1.0; patch and build counters are per platform. Candidate package/lockfile version: 1.0.9.
-- Candidate changes only the indoor relation parser (blank roles, closed rings). No database migration, Tower or iOS change. Pairs with waypoint-site 1.1.1 (PR #3), which republishes indoor cells with relation members.
+- Candidate changes the indoor relation parser (blank roles, order-free outlines, holes, unplaceable points) and how cells are merged in `IndoorLayer` (each element once, from the cell with the newest snapshot). No database migration, Tower or iOS change. Pairs with waypoint-site 1.1.1 (PR #3), which republishes indoor cells with relation members.
 
 ## Supabase contract inventory
 
