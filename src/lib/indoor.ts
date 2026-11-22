@@ -268,21 +268,27 @@ export function outlinesOf(ways: Point[][]): Point[][] {
 
 const areaOf = (r: Point[]) => Math.abs(shiftedArea(r.slice(0, -1)))
 
-/** Features from several cells, each element once. An element's features all come from the first
- *  cell that has it: neighbouring cells are refreshed on different nights and can hold different
- *  versions of a relation, and mixing them would draw an old outline over a new courtyard. */
+/** Features from several cells, each element once. An element's features all come from one cell:
+ *  neighbouring cells are refreshed on different nights and can hold different versions of a
+ *  relation, and mixing them would draw an old outline over a new courtyard. That cell is the one
+ *  built from the newest OpenStreetMap snapshot, so panning never brings back older geometry; with
+ *  no snapshot time (cells published before 1.1.1), the first cell. */
 export function mergeCells(cells: (GeoJSON.Feature[] | null)[]): GeoJSON.Feature[] {
-  const owner = new Map<string, number>()
+  const owner = new Map<string, { cell: number; base: string }>()
+  cells.forEach((cell, i) => {
+    for (const f of cell ?? []) {
+      const source = f.properties?.source as string | undefined
+      if (!source) continue
+      const base = (f.properties?.osmBase as string | undefined) ?? ''
+      const cur = owner.get(source)
+      if (!cur || base > cur.base) owner.set(source, { cell: i, base })
+    }
+  })
   const out: GeoJSON.Feature[] = []
   cells.forEach((cell, i) => {
     for (const f of cell ?? []) {
       const source = f.properties?.source as string | undefined
-      if (source) {
-        const first = owner.get(source)
-        if (first === undefined) owner.set(source, i)
-        else if (first !== i) continue
-      }
-      out.push(f)
+      if (!source || owner.get(source)!.cell === i) out.push(f)
     }
   })
   return out
@@ -454,8 +460,10 @@ export async function loadCell(cell: Cell): Promise<GeoJSON.Feature[] | null> {
       return null
     }
     if (!res.ok) return null // transient; try again on the next move
-    const json = (await res.json()) as { elements: Element[] }
+    const json = (await res.json()) as { elements: Element[]; osm_base?: string }
     const features = toFeatures(json.elements ?? [])
+    // The OpenStreetMap snapshot the cell was built from, so mergeCells can prefer the newer cell.
+    if (typeof json.osm_base === 'string') for (const f of features) f.properties = { ...f.properties, osmBase: json.osm_base }
     rememberCell(key, features)
     return features
   } catch {

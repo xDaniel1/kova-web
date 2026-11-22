@@ -263,4 +263,13 @@ describe('indoor relations', () => {
     const f = toFeatures([{ type: 'relation', id: 24, tags: { building: 'train_station' }, members: [{ role: 'outer', geometry: u }, { role: 'inner', geometry: hole }] }] as Parameters<typeof toFeatures>[0])
     expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
   })
+  it('prefers the cell built from the newer OpenStreetMap snapshot, in any order', () => {
+    const tags = { building: 'train_station' }
+    const stamp = (fs: GeoJSON.Feature[], base: string) => fs.map((f) => ({ ...f, properties: { ...f.properties, osmBase: base } }))
+    const old = stamp(toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: square }] }] as Parameters<typeof toFeatures>[0]), '2026-11-01T00:00:00Z')
+    const box = [pt(0, 0), pt(0, 2), pt(2, 2), pt(2, 0), pt(0, 0)]
+    const fresh = stamp(toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box }] }] as Parameters<typeof toFeatures>[0]), '2026-11-20T00:00:00Z')
+    expect(mergeCells([old, fresh])).toEqual(fresh)
+    expect(mergeCells([fresh, old])).toEqual(fresh)
+  })
 })
