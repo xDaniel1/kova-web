@@ -95,6 +95,27 @@ function ring(points: Point[]): [number, number][] {
   return points.map((p) => [p.lon, p.lat])
 }
 
+/** The closed loops in a chain of points: each time the chain returns to a point it already
+ *  visited, the stretch since then is a ring. Splits outlines that touch at one point and keeps
+ *  closed loops out of a chain whose ends never meet. */
+export function loopsOf(chain: Point[]): Point[][] {
+  const loops: Point[][] = []
+  const path: Point[] = []
+  const seen = new Map<string, number>()
+  const key = (p: Point) => `${p.lat},${p.lon}`
+  for (const p of chain) {
+    const at = seen.get(key(p))
+    if (at !== undefined) {
+      const loop = path.splice(at)
+      for (const q of loop) seen.delete(key(q))
+      if (loop.length >= 3) loops.push([...loop, p])
+    }
+    seen.set(key(p), path.length)
+    path.push(p)
+  }
+  return loops
+}
+
 export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
   const features: GeoJSON.Feature[] = []
   for (const el of elements) {
@@ -151,8 +172,9 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
             if (last.lat === end.lat && last.lon === end.lon) { r = r.concat(s.slice(0, -1).reverse()); segments.splice(i, 1); grew = true; break }
           }
         }
-        // Only a closed ring is a polygon; a chain left open by missing members is dropped.
-        if (isClosed(r)) rings.push(r)
+        // A chain may pass through a point where two outlines touch; each loop it makes there is
+        // its own ring. Whatever is left open by missing members is dropped.
+        rings.push(...loopsOf(r))
       }
       for (const r of rings) {
         features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })

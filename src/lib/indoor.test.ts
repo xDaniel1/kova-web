@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellOf, levelLabel, parseLevels, toFeatures } from './indoor'
+import { cellOf, levelLabel, loopsOf, parseLevels, toFeatures } from './indoor'
 
 describe('indoor cells and levels', () => {
   it('addresses cells like the iOS app (floor of coordinate / 0.006)', () => {
@@ -69,5 +69,30 @@ describe('indoor relations', () => {
     const f = toFeatures([{ type: 'relation', id: 4, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: a1 }, { role: 'outer', geometry: b }, { role: 'outer', geometry: a2 }] }] as Parameters<typeof toFeatures>[0])
     expect(f).toHaveLength(2)
     for (const x of f) expect((x.geometry as GeoJSON.Polygon).coordinates[0]).toHaveLength(5)
+  })
+  it('splits two multi-way rings that touch at a shared point', () => {
+    // Ring A: (0,0)→(0,1)→(1,1)→(1,0)→(0,0); ring B: (1,1)→(1,2)→(2,2)→(2,1)→(1,1). Each in two ways,
+    // ordered so the stitcher walks from A into B at (1,1) before A is closed.
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    const members = [m([[0, 0], [0, 1], [1, 1]]), m([[1, 1], [1, 2], [2, 2]]), m([[2, 2], [2, 1], [1, 1]]), m([[1, 1], [1, 0], [0, 0]])]
+    const f = toFeatures([{ type: 'relation', id: 5, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(2)
+    for (const x of f) {
+      const r = (x.geometry as GeoJSON.Polygon).coordinates[0]
+      expect(r).toHaveLength(5)
+      expect(new Set(r.slice(0, -1).map(String)).size).toBe(4)
+    }
+  })
+  it('keeps a closed ring that a dangling way runs into', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    // A dangling way ends at (1,1), then the ring (1,1)→(1,2)→(2,2)→(2,1)→(1,1) in two ways.
+    const members = [m([[5, 5], [1, 1]]), m([[1, 1], [1, 2], [2, 2]]), m([[2, 2], [2, 1], [1, 1]])]
+    expect(toFeatures([{ type: 'relation', id: 6, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])).toHaveLength(1)
+  })
+  it('finds every loop in a chain', () => {
+    const p = (lat: number, lon: number) => ({ lat, lon })
+    expect(loopsOf([p(0, 0), p(0, 1), p(1, 1), p(0, 0)])).toHaveLength(1)
+    expect(loopsOf([p(0, 0), p(0, 1), p(1, 1)])).toHaveLength(0)
+    expect(loopsOf([p(9, 9), p(0, 0), p(0, 1), p(1, 1), p(0, 0), p(8, 8)])).toHaveLength(1)
   })
 })
