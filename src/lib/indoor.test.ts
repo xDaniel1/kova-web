@@ -61,4 +61,13 @@ describe('indoor relations', () => {
     const open = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }, { lat: 1, lon: 0 }]
     expect(toFeatures([{ type: 'relation', id: 3, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: open }] }] as Parameters<typeof toFeatures>[0])).toHaveLength(0)
   })
+  it('keeps a closed member separate from an open outline that touches it at one point', () => {
+    // A: open path ending at B (1,1); then a closed ring starting and ending at B; then the rest of A.
+    const a1 = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }]
+    const b = [{ lat: 1, lon: 1 }, { lat: 1, lon: 2 }, { lat: 2, lon: 2 }, { lat: 2, lon: 1 }, { lat: 1, lon: 1 }]
+    const a2 = [{ lat: 1, lon: 1 }, { lat: 1, lon: 0 }, { lat: 0, lon: 0 }]
+    const f = toFeatures([{ type: 'relation', id: 4, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: a1 }, { role: 'outer', geometry: b }, { role: 'outer', geometry: a2 }] }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(2)
+    for (const x of f) expect((x.geometry as GeoJSON.Polygon).coordinates[0]).toHaveLength(5)
+  })
 })

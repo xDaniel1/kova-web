@@ -133,12 +133,15 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
       if (!kind) continue
       const outers = el.members.filter((m) => (m.role || 'outer') === 'outer' && m.geometry && m.geometry.length >= 2)
       // Stitch outer segments into rings, as the iOS parser does.
-      const segments = outers.map((m) => m.geometry!)
-      const rings: Point[][] = []
+      const isClosed = (r: Point[]) => r.length >= 4 && r[0].lat === r[r.length - 1].lat && r[0].lon === r[r.length - 1].lon
+      // A member that is already a closed ring stays its own ring, so a ring touching another
+      // outline at one point is never stitched into it.
+      const rings: Point[][] = outers.map((m) => m.geometry!).filter(isClosed)
+      const segments = outers.map((m) => m.geometry!).filter((g) => !isClosed(g))
       while (segments.length) {
         let r = segments.shift()!
         let grew = true
-        while (grew && !(r.length >= 4 && r[0].lat === r[r.length - 1].lat && r[0].lon === r[r.length - 1].lon)) {
+        while (grew && !isClosed(r)) {
           grew = false
           for (let i = 0; i < segments.length; i++) {
             const s = segments[i]
@@ -149,8 +152,7 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
           }
         }
         // Only a closed ring is a polygon; a chain left open by missing members is dropped.
-        const closed = r[0].lat === r[r.length - 1].lat && r[0].lon === r[r.length - 1].lon
-        if (r.length >= 4 && closed) rings.push(r)
+        if (isClosed(r)) rings.push(r)
       }
       for (const r of rings) {
         features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
