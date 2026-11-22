@@ -268,27 +268,50 @@ export function outlinesOf(ways: Point[][]): Point[][] {
 
 const areaOf = (r: Point[]) => Math.abs(shiftedArea(r.slice(0, -1)))
 
-/** Features from several cells, each element once. An element's features all come from one cell:
- *  neighbouring cells are refreshed on different nights and can hold different versions of a
- *  relation, and mixing them would draw an old outline over a new courtyard. That cell is the one
- *  built from the newest OpenStreetMap snapshot, so panning never brings back older geometry; with
- *  no snapshot time (cells published before 1.1.1), the first cell. */
-export function mergeCells(cells: (GeoJSON.Feature[] | null)[]): GeoJSON.Feature[] {
-  const owner = new Map<string, { cell: number; base: string }>()
-  cells.forEach((cell, i) => {
-    for (const f of cell ?? []) {
+/** A loaded cell: its features and the OpenStreetMap snapshot it was last confirmed against
+ *  (`osm_base`; empty for cells published before site 1.1.1). */
+export interface LoadedCell { cell: Cell; base: string; features: GeoJSON.Feature[] }
+
+/** The publisher asks Overpass for each cell's square plus this margin on every side. */
+export const MARGIN = 0.002
+
+const anchor = (g: GeoJSON.Geometry): number[] | null =>
+  g.type === 'Point' ? g.coordinates : g.type === 'LineString' ? g.coordinates[0] ?? null : g.type === 'Polygon' ? g.coordinates[0]?.[0] ?? null : null
+
+const covers = (c: Cell, [lon, lat]: number[]) =>
+  lat >= c.row * CELL - MARGIN && lat <= (c.row + 1) * CELL + MARGIN && lon >= c.col * CELL - MARGIN && lon <= (c.col + 1) * CELL + MARGIN
+
+/** Features from several cells, each element once.
+ *
+ *  Neighbouring cells are refreshed on different nights, so they can hold different versions of
+ *  the same element. Its features all come from one cell, so two versions never mix: the one most
+ *  recently confirmed against OpenStreetMap (the first cell on a tie). And if a cell confirmed
+ *  more recently still covers where the element is but no longer has it, it was deleted or
+ *  retagged, and isn't shown. */
+export function mergeCells(cells: (LoadedCell | null)[]): GeoJSON.Feature[] {
+  const loaded = cells.filter((c): c is LoadedCell => !!c)
+  const has = loaded.map((c) => new Set(c.features.map((f) => f.properties?.source as string | undefined)))
+  const owner = new Map<string, number>()
+  loaded.forEach((c, i) => {
+    for (const f of c.features) {
       const source = f.properties?.source as string | undefined
       if (!source) continue
-      const base = (f.properties?.osmBase as string | undefined) ?? ''
       const cur = owner.get(source)
-      if (!cur || base > cur.base) owner.set(source, { cell: i, base })
+      if (cur === undefined || c.base > loaded[cur].base) owner.set(source, i)
     }
   })
+  const gone = new Set<string>()
+  for (const [source, i] of owner) {
+    const f = loaded[i].features.find((x) => x.properties?.source === source)!
+    const at = anchor(f.geometry)
+    if (at && loaded.some((c, j) => c.base > loaded[i].base && !has[j].has(source) && covers(c.cell, at))) gone.add(source)
+  }
   const out: GeoJSON.Feature[] = []
-  cells.forEach((cell, i) => {
-    for (const f of cell ?? []) {
+  loaded.forEach((c, i) => {
+    for (const f of c.features) {
       const source = f.properties?.source as string | undefined
-      if (!source || owner.get(source)!.cell === i) out.push(f)
+      if (!source) out.push(f)
+      else if (owner.get(source) === i && !gone.has(source)) out.push(f)
     }
   })
   return out
@@ -436,43 +459,41 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
   return features
 }
 
-const cache = new Map<string, GeoJSON.Feature[] | null>()
+const cache = new Map<string, LoadedCell | null>()
 
 const MAX_CACHED_CELLS = 48
-function rememberCell(key: string, value: GeoJSON.Feature[] | null) {
+function rememberCell(key: string, value: LoadedCell | null) {
   cache.delete(key)
   cache.set(key, value)
   if (cache.size > MAX_CACHED_CELLS) cache.delete(cache.keys().next().value!)
 }
 
-export async function loadCell(cell: Cell): Promise<GeoJSON.Feature[] | null> {
+export async function loadCell(cell: Cell): Promise<LoadedCell | null> {
   const key = `${cell.row}_${cell.col}`
   if (cache.has(key)) {
     const value = cache.get(key)!
     rememberCell(key, value)
     return value
   }
+  let res: Response
   try {
-    const res = await fetch(`${BASE}/indoor_${key}.json`)
-    if (res.status === 404) {
-      rememberCell(key, null)
-      return null
-    }
-    if (!res.ok) return null // transient; try again on the next move
-    const json = (await res.json()) as { elements: Element[]; osm_base?: string }
-    let features: GeoJSON.Feature[]
-    try {
-      features = toFeatures(json.elements ?? [])
-    } catch {
-      // A malformed cell won't parse on the next move either; remember it as empty.
-      rememberCell(key, null)
-      return null
-    }
-    // The OpenStreetMap snapshot the cell was built from, so mergeCells can prefer the newer cell.
-    if (typeof json.osm_base === 'string') for (const f of features) f.properties = { ...f.properties, osmBase: json.osm_base }
-    rememberCell(key, features)
-    return features
+    res = await fetch(`${BASE}/indoor_${key}.json`)
   } catch {
+    return null // offline or transient; try again on the next move
+  }
+  if (res.status === 404) {
+    rememberCell(key, null)
+    return null
+  }
+  if (!res.ok) return null // transient; try again on the next move
+  try {
+    const json = (await res.json()) as { elements?: Element[]; osm_base?: unknown }
+    const loaded: LoadedCell = { cell, base: typeof json.osm_base === 'string' ? json.osm_base : '', features: toFeatures(json.elements ?? []) }
+    rememberCell(key, loaded)
+    return loaded
+  } catch {
+    // Not JSON, or not a cell: it won't parse on the next move either; remember it as empty.
+    rememberCell(key, null)
     return null
   }
 }

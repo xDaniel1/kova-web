@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { cellOf, hasArea, levelLabel, loopsOf, mergeCells, outlinesOf, parseLevels, toFeatures } from './indoor'
+import { cellOf, hasArea, levelLabel, loopsOf, mergeCells, outlinesOf, parseLevels, toFeatures, type LoadedCell } from './indoor'
+
+const lc = (features: GeoJSON.Feature[], base = '', cell = { row: 0, col: 0 }): LoadedCell => ({ cell, base, features })
 
 describe('indoor cells and levels', () => {
   it('addresses cells like the iOS app (floor of coordinate / 0.006)', () => {
@@ -218,7 +220,7 @@ describe('indoor relations', () => {
     const room = { type: 'way', id: 1, tags: { indoor: 'room', level: '0' }, geometry: square }
     const a = toFeatures([rel, room] as Parameters<typeof toFeatures>[0])
     const b = toFeatures([rel] as Parameters<typeof toFeatures>[0])
-    expect(mergeCells([a, b, null])).toHaveLength(a.length)
+    expect(mergeCells([lc(a), lc(b), null])).toHaveLength(a.length)
   })
   it('gives a hole to the innermost outline holding it (island in a courtyard)', () => {
     const box = (lo: number, hi: number) => [pt(lo, lo), pt(lo, hi), pt(hi, hi), pt(hi, lo), pt(lo, lo)]
@@ -240,8 +242,8 @@ describe('indoor relations', () => {
     const older = toFeatures([{ type: 'relation', id: 1, tags, members: [A] }] as Parameters<typeof toFeatures>[0])
     const newer = toFeatures([{ type: 'relation', id: 1, tags, members: [B, A] }] as Parameters<typeof toFeatures>[0])
     // Never a mix of the two: exactly the version of whichever cell came first.
-    expect(mergeCells([older, newer])).toEqual(older)
-    expect(mergeCells([newer, older])).toEqual(newer)
+    expect(mergeCells([lc(older), lc(newer)])).toEqual(older)
+    expect(mergeCells([lc(newer), lc(older)])).toEqual(newer)
   })
   it('leaves out a hole that crosses its outline', () => {
     const outer = { role: 'outer', geometry: square }
@@ -254,7 +256,7 @@ describe('indoor relations', () => {
     const tags = { building: 'train_station' }
     const before = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box(0, 10) }] }] as Parameters<typeof toFeatures>[0])
     const after = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box(0, 10) }, { role: 'inner', geometry: box(4, 6) }] }] as Parameters<typeof toFeatures>[0])
-    for (const cells of [[before, after], [after, before]]) expect(mergeCells(cells)).toHaveLength(1)
+    for (const cells of [[before, after], [after, before]]) expect(mergeCells(cells.map((c) => lc(c)))).toHaveLength(1)
   })
   it('leaves out a hole whose edge crosses a concave outline', () => {
     // U shape open at the top; the hole's corners are all inside the arms but its top edge spans the gap.
@@ -263,13 +265,23 @@ describe('indoor relations', () => {
     const f = toFeatures([{ type: 'relation', id: 24, tags: { building: 'train_station' }, members: [{ role: 'outer', geometry: u }, { role: 'inner', geometry: hole }] }] as Parameters<typeof toFeatures>[0])
     expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
   })
-  it('prefers the cell built from the newer OpenStreetMap snapshot, in any order', () => {
+  it('prefers the cell confirmed against the newer OpenStreetMap snapshot, in any order', () => {
     const tags = { building: 'train_station' }
-    const stamp = (fs: GeoJSON.Feature[], base: string) => fs.map((f) => ({ ...f, properties: { ...f.properties, osmBase: base } }))
-    const old = stamp(toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: square }] }] as Parameters<typeof toFeatures>[0]), '2026-11-01T00:00:00Z')
+    const old = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: square }] }] as Parameters<typeof toFeatures>[0])
     const box = [pt(0, 0), pt(0, 2), pt(2, 2), pt(2, 0), pt(0, 0)]
-    const fresh = stamp(toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box }] }] as Parameters<typeof toFeatures>[0]), '2026-11-20T00:00:00Z')
-    expect(mergeCells([old, fresh])).toEqual(fresh)
-    expect(mergeCells([fresh, old])).toEqual(fresh)
+    const fresh = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box }] }] as Parameters<typeof toFeatures>[0])
+    expect(mergeCells([lc(old, '2026-11-01T00:00:00Z'), lc(fresh, '2026-11-20T00:00:00Z')])).toEqual(fresh)
+    expect(mergeCells([lc(fresh, '2026-11-20T00:00:00Z'), lc(old, '2026-11-01T00:00:00Z')])).toEqual(fresh)
+  })
+  it('hides an element that a more recently confirmed cell covering it no longer has', () => {
+    // A gate at (0.0061, 0.001): in cell (1,0)'s square and in cell (0,0)'s margin.
+    const gate = toFeatures([{ type: 'node', id: 7, lat: 0.0061, lon: 0.001, tags: { aeroway: 'gate', ref: 'A1' } }] as Parameters<typeof toFeatures>[0])
+    const older = lc(gate, '2026-11-01T00:00:00Z', { row: 0, col: 0 })
+    const retagged = lc([], '2026-11-20T00:00:00Z', { row: 1, col: 0 })
+    expect(mergeCells([older, retagged])).toHaveLength(0)
+    // A newer cell that doesn't cover the gate's spot says nothing about it.
+    expect(mergeCells([older, lc([], '2026-11-20T00:00:00Z', { row: 5, col: 5 })])).toHaveLength(1)
+    // Nor does an older one.
+    expect(mergeCells([lc(gate, '2026-11-20T00:00:00Z'), lc([], '2026-11-01T00:00:00Z', { row: 1, col: 0 })])).toHaveLength(1)
   })
 })
