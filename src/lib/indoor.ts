@@ -131,15 +131,44 @@ export function outlinesOf(ways: Point[][]): Point[][] {
     if (i === undefined) { i = pts.length; id.set(k, i); pts.push(p) }
     return i
   }
+  for (const w of ways) for (const p of w) node(p)
+  // Points by longitude, to find the ones lying on a segment: a wall drawn with an extra point in
+  // one way and without it in another must become the same edges, or the two copies never meet.
+  const byLon = pts.map((_, i) => i).sort((x, y) => pts[x].lon - pts[y].lon)
+  const firstAtLeast = (lon: number) => {
+    let lo = 0, hi = byLon.length
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (pts[byLon[mid]].lon < lon) lo = mid + 1; else hi = mid }
+    return lo
+  }
+  const onSegment = (a: number, b: number): number[] => {
+    const A = pts[a], B = pts[b]
+    const dx = B.lon - A.lon, dy = B.lat - A.lat, len2 = dx * dx + dy * dy
+    const [minLat, maxLat] = A.lat < B.lat ? [A.lat, B.lat] : [B.lat, A.lat]
+    const hits: { i: number; t: number }[] = []
+    for (let k = firstAtLeast(Math.min(A.lon, B.lon)); k < byLon.length && pts[byLon[k]].lon <= Math.max(A.lon, B.lon); k++) {
+      const i = byLon[k]
+      if (i === a || i === b || pts[i].lat < minLat || pts[i].lat > maxLat) continue
+      const px = pts[i].lon - A.lon, py = pts[i].lat - A.lat
+      const t = (px * dx + py * dy) / len2
+      // Within about 1 cm of the line, strictly between the ends.
+      if (t > 0 && t < 1 && Math.abs(px * dy - py * dx) / Math.sqrt(len2) < 1e-7) hits.push({ i, t })
+    }
+    return hits.sort((x, y) => x.t - y.t).map((h) => h.i)
+  }
   const edges: [number, number][] = []
   const seenEdge = new Set<string>()
+  const addEdge = (a: number, b: number) => {
+    const k = a < b ? `${a}-${b}` : `${b}-${a}`
+    if (a === b || seenEdge.has(k)) return
+    seenEdge.add(k)
+    edges.push([a, b])
+  }
   for (const w of ways) {
     for (let i = 0; i + 1 < w.length; i++) {
       const a = node(w[i]), b = node(w[i + 1])
-      const k = a < b ? `${a}-${b}` : `${b}-${a}`
-      if (a === b || seenEdge.has(k)) continue
-      seenEdge.add(k)
-      edges.push([a, b])
+      if (a === b) continue
+      const chain = [a, ...onSegment(a, b), b]
+      for (let j = 0; j + 1 < chain.length; j++) addEdge(chain[j], chain[j + 1])
     }
   }
   const adj: number[][] = pts.map(() => [])
@@ -228,6 +257,17 @@ export function outlinesOf(ways: Point[][]): Point[][] {
   return rings
 }
 
+/** Whether a point is strictly inside a closed ring (ray casting; points on the edge don't count). */
+export function inside(p: Point, r: Point[]): boolean {
+  let hit = false
+  for (let i = 0, j = r.length - 2; i < r.length - 1; j = i++) {
+    const a = r[i], b = r[j]
+    if (sameSpot(p, a)) return false
+    if ((a.lat > p.lat) !== (b.lat > p.lat) && p.lon < ((b.lon - a.lon) * (p.lat - a.lat)) / (b.lat - a.lat) + a.lon) hit = !hit
+  }
+  return hit
+}
+
 /** Twice the signed area of a closed path of points, taken relative to its first point so real
  *  coordinates don't cancel out. The path may or may not repeat its first point at the end. */
 function shiftedArea(r: Point[]): number {
@@ -306,11 +346,18 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
     if (el.type === 'relation' && el.members) {
       const kind = kindFor(tags, true)
       if (!kind) continue
-      const outers = el.members.filter((m) => (m.role || 'outer') === 'outer' && Array.isArray(m.geometry))
-      const rings = outlinesOf(outers.flatMap((m) => runsOf(m.geometry!)))
-      for (const r of rings) {
-        features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
+      const ways = (role: 'outer' | 'inner') =>
+        el.members!.filter((m) => (m.role || 'outer') === role && Array.isArray(m.geometry)).flatMap((m) => runsOf(m.geometry!))
+      const outers = outlinesOf(ways('outer'))
+      // Inner rings (courtyards, atriums) become holes in the outline that holds them.
+      const holes: Point[][][] = outers.map(() => [])
+      for (const inner of outlinesOf(ways('inner'))) {
+        const at = outers.findIndex((o) => inner.slice(0, -1).some((p) => inside(p, o)))
+        if (at >= 0) holes[at].push(inner)
       }
+      outers.forEach((r, i) => {
+        features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r), ...holes[i].map(ring)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
+      })
     }
   }
   return features

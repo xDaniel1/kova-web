@@ -187,4 +187,26 @@ describe('indoor relations', () => {
       expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(6)
     }
   })
+  it('treats a wall drawn with an extra point in one room only as shared', () => {
+    const a = [pt(0, 0), pt(0, 1), pt(0.5, 1), pt(1, 1), pt(1, 0), pt(0, 0)] // midpoint on the wall
+    const b = [pt(0, 1), pt(0, 2), pt(1, 2), pt(1, 1), pt(0, 1)] // same wall, no midpoint
+    for (const ways of [[a, b], [b, a], [[...a].reverse(), b], [b, [...a].reverse()]]) {
+      const rings = outlinesOf(ways)
+      expect(rings).toHaveLength(1)
+      expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(6)
+    }
+  })
+  it('cuts inner members out of the outline as holes', () => {
+    const outer = { role: 'outer', geometry: [pt(0, 0), pt(0, 3), pt(3, 3), pt(3, 0), pt(0, 0)] }
+    const inner = { role: 'inner', geometry: [pt(1, 1), pt(1, 2), pt(2, 2), pt(2, 1), pt(1, 1)] }
+    const f = toFeatures([{ type: 'relation', id: 20, tags: { building: 'train_station' }, members: [inner, outer] }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(1)
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(2)
+  })
+  it('drops an inner ring that sits in no outline', () => {
+    const outer = { role: 'outer', geometry: [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)] }
+    const inner = { role: 'inner', geometry: [pt(5, 5), pt(5, 6), pt(6, 6), pt(6, 5), pt(5, 5)] }
+    const f = toFeatures([{ type: 'relation', id: 21, tags: { building: 'train_station' }, members: [outer, inner] }] as Parameters<typeof toFeatures>[0])
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
+  })
 })
