@@ -200,15 +200,14 @@ export function loopsOf(chain: Point[]): Point[][] {
   const loops: Point[][] = []
   const path: Point[] = []
   const seen = new Map<string, number>()
-  const key = (p: Point) => `${p.lat},${p.lon}`
   for (const p of chain) {
-    const at = seen.get(key(p))
+    const at = seen.get(spot(p))
     if (at !== undefined) {
       const loop = path.splice(at)
-      for (const q of loop) seen.delete(key(q))
+      for (const q of loop) seen.delete(spot(q))
       if (loop.length >= 3) loops.push([...loop, p])
     }
-    seen.set(key(p), path.length)
+    seen.set(spot(p), path.length)
     path.push(p)
   }
   return loops
