@@ -233,4 +233,18 @@ describe('indoor relations', () => {
     const sq2 = [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)]
     expect(outlinesOf([sq2, [...sq2].reverse()])).toHaveLength(1) // same ring either way round
   })
+  it('keeps every outline when neighbouring cells hold different revisions of a relation', () => {
+    const A = { role: 'outer', geometry: square }
+    const B = { role: 'outer', geometry: [pt(5, 5), pt(5, 6), pt(6, 6), pt(6, 5), pt(5, 5)] }
+    const tags = { building: 'train_station' }
+    const older = toFeatures([{ type: 'relation', id: 1, tags, members: [A] }] as Parameters<typeof toFeatures>[0])
+    const newer = toFeatures([{ type: 'relation', id: 1, tags, members: [B, A] }] as Parameters<typeof toFeatures>[0])
+    for (const cells of [[older, newer], [newer, older]]) expect(mergeCells(cells)).toHaveLength(2)
+  })
+  it('leaves out a hole that crosses its outline', () => {
+    const outer = { role: 'outer', geometry: square }
+    const inner = { role: 'inner', geometry: [pt(0.5, 0.5), pt(0.5, 2), pt(0.8, 2), pt(0.8, 0.5), pt(0.5, 0.5)] }
+    const f = toFeatures([{ type: 'relation', id: 23, tags: { building: 'train_station' }, members: [outer, inner] }] as Parameters<typeof toFeatures>[0])
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
+  })
 })

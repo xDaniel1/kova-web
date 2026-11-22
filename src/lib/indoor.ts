@@ -345,12 +345,12 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
   const features: GeoJSON.Feature[] = []
   // Each feature is keyed by the element it came from, so one drawn in several cells (a relation
   // near a cell edge is in each neighbouring cell) can be shown once: see mergeCells.
-  let part = 0
   let from = ''
-  const push = (f: GeoJSON.Feature) => { f.properties = { ...f.properties, key: `${from}#${part++}` }; features.push(f) }
+  // Keyed by what was drawn, not by position, so cells holding different revisions of the same
+  // relation keep every distinct outline and only drop true repeats.
+  const push = (f: GeoJSON.Feature) => { f.properties = { ...f.properties, key: `${from}|${f.properties?.label ? 'label' : f.geometry.type}|${JSON.stringify((f.geometry as GeoJSON.Point | GeoJSON.LineString | GeoJSON.Polygon).coordinates)}` }; features.push(f) }
   for (const el of elements) {
     from = `${el.type}/${el.id}`
-    part = 0
     const tags = el.tags
     if (!tags) continue
     if (el.type === 'node' && Number.isFinite(el.lat) && Number.isFinite(el.lon)) {
@@ -394,7 +394,10 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
         // The innermost outline holding it: an island inside a courtyard keeps its own atrium.
         let at = -1
         outers.forEach((o, i) => {
-          if (inner.slice(0, -1).some((p) => inside(p, o)) && (at < 0 || areaOf(o) < areaOf(outers[at]))) at = i
+          // Every point of the hole inside the outline (or on one of its corners); a ring crossing
+          // the outline would make an invalid polygon and is left out.
+          const corners = new Set(o.map(spot))
+          if (inner.slice(0, -1).every((p) => corners.has(spot(p)) || inside(p, o)) && (at < 0 || areaOf(o) < areaOf(outers[at]))) at = i
         })
         if (at >= 0) holes[at].push(inner)
       }
