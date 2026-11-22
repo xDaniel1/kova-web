@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellOf, levelLabel, loopsOf, parseLevels, toFeatures } from './indoor'
+import { cellOf, hasArea, levelLabel, loopsOf, parseLevels, toFeatures } from './indoor'
 
 describe('indoor cells and levels', () => {
   it('addresses cells like the iOS app (floor of coordinate / 0.006)', () => {
@@ -109,5 +109,26 @@ describe('indoor relations', () => {
     expect(rel([[0, 0], [1, 1], [1, 1], [0, 0]])).toHaveLength(0) // two distinct points
     expect(rel([[0, 0], [1, 1], [2, 2], [0, 0]])).toHaveLength(0) // collinear
     expect(rel([[0, 0], [0, 1], [1, 1], [0, 0]])).toHaveLength(1)
+  })
+  it('keeps a square joined to two other rings by stray ways, whatever the member order', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    const members = [
+      m([[0, 0], [0, 1]]), // one side of the square
+      m([[0, 0], [-5, -5]]), m([[1, 1], [6, 6]]), // connectors to the two rings
+      m([[-5, -5], [-5, -6], [-6, -6], [-5, -5]]), m([[6, 6], [6, 7], [7, 7], [6, 6]]),
+      m([[0, 1], [1, 1]]), m([[1, 1], [1, 0]]), m([[1, 0], [0, 0]]),
+    ]
+    const f = toFeatures([{ type: 'relation', id: 9, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(3)
+  })
+  it('finds a loop inside one way with loose ends', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    const members = [m([[9, 9], [0, 0], [0, 1], [1, 1], [1, 0], [0, 0], [8, 8]])]
+    expect(toFeatures([{ type: 'relation', id: 10, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])).toHaveLength(1)
+  })
+  it('sees collinear points at real coordinates as no area', () => {
+    const p = (lat: number, lon: number) => ({ lat, lon })
+    expect(hasArea([p(40, -74), p(40.001, -73.999), p(40.002, -73.998), p(40, -74)])).toBe(false)
+    expect(hasArea([p(40, -74), p(40, -73.9999), p(40.0001, -73.9999), p(40, -74)])).toBe(true) // ~10 m square half
   })
 })

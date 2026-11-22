@@ -95,34 +95,107 @@ function ring(points: Point[]): [number, number][] {
   return points.map((p) => [p.lon, p.lat])
 }
 
-/** The closed loops in a chain of points: each time the chain returns to a point it already
- *  visited, the stretch since then is a ring. Splits outlines that touch at one point and keeps
- *  closed loops out of a chain whose ends never meet. */
 const sameSpot = (a: Point, b: Point) => a.lat === b.lat && a.lon === b.lon
 const spot = (p: Point) => `${p.lat},${p.lon}`
 
-/** Ways whose end touches no other way (spurs) can't be part of any outline. Removing them, again
- *  until none are left, leaves only ways that join up into rings. A way closed on itself stays. */
-export function withoutSpurs(ways: Point[][]): Point[][] {
-  let left = ways.filter((w) => w.length >= 2)
-  for (;;) {
-    const ends = new Map<string, number>()
-    for (const w of left) for (const p of [w[0], w[w.length - 1]]) ends.set(spot(p), (ends.get(spot(p)) ?? 0) + 1)
-    const kept = left.filter((w) => sameSpot(w[0], w[w.length - 1]) || (ends.get(spot(w[0]))! >= 2 && ends.get(spot(w[w.length - 1]))! >= 2))
-    if (kept.length === left.length) return kept
-    left = kept
+/** The outlines in a relation's outer ways.
+ *
+ *  The ways are broken into edges between points. An edge that lies on no loop (a bridge: a spur,
+ *  or a way joining one outline to another) can't be part of any outline and is removed. What is
+ *  left is walked edge by edge; each time the walk returns to a point it has already passed, the
+ *  stretch since then is a ring. So rings that touch, rings joined by stray ways, and a loop inside
+ *  one way all come out on their own, whatever order the members are in. Rings with no area are
+ *  dropped. */
+export function outlinesOf(ways: Point[][]): Point[][] {
+  const pts: Point[] = []
+  const id = new Map<string, number>()
+  const node = (p: Point) => {
+    const k = spot(p)
+    let i = id.get(k)
+    if (i === undefined) { i = pts.length; id.set(k, i); pts.push(p) }
+    return i
   }
+  const edges: [number, number][] = []
+  const seenEdge = new Set<string>()
+  for (const w of ways) {
+    for (let i = 0; i + 1 < w.length; i++) {
+      const a = node(w[i]), b = node(w[i + 1])
+      const k = a < b ? `${a}-${b}` : `${b}-${a}`
+      if (a === b || seenEdge.has(k)) continue
+      seenEdge.add(k)
+      edges.push([a, b])
+    }
+  }
+  const adj: number[][] = pts.map(() => [])
+  edges.forEach(([a, b], e) => { adj[a].push(e); adj[b].push(e) })
+
+  // Bridges, by an iterative depth-first search (low-link), so long outlines can't overflow the stack.
+  const order = new Array<number>(pts.length).fill(-1)
+  const low = new Array<number>(pts.length).fill(0)
+  const bridge = new Array<boolean>(edges.length).fill(false)
+  let t = 0
+  for (let root = 0; root < pts.length; root++) {
+    if (order[root] !== -1) continue
+    order[root] = low[root] = t++
+    const stack: { v: number; via: number; next: number }[] = [{ v: root, via: -1, next: 0 }]
+    while (stack.length) {
+      const top = stack[stack.length - 1]
+      if (top.next < adj[top.v].length) {
+        const e = adj[top.v][top.next++]
+        if (e === top.via) continue
+        const u = edges[e][0] === top.v ? edges[e][1] : edges[e][0]
+        if (order[u] === -1) {
+          order[u] = low[u] = t++
+          stack.push({ v: u, via: e, next: 0 })
+        } else {
+          low[top.v] = Math.min(low[top.v], order[u])
+        }
+      } else {
+        stack.pop()
+        if (stack.length) {
+          const parent = stack[stack.length - 1].v
+          low[parent] = Math.min(low[parent], low[top.v])
+          if (low[top.v] > order[parent]) bridge[top.via] = true
+        }
+      }
+    }
+  }
+
+  const used = bridge.slice()
+  const rings: Point[][] = []
+  for (let start = 0; start < edges.length; start++) {
+    if (used[start]) continue
+    used[start] = true
+    const chain = [edges[start][0], edges[start][1]]
+    for (;;) {
+      const v = chain[chain.length - 1]
+      const e = adj[v].find((x) => !used[x])
+      if (e === undefined) break
+      used[e] = true
+      chain.push(edges[e][0] === v ? edges[e][1] : edges[e][0])
+    }
+    for (const loop of loopsOf(chain.map((i) => pts[i]))) if (hasArea(loop)) rings.push(loop)
+  }
+  return rings
 }
 
-/** A closed ring with at least three distinct points and a non-zero area. */
+/** A closed ring with at least three distinct points and an area above about 0.01 m². The sum is
+ *  taken relative to the first point, so real coordinates don't cancel it out. */
 export function hasArea(r: Point[]): boolean {
   if (r.length < 4 || !sameSpot(r[0], r[r.length - 1])) return false
   if (new Set(r.slice(0, -1).map(spot)).size < 3) return false
+  const o = r[0]
   let twice = 0
-  for (let i = 0; i < r.length - 1; i++) twice += r[i].lon * r[i + 1].lat - r[i + 1].lon * r[i].lat
-  return Math.abs(twice) > 1e-14
+  for (let i = 0; i < r.length - 1; i++) {
+    const ax = r[i].lon - o.lon, ay = r[i].lat - o.lat, bx = r[i + 1].lon - o.lon, by = r[i + 1].lat - o.lat
+    twice += ax * by - bx * ay
+  }
+  return Math.abs(twice) / 2 > 1e-12
 }
 
+/** The closed loops in a chain of points: each time the chain returns to a point it already
+ *  visited, the stretch since then is a ring. Splits outlines that touch at one point and keeps
+ *  closed loops out of a chain whose ends never meet. */
 export function loopsOf(chain: Point[]): Point[][] {
   const loops: Point[][] = []
   const path: Point[] = []
@@ -179,26 +252,7 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
       if (!kind) continue
       const outers = el.members.filter((m) => (m.role || 'outer') === 'outer' && m.geometry && m.geometry.length >= 2)
       // Stitch outer segments into rings, as the iOS parser does.
-      const segments = withoutSpurs(outers.map((m) => m.geometry!))
-      const rings: Point[][] = []
-      while (segments.length) {
-        let r = segments.shift()!
-        // Walk on until the chain returns to its start. With spurs gone, every way out of a point
-        // belongs to some ring, so the walk never strands a ring's closing way.
-        let grew = true
-        while (grew && !sameSpot(r[0], r[r.length - 1])) {
-          grew = false
-          for (let i = 0; i < segments.length; i++) {
-            const s = segments[i]
-            const end = r[r.length - 1]
-            if (sameSpot(s[0], end)) { r = r.concat(s.slice(1)); segments.splice(i, 1); grew = true; break }
-            if (sameSpot(s[s.length - 1], end)) { r = r.concat(s.slice(0, -1).reverse()); segments.splice(i, 1); grew = true; break }
-          }
-        }
-        // A chain through a point where outlines touch holds one loop per outline; whatever is
-        // left open by missing members is dropped, and so are loops with no area.
-        rings.push(...loopsOf(r).filter(hasArea))
-      }
+      const rings = outlinesOf(outers.map((m) => m.geometry!))
       for (const r of rings) {
         features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
       }
