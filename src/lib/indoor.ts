@@ -268,16 +268,38 @@ export function outlinesOf(ways: Point[][]): Point[][] {
 
 const areaOf = (r: Point[]) => Math.abs(shiftedArea(r.slice(0, -1)))
 
-/** Features from several cells, each element's features once. */
+/** Features from several cells, each element once. An element's features all come from the first
+ *  cell that has it: neighbouring cells are refreshed on different nights and can hold different
+ *  versions of a relation, and mixing them would draw an old outline over a new courtyard. */
 export function mergeCells(cells: (GeoJSON.Feature[] | null)[]): GeoJSON.Feature[] {
-  const seen = new Set<string>()
+  const owner = new Map<string, number>()
   const out: GeoJSON.Feature[] = []
-  for (const f of cells.flatMap((c) => c ?? [])) {
-    const key = f.properties?.key as string | undefined
-    if (key) { if (seen.has(key)) continue; seen.add(key) }
-    out.push(f)
-  }
+  cells.forEach((cell, i) => {
+    for (const f of cell ?? []) {
+      const source = f.properties?.source as string | undefined
+      if (source) {
+        const first = owner.get(source)
+        if (first === undefined) owner.set(source, i)
+        else if (first !== i) continue
+      }
+      out.push(f)
+    }
+  })
   return out
+}
+
+/** Whether two rings' edges cross (touching at a shared point doesn't count). */
+export function crosses(a: Point[], b: Point[]): boolean {
+  const side = (p: Point, q: Point, r: Point) => Math.sign((q.lon - p.lon) * (r.lat - p.lat) - (q.lat - p.lat) * (r.lon - p.lon))
+  for (let i = 0; i + 1 < a.length; i++) {
+    for (let j = 0; j + 1 < b.length; j++) {
+      const p1 = a[i], p2 = a[i + 1], q1 = b[j], q2 = b[j + 1]
+      if (sameSpot(p1, q1) || sameSpot(p1, q2) || sameSpot(p2, q1) || sameSpot(p2, q2)) continue
+      const d1 = side(q1, q2, p1), d2 = side(q1, q2, p2), d3 = side(p1, p2, q1), d4 = side(p1, p2, q2)
+      if (d1 * d2 < 0 && d3 * d4 < 0) return true
+    }
+  }
+  return false
 }
 
 /** Whether a point is strictly inside a closed ring (ray casting; points on the edge don't count). */
@@ -346,9 +368,9 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
   // Each feature is keyed by the element it came from, so one drawn in several cells (a relation
   // near a cell edge is in each neighbouring cell) can be shown once: see mergeCells.
   let from = ''
-  // Keyed by what was drawn, not by position, so cells holding different revisions of the same
-  // relation keep every distinct outline and only drop true repeats.
-  const push = (f: GeoJSON.Feature) => { f.properties = { ...f.properties, key: `${from}|${f.properties?.label ? 'label' : f.geometry.type}|${JSON.stringify((f.geometry as GeoJSON.Point | GeoJSON.LineString | GeoJSON.Polygon).coordinates)}` }; features.push(f) }
+  // Each feature carries the element it came from, so one found in several cells (a relation near
+  // a cell edge is in each neighbouring cell) is shown once: see mergeCells.
+  const push = (f: GeoJSON.Feature) => { f.properties = { ...f.properties, source: from }; features.push(f) }
   for (const el of elements) {
     from = `${el.type}/${el.id}`
     const tags = el.tags
@@ -397,7 +419,7 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
           // Every point of the hole inside the outline (or on one of its corners); a ring crossing
           // the outline would make an invalid polygon and is left out.
           const corners = new Set(o.map(spot))
-          if (inner.slice(0, -1).every((p) => corners.has(spot(p)) || inside(p, o)) && (at < 0 || areaOf(o) < areaOf(outers[at]))) at = i
+          if (inner.slice(0, -1).every((p) => corners.has(spot(p)) || inside(p, o)) && !crosses(inner, o) && (at < 0 || areaOf(o) < areaOf(outers[at]))) at = i
         })
         if (at >= 0) holes[at].push(inner)
       }

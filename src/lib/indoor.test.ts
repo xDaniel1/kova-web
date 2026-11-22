@@ -233,18 +233,34 @@ describe('indoor relations', () => {
     const sq2 = [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)]
     expect(outlinesOf([sq2, [...sq2].reverse()])).toHaveLength(1) // same ring either way round
   })
-  it('keeps every outline when neighbouring cells hold different revisions of a relation', () => {
+  it('takes a relation whole from one cell when neighbouring cells hold different revisions', () => {
     const A = { role: 'outer', geometry: square }
     const B = { role: 'outer', geometry: [pt(5, 5), pt(5, 6), pt(6, 6), pt(6, 5), pt(5, 5)] }
     const tags = { building: 'train_station' }
     const older = toFeatures([{ type: 'relation', id: 1, tags, members: [A] }] as Parameters<typeof toFeatures>[0])
     const newer = toFeatures([{ type: 'relation', id: 1, tags, members: [B, A] }] as Parameters<typeof toFeatures>[0])
-    for (const cells of [[older, newer], [newer, older]]) expect(mergeCells(cells)).toHaveLength(2)
+    // Never a mix of the two: exactly the version of whichever cell came first.
+    expect(mergeCells([older, newer])).toEqual(older)
+    expect(mergeCells([newer, older])).toEqual(newer)
   })
   it('leaves out a hole that crosses its outline', () => {
     const outer = { role: 'outer', geometry: square }
     const inner = { role: 'inner', geometry: [pt(0.5, 0.5), pt(0.5, 2), pt(0.8, 2), pt(0.8, 0.5), pt(0.5, 0.5)] }
     const f = toFeatures([{ type: 'relation', id: 23, tags: { building: 'train_station' }, members: [outer, inner] }] as Parameters<typeof toFeatures>[0])
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
+  })
+  it('shows one version of a relation when neighbouring cells hold an older and a newer one', () => {
+    const box = (lo: number, hi: number) => [pt(lo, lo), pt(lo, hi), pt(hi, hi), pt(hi, lo), pt(lo, lo)]
+    const tags = { building: 'train_station' }
+    const before = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box(0, 10) }] }] as Parameters<typeof toFeatures>[0])
+    const after = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box(0, 10) }, { role: 'inner', geometry: box(4, 6) }] }] as Parameters<typeof toFeatures>[0])
+    for (const cells of [[before, after], [after, before]]) expect(mergeCells(cells)).toHaveLength(1)
+  })
+  it('leaves out a hole whose edge crosses a concave outline', () => {
+    // U shape open at the top; the hole's corners are all inside the arms but its top edge spans the gap.
+    const u = [pt(0, 0), pt(0, 3), pt(3, 3), pt(3, 2), pt(1, 2), pt(1, 1), pt(3, 1), pt(3, 0), pt(0, 0)]
+    const hole = [pt(0.5, 0.5), pt(0.5, 2.5), pt(2.5, 2.5), pt(2.5, 0.5), pt(0.5, 0.5)]
+    const f = toFeatures([{ type: 'relation', id: 24, tags: { building: 'train_station' }, members: [{ role: 'outer', geometry: u }, { role: 'inner', geometry: hole }] }] as Parameters<typeof toFeatures>[0])
     expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
   })
 })
