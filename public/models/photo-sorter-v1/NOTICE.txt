@@ -1,0 +1,4 @@
+MobileNet V2 (width 0.5, 224x224) image classifier, from TensorFlow Hub
+(google/imagenet/mobilenet_v2_050_224/classification/3, TF.js format), weights converted to float16.
+Copyright Google LLC. Licensed under the Apache License, Version 2.0:
+https://www.apache.org/licenses/LICENSE-2.0
