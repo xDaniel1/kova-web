@@ -1,7 +1,7 @@
 import { ensureStreetsProbe, isStandard } from '../lib/mapStyle'
 import type { ExpressionSpecification, GeoJSONSource, Map as MapboxMap, LayerSpecification } from 'mapbox-gl'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { INDOOR_MIN_ZOOM, cellsIn, levelLabel, loadCell } from '../lib/indoor'
+import { INDOOR_MIN_ZOOM, cellsIn, levelLabel, loadCell, mergeCells } from '../lib/indoor'
 import {
   DIRECTORY_COLOR, DIRECTORY_ICON, DIRECTORY_ORDER, DIRECTORY_TITLES, INDOOR_SOURCE, INDOOR_TILESET, INDOOR_TILE_MIN_ZOOM,
   directoryCategory, floorsOf, isDirectoryPlace, parseFloor, parseStructure, structureNear, uniqueById, visibleFloorIds,
@@ -178,7 +178,7 @@ export function IndoorLayer({ map, enabled, dark, left, placeLabels = true }: Pr
       const cells = cellsIn({ south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() })
       const loaded = await Promise.all(cells.map(loadCell))
       if (my !== gen) return
-      setFeatures(loaded.flatMap((f) => f ?? []))
+      setFeatures(mergeCells(loaded))
     }
     map.on('moveend', refresh)
     refresh()

@@ -1,15 +1,14 @@
-# Web release manifest — November 12, 2026
+# Web release manifest — November 22, 2026
 
-Status: **1.0.8 candidate** — trees from the R2 file host. 1.0.7 is live and tagged.
+Status: **1.0.9 candidate** — indoor relation outlines (iPhone build 76 sync). 1.0.8 is live and tagged.
 
 ## Source and deployment
 
-- Current main: `81b0edf515485525e8ba0d1bc5abf434cd90d9fe` (merged PR #31).
-- Last verified production release: **1.0.3 build 45**, commit `81b0edf`. Deployment [43241930545](https://github.com/xDaniel1/kova-web/actions/runs/43241930545) passed. Previous session verified version/commit in served assets. This candidate has not changed production.
-- Tags `web-v1.0.1`, `web-v1.0.2`, `web-v1.0.3` are historical releases and must not move.
-- Platforms share major.minor 1.0; patch and build counters are per platform. Candidate package/lockfile version: 1.0.8.
-- PR #29 shipped Apple provider selection and extended Tower controls. PR #31 shipped venue POIs without floor plans, street labels, `place_labels`/`rural_detail`, and check-in `channel`/`config_keys`. Full Google/Apple login remains unverified and assigned to Daniel, explicitly not a tag blocker.
-- Candidate closes issue #30: display/edit/clear Home/Work, move a role from its previous holder, show Home and Work first in Saved, preserve JSON fields and customizations. No database migration or iOS/Tower changes.
+- Candidate branch `fix/indoor-blank-role` (PR #37) on main `966cc30` (merged PR #36).
+- Last verified production release: **1.0.8 build 57**, commit `966cc30`, tagged `web-v1.0.8`.
+- Earlier `web-v1.0.x` tags (1.0.1–1.0.3 and 1.0.5–1.0.8; there is no `web-v1.0.4`) are historical releases and must not move.
+- Platforms share major.minor 1.0; patch and build counters are per platform. Candidate package/lockfile version: 1.0.9.
+- Candidate changes the indoor relation parser (blank roles, order-free outlines, holes, unplaceable points) and how cells are merged in `IndoorLayer` (each element once, from the cell with the newest snapshot). No database migration, Tower or iOS change. Pairs with waypoint-site 1.1.1 (PR #3), which republishes indoor cells with relation members.
 
 ## Supabase contract inventory
 
@@ -62,6 +61,6 @@ Production RLS exercised with an existing Apple-backed authenticated session: ow
 - Successful Apple login also needs real account interaction; provider setup and cancellation callback only are proven. Secret rotation belongs to Control (expiry 2027-05-10); web did not access/change it.
 - Nationwide indoor/speed datasets and missing CDN cells remain coverage gaps. Feedback and external incident feeds missing; Home/Work editing awaits candidate deployment.
 - Lazy Mapbox vendor chunk remains ~1.93 MB raw / 545 kB gzip. CPU-throttled functional smoke passed; physical cheap-laptop GPU/FPS/memory certification is still outstanding. No new DEM source or 3D terrain was added.
-- Existing tests: 69 unit checks pass after compatibility changes; build passes; Apple chooser Chrome checks pass. 45 remote-control browser checks pass across Chrome, WebKit, tablet and both phone projects. Local Firefox cannot launch ("Could not find profile folder"), including with a fresh temporary directory; its required Linux CI check remains enabled. Updated full cross-browser CI remains the merge gate.
+- Existing tests: 118 unit checks pass (1.0.9); build passes; Apple chooser Chrome checks pass. 45 remote-control browser checks pass across Chrome, WebKit, tablet and both phone projects. Local Firefox cannot launch ("Could not find profile folder"), including with a fresh temporary directory; its required Linux CI check remains enabled. Updated full cross-browser CI remains the merge gate.
 
-**Tag verdict: pending candidate CI and deployment.** Verify the new live version/build/commit before tagging `web-v1.0.8`. Full Google/Apple login remains assigned to Daniel and explicitly not a tag blocker. Never move existing release tags.
+**Tag verdict: pending candidate CI and deployment.** Verify the new live version/build/commit before tagging `web-v1.0.9`. Full Google/Apple login remains assigned to Daniel and explicitly not a tag blocker. Never move existing release tags.

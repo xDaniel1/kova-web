@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.9 — 2026-11-22
+
+Syncs with iPhone build 76.
+
+- Indoor maps: stations and terminals mapped as multipolygons (Penn Station, Grand Central and others) draw their outlines. A member with a blank role now counts as outline (Penn Station), as on iPhone. Outlines are the outer boundary of the relation's ways, found edge by edge, so member order doesn't matter: stray ways, links between outlines and chords across a shape are left out (where they share points with the outline; lines crossing without one are invalid data and may still draw oddly, but never twice), outlines touching at one point stay separate, outlines sharing a wall draw as their joint outline (even when the wall has extra points in one copy), inner members (courtyards, atriums) are cut out as holes of the innermost outline holding them (a hole crossing its outline is left out), and shapes with no area are skipped. A point OpenStreetMap couldn't place no longer drops the whole cell. A station or terminal near a cell edge, which every neighbouring cell carries, is drawn and listed once, taken whole from one cell so two versions never mix: the one most recently confirmed against OpenStreetMap (site 1.1.1 cells record it). Something deleted from OpenStreetMap can still show from a neighbouring cell until that cell next refreshes (normally within 14 days). A cell that isn't a valid cell is remembered as empty instead of fetched on every move; a download cut off midway is tried again. Checked on live cells: JFK Terminal 5, Penn Station, Times Square and O'Hare Terminals 1 and 3 all draw. Unlike iPhone, which drops a relation chain whose ends don't meet, the web keeps any complete outline inside it. Needs waypoint-site 1.1.1, whose nightly build now asks OpenStreetMap for relation members; they came back as tags only. Airports with Mapbox plans (JFK and the other ten) keep drawing Mapbox's plan, as on iPhone.
+
 ## 1.0.8 — 2026-11-14
 
 - Trees are read from `tiles.kovamaps.com` (Cloudflare R2) first, as on iPhone, now that the `kova-tiles` bucket allows GET from app.kovamaps.com and kovamaps.com. This costs no database time. The database stays the fallback for tiles without a file, and for local and CI builds, whose origins the bucket does not allow.

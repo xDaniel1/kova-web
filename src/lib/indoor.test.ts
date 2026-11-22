@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
-import { cellOf, levelLabel, parseLevels, toFeatures } from './indoor'
+import { describe, expect, it, vi } from 'vitest'
+import { cellOf, hasArea, levelLabel, loopsOf, mergeCells, outlinesOf, parseLevels, toFeatures, type LoadedCell } from './indoor'
+
+const lc = (features: GeoJSON.Feature[], base = '', cell = { row: 0, col: 0 }): LoadedCell => ({ cell, base, features })
 
 describe('indoor cells and levels', () => {
   it('addresses cells like the iOS app (floor of coordinate / 0.006)', () => {
@@ -34,5 +36,274 @@ describe('toFeatures', () => {
     ])
     expect(f).toHaveLength(1)
     expect(f[0].geometry.type).toBe('LineString')
+  })
+})
+
+describe('indoor relations', () => {
+  const sq = (o: number) => [{ lat: 0, lon: o }, { lat: 0, lon: o + 1 }, { lat: 1, lon: o + 1 }, { lat: 1, lon: o }, { lat: 0, lon: o }]
+  const rel = (role: string | undefined) => ({ type: 'relation', id: 1, tags: { building: 'train_station', name: 'Penn Station' }, members: [{ role, geometry: sq(0) }] })
+  it('treats a blank member role as outline, like iPhone build 76 (Penn Station)', () => {
+    for (const role of ['', undefined, 'outer']) {
+      expect(toFeatures([rel(role)] as Parameters<typeof toFeatures>[0]).length, `role ${JSON.stringify(role)}`).toBeGreaterThan(0)
+    }
+  })
+  it('still skips inner members', () => {
+    expect(toFeatures([rel('inner')] as Parameters<typeof toFeatures>[0])).toHaveLength(0)
+  })
+  it('stitches open members into one closed ring, reversing where needed', () => {
+    const a = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }]
+    const b = [{ lat: 0, lon: 0 }, { lat: 1, lon: 0 }, { lat: 1, lon: 1 }] // runs the other way
+    const f = toFeatures([{ type: 'relation', id: 2, tags: { aeroway: 'terminal', name: 'T5' }, members: [{ role: 'outer', geometry: a }, { role: '', geometry: b }] }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(1)
+    const ring = (f[0].geometry as GeoJSON.Polygon).coordinates[0]
+    expect(ring).toHaveLength(5)
+    expect(ring[0]).toEqual(ring[ring.length - 1])
+  })
+  it('drops an outline left open by a missing member', () => {
+    const open = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }, { lat: 1, lon: 0 }]
+    expect(toFeatures([{ type: 'relation', id: 3, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: open }] }] as Parameters<typeof toFeatures>[0])).toHaveLength(0)
+  })
+  it('keeps a closed member separate from an open outline that touches it at one point', () => {
+    // A: open path ending at B (1,1); then a closed ring starting and ending at B; then the rest of A.
+    const a1 = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }]
+    const b = [{ lat: 1, lon: 1 }, { lat: 1, lon: 2 }, { lat: 2, lon: 2 }, { lat: 2, lon: 1 }, { lat: 1, lon: 1 }]
+    const a2 = [{ lat: 1, lon: 1 }, { lat: 1, lon: 0 }, { lat: 0, lon: 0 }]
+    const f = toFeatures([{ type: 'relation', id: 4, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: a1 }, { role: 'outer', geometry: b }, { role: 'outer', geometry: a2 }] }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(2)
+    for (const x of f) expect((x.geometry as GeoJSON.Polygon).coordinates[0]).toHaveLength(5)
+  })
+  it('splits two multi-way rings that touch at a shared point', () => {
+    // Ring A: (0,0)→(0,1)→(1,1)→(1,0)→(0,0); ring B: (1,1)→(1,2)→(2,2)→(2,1)→(1,1). Each in two ways,
+    // ordered so the stitcher walks from A into B at (1,1) before A is closed.
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    const members = [m([[0, 0], [0, 1], [1, 1]]), m([[1, 1], [1, 2], [2, 2]]), m([[2, 2], [2, 1], [1, 1]]), m([[1, 1], [1, 0], [0, 0]])]
+    const f = toFeatures([{ type: 'relation', id: 5, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(2)
+    for (const x of f) {
+      const r = (x.geometry as GeoJSON.Polygon).coordinates[0]
+      expect(r).toHaveLength(5)
+      expect(new Set(r.slice(0, -1).map(String)).size).toBe(4)
+    }
+  })
+  it('keeps a closed ring that a dangling way runs into', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    // A dangling way ends at (1,1), then the ring (1,1)→(1,2)→(2,2)→(2,1)→(1,1) in two ways.
+    const members = [m([[5, 5], [1, 1]]), m([[1, 1], [1, 2], [2, 2]]), m([[2, 2], [2, 1], [1, 1]])]
+    expect(toFeatures([{ type: 'relation', id: 6, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])).toHaveLength(1)
+  })
+  it('finds every loop in a chain', () => {
+    const p = (lat: number, lon: number) => ({ lat, lon })
+    expect(loopsOf([p(0, 0), p(0, 1), p(1, 1), p(0, 0)])).toHaveLength(1)
+    expect(loopsOf([p(0, 0), p(0, 1), p(1, 1)])).toHaveLength(0)
+    expect(loopsOf([p(9, 9), p(0, 0), p(0, 1), p(1, 1), p(0, 0), p(8, 8)])).toHaveLength(1)
+  })
+  it('keeps a ring when spurs sit between its ways', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    // A=(0,0), B=(1,1). One side A→B, a spur from B, a spur from A, then the other side B→A.
+    const members = [m([[0, 0], [0, 1], [1, 1]]), m([[1, 1], [3, 3]]), m([[0, 0], [-3, -3]]), m([[1, 1], [1, 0], [0, 0]])]
+    const f = toFeatures([{ type: 'relation', id: 7, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(1)
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates[0]).toHaveLength(5)
+  })
+  it('drops rings with no area', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    const rel = (g: [number, number][]) => toFeatures([{ type: 'relation', id: 8, tags: { aeroway: 'terminal' }, members: [m(g)] }] as Parameters<typeof toFeatures>[0])
+    expect(rel([[0, 0], [1, 1], [1, 1], [0, 0]])).toHaveLength(0) // two distinct points
+    expect(rel([[0, 0], [1, 1], [2, 2], [0, 0]])).toHaveLength(0) // collinear
+    expect(rel([[0, 0], [0, 1], [1, 1], [0, 0]])).toHaveLength(1)
+  })
+  it('keeps a square joined to two other rings by stray ways, whatever the member order', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    const members = [
+      m([[0, 0], [0, 1]]), // one side of the square
+      m([[0, 0], [-5, -5]]), m([[1, 1], [6, 6]]), // connectors to the two rings
+      m([[-5, -5], [-5, -6], [-6, -6], [-5, -5]]), m([[6, 6], [6, 7], [7, 7], [6, 6]]),
+      m([[0, 1], [1, 1]]), m([[1, 1], [1, 0]]), m([[1, 0], [0, 0]]),
+    ]
+    const f = toFeatures([{ type: 'relation', id: 9, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(3)
+  })
+  it('finds a loop inside one way with loose ends', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    const members = [m([[9, 9], [0, 0], [0, 1], [1, 1], [1, 0], [0, 0], [8, 8]])]
+    expect(toFeatures([{ type: 'relation', id: 10, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])).toHaveLength(1)
+  })
+  it('sees collinear points at real coordinates as no area', () => {
+    const p = (lat: number, lon: number) => ({ lat, lon })
+    expect(hasArea([p(40, -74), p(40.001, -73.999), p(40.002, -73.998), p(40, -74)])).toBe(false)
+    expect(hasArea([p(40, -74), p(40, -73.9999), p(40.0001, -73.9999), p(40, -74)])).toBe(true) // ~10 m square half
+  })
+  const pt = (lat: number, lon: number) => ({ lat, lon })
+  const square = [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)]
+  it('draws the whole square when a diagonal crosses it, in either member order', () => {
+    const diagonal = [pt(0, 0), pt(1, 1)]
+    for (const ways of [[diagonal, square], [square, diagonal]]) {
+      const rings = outlinesOf(ways)
+      expect(rings).toHaveLength(1)
+      expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(4)
+    }
+  })
+  it('splits rings touching at a point in any member order', () => {
+    const b = [pt(1, 1), pt(1, 2), pt(2, 2), pt(2, 1), pt(1, 1)]
+    for (const ways of [[square, b], [b, square]]) expect(outlinesOf(ways)).toHaveLength(2)
+  })
+  it('handles many rings touching one point quickly', () => {
+    const ways = Array.from({ length: 2000 }, (_, i) => {
+      const a = (i / 2000) * 2 * Math.PI, c = Math.cos(a), s = Math.sin(a)
+      return [pt(0, 0), pt(s * 1, c * 1), pt(Math.sin(a + 0.001) * 1, Math.cos(a + 0.001) * 1), pt(0, 0)]
+    })
+    const started = performance.now()
+    expect(outlinesOf(ways)).toHaveLength(2000)
+    expect(performance.now() - started).toBeLessThan(1000)
+  })
+  it('survives points Overpass could not place, keeping the rest of the cell', () => {
+    const els = [
+      { type: 'relation', id: 11, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: [pt(0, 0), null, pt(1, 1)] }] },
+      { type: 'way', id: 12, tags: { indoor: 'room' }, geometry: [pt(0, 0), null, pt(1, 1), pt(0, 0)] },
+      { type: 'node', id: 13, lat: null, lon: null, tags: { shop: 'yes' } },
+      { type: 'way', id: 14, tags: { indoor: 'room', level: '0' }, geometry: square },
+    ] as unknown as Parameters<typeof toFeatures>[0]
+    const f = toFeatures(els)
+    expect(f.filter((x) => x.geometry.type === 'Polygon')).toHaveLength(1)
+  })
+  const perms = <T,>(xs: T[]): T[][] => xs.length <= 1 ? [xs] : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((r) => [x, ...r]))
+  it('draws the full outline for every order of a square split by a crossing way', () => {
+    // Left side (0,0)→(0,1)… as three ways plus the way across the middle, also reversed.
+    const left = [pt(0, 0.5), pt(0, 0), pt(1, 0), pt(1, 0.5)]
+    const right = [pt(1, 0.5), pt(1, 1), pt(0, 1), pt(0, 0.5)]
+    const across = [pt(0, 0.5), pt(1, 0.5)]
+    for (const ways of perms([left, right, across])) {
+      for (const flip of [false, true]) {
+        const rings = outlinesOf(ways.map((w) => (flip ? [...w].reverse() : w)))
+        expect(rings).toHaveLength(1)
+        expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(6)
+      }
+    }
+  })
+  it('draws two rooms sharing a wall as their joint outline, whatever the order', () => {
+    const a = [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)]
+    const b = [pt(0, 1), pt(0, 2), pt(1, 2), pt(1, 1), pt(0, 1)]
+    for (const ways of [[a, b], [b, a]]) {
+      const rings = outlinesOf(ways)
+      expect(rings).toHaveLength(1)
+      expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(6)
+    }
+  })
+  it('treats a wall drawn with an extra point in one room only as shared', () => {
+    const a = [pt(0, 0), pt(0, 1), pt(0.5, 1), pt(1, 1), pt(1, 0), pt(0, 0)] // midpoint on the wall
+    const b = [pt(0, 1), pt(0, 2), pt(1, 2), pt(1, 1), pt(0, 1)] // same wall, no midpoint
+    for (const ways of [[a, b], [b, a], [[...a].reverse(), b], [b, [...a].reverse()]]) {
+      const rings = outlinesOf(ways)
+      expect(rings).toHaveLength(1)
+      expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(6)
+    }
+  })
+  it('cuts inner members out of the outline as holes', () => {
+    const outer = { role: 'outer', geometry: [pt(0, 0), pt(0, 3), pt(3, 3), pt(3, 0), pt(0, 0)] }
+    const inner = { role: 'inner', geometry: [pt(1, 1), pt(1, 2), pt(2, 2), pt(2, 1), pt(1, 1)] }
+    const f = toFeatures([{ type: 'relation', id: 20, tags: { building: 'train_station' }, members: [inner, outer] }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(1)
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(2)
+  })
+  it('drops an inner ring that sits in no outline', () => {
+    const outer = { role: 'outer', geometry: [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)] }
+    const inner = { role: 'inner', geometry: [pt(5, 5), pt(5, 6), pt(6, 6), pt(6, 5), pt(5, 5)] }
+    const f = toFeatures([{ type: 'relation', id: 21, tags: { building: 'train_station' }, members: [outer, inner] }] as Parameters<typeof toFeatures>[0])
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
+  })
+  it('draws a ring once when an overlapping way makes it come out twice', () => {
+    const sqWithMid = [pt(0, 0), pt(0, 1), pt(0, 2), pt(2, 2), pt(2, 0), pt(0, 0)]
+    expect(outlinesOf([sqWithMid, [pt(0, 0), pt(0, 2)]])).toHaveLength(1)
+  })
+  it('shows a relation found in several cells once', () => {
+    const rel = { type: 'relation', id: 3568744, tags: { building: 'train_station', name: 'Penn' }, members: [{ role: 'outer', geometry: square }] }
+    const room = { type: 'way', id: 1, tags: { indoor: 'room', level: '0' }, geometry: square }
+    const a = toFeatures([rel, room] as Parameters<typeof toFeatures>[0])
+    const b = toFeatures([rel] as Parameters<typeof toFeatures>[0])
+    expect(mergeCells([lc(a), lc(b), null])).toHaveLength(a.length)
+  })
+  it('gives a hole to the innermost outline holding it (island in a courtyard)', () => {
+    const box = (lo: number, hi: number) => [pt(lo, lo), pt(lo, hi), pt(hi, hi), pt(hi, lo), pt(lo, lo)]
+    const members = [
+      { role: 'outer', geometry: box(0, 10) }, { role: 'inner', geometry: box(2, 8) },
+      { role: 'outer', geometry: box(3, 7) }, { role: 'inner', geometry: box(4, 6) },
+    ]
+    const f = toFeatures([{ type: 'relation', id: 22, tags: { building: 'train_station' }, members }] as Parameters<typeof toFeatures>[0])
+    expect(f.map((x) => (x.geometry as GeoJSON.Polygon).coordinates.length).sort()).toEqual([2, 2])
+  })
+  it('sees a ring and its reverse as one ring', () => {
+    const sq2 = [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)]
+    expect(outlinesOf([sq2, [...sq2].reverse()])).toHaveLength(1) // same ring either way round
+  })
+  it('takes a relation whole from one cell when neighbouring cells hold different revisions', () => {
+    const A = { role: 'outer', geometry: square }
+    const B = { role: 'outer', geometry: [pt(5, 5), pt(5, 6), pt(6, 6), pt(6, 5), pt(5, 5)] }
+    const tags = { building: 'train_station' }
+    const older = toFeatures([{ type: 'relation', id: 1, tags, members: [A] }] as Parameters<typeof toFeatures>[0])
+    const newer = toFeatures([{ type: 'relation', id: 1, tags, members: [B, A] }] as Parameters<typeof toFeatures>[0])
+    // Never a mix of the two: exactly the version of whichever cell came first.
+    expect(mergeCells([lc(older), lc(newer)])).toEqual(older)
+    expect(mergeCells([lc(newer), lc(older)])).toEqual(newer)
+  })
+  it('leaves out a hole that crosses its outline', () => {
+    const outer = { role: 'outer', geometry: square }
+    const inner = { role: 'inner', geometry: [pt(0.5, 0.5), pt(0.5, 2), pt(0.8, 2), pt(0.8, 0.5), pt(0.5, 0.5)] }
+    const f = toFeatures([{ type: 'relation', id: 23, tags: { building: 'train_station' }, members: [outer, inner] }] as Parameters<typeof toFeatures>[0])
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
+  })
+  it('shows one version of a relation when neighbouring cells hold an older and a newer one', () => {
+    const box = (lo: number, hi: number) => [pt(lo, lo), pt(lo, hi), pt(hi, hi), pt(hi, lo), pt(lo, lo)]
+    const tags = { building: 'train_station' }
+    const before = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box(0, 10) }] }] as Parameters<typeof toFeatures>[0])
+    const after = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box(0, 10) }, { role: 'inner', geometry: box(4, 6) }] }] as Parameters<typeof toFeatures>[0])
+    for (const cells of [[before, after], [after, before]]) expect(mergeCells(cells.map((c) => lc(c)))).toHaveLength(1)
+  })
+  it('leaves out a hole whose edge crosses a concave outline', () => {
+    // U shape open at the top; the hole's corners are all inside the arms but its top edge spans the gap.
+    const u = [pt(0, 0), pt(0, 3), pt(3, 3), pt(3, 2), pt(1, 2), pt(1, 1), pt(3, 1), pt(3, 0), pt(0, 0)]
+    const hole = [pt(0.5, 0.5), pt(0.5, 2.5), pt(2.5, 2.5), pt(2.5, 0.5), pt(0.5, 0.5)]
+    const f = toFeatures([{ type: 'relation', id: 24, tags: { building: 'train_station' }, members: [{ role: 'outer', geometry: u }, { role: 'inner', geometry: hole }] }] as Parameters<typeof toFeatures>[0])
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
+  })
+  it('prefers the cell confirmed against the newer OpenStreetMap snapshot, in any order', () => {
+    const tags = { building: 'train_station' }
+    const old = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: square }] }] as Parameters<typeof toFeatures>[0])
+    const box = [pt(0, 0), pt(0, 2), pt(2, 2), pt(2, 0), pt(0, 0)]
+    const fresh = toFeatures([{ type: 'relation', id: 1, tags, members: [{ role: 'outer', geometry: box }] }] as Parameters<typeof toFeatures>[0])
+    expect(mergeCells([lc(old, '2026-11-01T00:00:00Z'), lc(fresh, '2026-11-20T00:00:00Z')])).toEqual(fresh)
+    expect(mergeCells([lc(fresh, '2026-11-20T00:00:00Z'), lc(old, '2026-11-01T00:00:00Z')])).toEqual(fresh)
+  })
+})
+
+describe('loading cells', () => {
+  const respond = (status: number, text: () => Promise<string>) => ({ status, ok: status >= 200 && status < 300, text }) as unknown as Response
+  it('tries again after the body fails mid-download, but remembers a cell that is not a cell', async () => {
+    const { loadCell } = await import('./indoor')
+    let calls = 0
+    vi.stubGlobal('fetch', async () => {
+      calls++
+      return respond(200, calls === 1 ? () => Promise.reject(new TypeError('network')) : () => Promise.resolve('{"osm_base":"2026-11-22T07:20:03Z"}'))
+    })
+    try {
+      const cell = { row: 999_001, col: 999_001 }
+      expect(await loadCell(cell)).toBeNull() // dropped connection: not cached
+      expect(await loadCell(cell)).toBeNull() // no elements array: not a cell, cached
+      expect(await loadCell(cell)).toBeNull()
+      expect(calls).toBe(2)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+})
+
+describe('cell snapshots', () => {
+  it('ignores an osm_base that is not a snapshot time', async () => {
+    const { loadCell } = await import('./indoor')
+    vi.stubGlobal('fetch', async () => ({ status: 200, ok: true, text: async () => '{"elements":[],"osm_base":"zzz"}' }) as unknown as Response)
+    try {
+      expect((await loadCell({ row: 999_002, col: 999_002 }))?.base).toBe('')
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
