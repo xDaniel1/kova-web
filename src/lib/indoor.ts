@@ -31,10 +31,10 @@ interface Element {
   type: 'node' | 'way' | 'relation'
   id: number
   tags?: Record<string, string>
-  geometry?: Point[]
+  geometry?: (Point | null)[]
   lat?: number
   lon?: number
-  members?: { role?: string; geometry?: Point[] }[]
+  members?: { role?: string; geometry?: (Point | null)[] }[]
 }
 
 export type IndoorKind = 'room' | 'corridor' | 'area' | 'shop' | 'amenity' | 'gate' | 'stairs' | 'wall' | 'footprint'
@@ -98,14 +98,30 @@ function ring(points: Point[]): [number, number][] {
 const sameSpot = (a: Point, b: Point) => a.lat === b.lat && a.lon === b.lon
 const spot = (p: Point) => `${p.lat},${p.lon}`
 
-/** The outlines in a relation's outer ways.
+/** A point Overpass could actually place (it writes null for one it can't). */
+export const realPoint = (p: Point | null | undefined): p is Point =>
+  !!p && Number.isFinite(p.lat) && Number.isFinite(p.lon)
+
+/** The stretches of a way between points Overpass couldn't place. */
+export function runsOf(way: (Point | null)[]): Point[][] {
+  const runs: Point[][] = []
+  let run: Point[] = []
+  for (const p of way) {
+    if (realPoint(p)) run.push(p)
+    else { if (run.length >= 2) runs.push(run); run = [] }
+  }
+  if (run.length >= 2) runs.push(run)
+  return runs
+}
+
+/** The outlines in a relation's outer ways, whatever order the members come in.
  *
- *  The ways are broken into edges between points. An edge that lies on no loop (a bridge: a spur,
- *  or a way joining one outline to another) can't be part of any outline and is removed. What is
- *  left is walked edge by edge; each time the walk returns to a point it has already passed, the
- *  stretch since then is a ring. So rings that touch, rings joined by stray ways, and a loop inside
- *  one way all come out on their own, whatever order the members are in. Rings with no area are
- *  dropped. */
+ *  The ways are broken into edges between points. An edge on no loop (a bridge: a spur, or a way
+ *  joining one outline to another) is removed. Each remaining connected piece is a plane drawing;
+ *  its outline is the boundary of its outer face, found by walking edges and always taking the
+ *  next one clockwise. That boundary ignores chords and stray ways inside the shape, and where
+ *  outlines touch at a point it passes that point twice, so it is split into one ring per
+ *  outline there. Rings with no area are dropped. Linear in the number of edges, after sorting. */
 export function outlinesOf(ways: Point[][]): Point[][] {
   const pts: Point[] = []
   const id = new Map<string, number>()
@@ -161,22 +177,68 @@ export function outlinesOf(ways: Point[][]): Point[][] {
     }
   }
 
-  const used = bridge.slice()
-  const rings: Point[][] = []
-  for (let start = 0; start < edges.length; start++) {
-    if (used[start]) continue
-    used[start] = true
-    const chain = [edges[start][0], edges[start][1]]
-    for (;;) {
-      const v = chain[chain.length - 1]
-      const e = adj[v].find((x) => !used[x])
-      if (e === undefined) break
-      used[e] = true
-      chain.push(edges[e][0] === v ? edges[e][1] : edges[e][0])
+  // Half-edge h runs from[h] -> to[h]; its twin is h ^ 1. Around each point, outgoing half-edges
+  // sorted by direction.
+  const from: number[] = [], to: number[] = []
+  edges.forEach(([a, b], e) => { from[2 * e] = a; to[2 * e] = b; from[2 * e + 1] = b; to[2 * e + 1] = a })
+  const out: number[][] = pts.map(() => [])
+  for (let h = 0; h < 2 * edges.length; h++) if (!bridge[h >> 1]) out[from[h]].push(h)
+  const slot = new Array<number>(2 * edges.length).fill(-1)
+  out.forEach((hs, v) => {
+    const angle = (h: number) => Math.atan2(pts[to[h]].lat - pts[v].lat, pts[to[h]].lon - pts[v].lon)
+    hs.sort((x, y) => angle(x) - angle(y))
+    hs.forEach((h, i) => { slot[h] = i })
+  })
+  // Arriving along h at point v, leave by the half-edge just clockwise of the way back.
+  const next = (h: number) => {
+    const hs = out[to[h]]
+    return hs[(slot[h ^ 1] - 1 + hs.length) % hs.length]
+  }
+
+  // Connected pieces (bridges excluded), then every face; keep each piece's largest face.
+  const piece = new Array<number>(pts.length).fill(-1)
+  let pieces = 0
+  for (let v = 0; v < pts.length; v++) {
+    if (piece[v] !== -1 || !out[v].length) continue
+    const todo = [v]
+    piece[v] = pieces
+    while (todo.length) {
+      const x = todo.pop()!
+      for (const h of out[x]) if (piece[to[h]] === -1) { piece[to[h]] = pieces; todo.push(to[h]) }
     }
-    for (const loop of loopsOf(chain.map((i) => pts[i]))) if (hasArea(loop)) rings.push(loop)
+    pieces++
+  }
+  const best: { area: number; face: number[] }[] = []
+  const walked = new Array<boolean>(2 * edges.length).fill(false)
+  for (let h0 = 0; h0 < 2 * edges.length; h0++) {
+    if (walked[h0] || bridge[h0 >> 1]) continue
+    const face: number[] = []
+    for (let h = h0; !walked[h]; h = next(h)) { walked[h] = true; face.push(from[h]) }
+    const area = Math.abs(shiftedArea(face.map((i) => pts[i])))
+    const p = piece[face[0]]
+    if (!best[p] || area > best[p].area) best[p] = { area, face }
+  }
+
+  const rings: Point[][] = []
+  for (const b of best) {
+    if (!b) continue
+    const chain = [...b.face, b.face[0]].map((i) => pts[i])
+    for (const loop of loopsOf(chain)) if (hasArea(loop)) rings.push(loop)
   }
   return rings
+}
+
+/** Twice the signed area of a closed path of points, taken relative to its first point so real
+ *  coordinates don't cancel out. The path may or may not repeat its first point at the end. */
+function shiftedArea(r: Point[]): number {
+  if (r.length < 3) return 0
+  const o = r[0]
+  let twice = 0
+  for (let i = 0; i < r.length; i++) {
+    const p = r[i], q = r[(i + 1) % r.length]
+    twice += (p.lon - o.lon) * (q.lat - o.lat) - (q.lon - o.lon) * (p.lat - o.lat)
+  }
+  return twice
 }
 
 /** A closed ring with at least three distinct points and an area above about 0.01 m². The sum is
@@ -184,13 +246,7 @@ export function outlinesOf(ways: Point[][]): Point[][] {
 export function hasArea(r: Point[]): boolean {
   if (r.length < 4 || !sameSpot(r[0], r[r.length - 1])) return false
   if (new Set(r.slice(0, -1).map(spot)).size < 3) return false
-  const o = r[0]
-  let twice = 0
-  for (let i = 0; i < r.length - 1; i++) {
-    const ax = r[i].lon - o.lon, ay = r[i].lat - o.lat, bx = r[i + 1].lon - o.lon, by = r[i + 1].lat - o.lat
-    twice += ax * by - bx * ay
-  }
-  return Math.abs(twice) / 2 > 1e-12
+  return Math.abs(shiftedArea(r.slice(0, -1))) / 2 > 1e-12
 }
 
 /** The closed loops in a chain of points: each time the chain returns to a point it already
@@ -218,17 +274,18 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
   for (const el of elements) {
     const tags = el.tags
     if (!tags) continue
-    if (el.type === 'node' && el.lat !== undefined && el.lon !== undefined) {
+    if (el.type === 'node' && Number.isFinite(el.lat) && Number.isFinite(el.lon)) {
       const kind: IndoorKind | null = tags.aeroway === 'gate' ? 'gate' : tags.shop ? 'shop' : tags.amenity ? 'amenity' : null
       if (!kind) continue
       features.push({
         type: 'Feature',
-        geometry: { type: 'Point', coordinates: [el.lon, el.lat] },
+        geometry: { type: 'Point', coordinates: [el.lon!, el.lat!] },
         properties: { kind, name: tags.name ?? tags.ref ?? '', icon: icon(tags, kind), levels: parseLevels(tags.level), point: true },
       })
       continue
     }
-    if (el.type === 'way' && el.geometry && el.geometry.length >= 2) {
+    // A way with a point Overpass couldn't place is skipped rather than drawn with a gap.
+    if (el.type === 'way' && el.geometry && el.geometry.length >= 2 && el.geometry.every(realPoint)) {
       const pts = el.geometry
       const closed = pts.length >= 4 && pts[0].lat === pts[pts.length - 1].lat && pts[0].lon === pts[pts.length - 1].lon
       const kind = kindFor(tags, closed)
@@ -249,9 +306,8 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
     if (el.type === 'relation' && el.members) {
       const kind = kindFor(tags, true)
       if (!kind) continue
-      const outers = el.members.filter((m) => (m.role || 'outer') === 'outer' && m.geometry && m.geometry.length >= 2)
-      // Stitch outer segments into rings, as the iOS parser does.
-      const rings = outlinesOf(outers.map((m) => m.geometry!))
+      const outers = el.members.filter((m) => (m.role || 'outer') === 'outer' && Array.isArray(m.geometry))
+      const rings = outlinesOf(outers.flatMap((m) => runsOf(m.geometry!)))
       for (const r of rings) {
         features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
       }

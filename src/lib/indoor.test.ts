@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellOf, hasArea, levelLabel, loopsOf, parseLevels, toFeatures } from './indoor'
+import { cellOf, hasArea, levelLabel, loopsOf, outlinesOf, parseLevels, toFeatures } from './indoor'
 
 describe('indoor cells and levels', () => {
   it('addresses cells like the iOS app (floor of coordinate / 0.006)', () => {
@@ -130,5 +130,38 @@ describe('indoor relations', () => {
     const p = (lat: number, lon: number) => ({ lat, lon })
     expect(hasArea([p(40, -74), p(40.001, -73.999), p(40.002, -73.998), p(40, -74)])).toBe(false)
     expect(hasArea([p(40, -74), p(40, -73.9999), p(40.0001, -73.9999), p(40, -74)])).toBe(true) // ~10 m square half
+  })
+  const pt = (lat: number, lon: number) => ({ lat, lon })
+  const square = [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)]
+  it('draws the whole square when a diagonal crosses it, in either member order', () => {
+    const diagonal = [pt(0, 0), pt(1, 1)]
+    for (const ways of [[diagonal, square], [square, diagonal]]) {
+      const rings = outlinesOf(ways)
+      expect(rings).toHaveLength(1)
+      expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(4)
+    }
+  })
+  it('splits rings touching at a point in any member order', () => {
+    const b = [pt(1, 1), pt(1, 2), pt(2, 2), pt(2, 1), pt(1, 1)]
+    for (const ways of [[square, b], [b, square]]) expect(outlinesOf(ways)).toHaveLength(2)
+  })
+  it('handles many rings touching one point quickly', () => {
+    const ways = Array.from({ length: 2000 }, (_, i) => {
+      const a = (i / 2000) * 2 * Math.PI, c = Math.cos(a), s = Math.sin(a)
+      return [pt(0, 0), pt(s * 1, c * 1), pt(Math.sin(a + 0.001) * 1, Math.cos(a + 0.001) * 1), pt(0, 0)]
+    })
+    const started = performance.now()
+    expect(outlinesOf(ways)).toHaveLength(2000)
+    expect(performance.now() - started).toBeLessThan(1000)
+  })
+  it('survives points Overpass could not place, keeping the rest of the cell', () => {
+    const els = [
+      { type: 'relation', id: 11, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: [pt(0, 0), null, pt(1, 1)] }] },
+      { type: 'way', id: 12, tags: { indoor: 'room' }, geometry: [pt(0, 0), null, pt(1, 1), pt(0, 0)] },
+      { type: 'node', id: 13, lat: null, lon: null, tags: { shop: 'yes' } },
+      { type: 'way', id: 14, tags: { indoor: 'room', level: '0' }, geometry: square },
+    ] as unknown as Parameters<typeof toFeatures>[0]
+    const f = toFeatures(els)
+    expect(f.filter((x) => x.geometry.type === 'Polygon')).toHaveLength(1)
   })
 })
