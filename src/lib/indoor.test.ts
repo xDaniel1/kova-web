@@ -42,16 +42,16 @@ describe('indoor relations', () => {
   const rel = (role: string | undefined) => ({ type: 'relation', id: 1, tags: { building: 'train_station', name: 'Penn Station' }, members: [{ role, geometry: sq(0) }] })
   it('treats a blank member role as outline, like iPhone build 76 (Penn Station)', () => {
     for (const role of ['', undefined, 'outer']) {
-      expect(toFeatures([rel(role)] as never).length, `role ${JSON.stringify(role)}`).toBeGreaterThan(0)
+      expect(toFeatures([rel(role)] as Parameters<typeof toFeatures>[0]).length, `role ${JSON.stringify(role)}`).toBeGreaterThan(0)
     }
   })
   it('still skips inner members', () => {
-    expect(toFeatures([rel('inner')] as never)).toHaveLength(0)
+    expect(toFeatures([rel('inner')] as Parameters<typeof toFeatures>[0])).toHaveLength(0)
   })
   it('stitches open members into one closed ring, reversing where needed', () => {
     const a = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }]
     const b = [{ lat: 0, lon: 0 }, { lat: 1, lon: 0 }, { lat: 1, lon: 1 }] // runs the other way
-    const f = toFeatures([{ type: 'relation', id: 2, tags: { aeroway: 'terminal', name: 'T5' }, members: [{ role: 'outer', geometry: a }, { role: '', geometry: b }] }] as never)
+    const f = toFeatures([{ type: 'relation', id: 2, tags: { aeroway: 'terminal', name: 'T5' }, members: [{ role: 'outer', geometry: a }, { role: '', geometry: b }] }] as Parameters<typeof toFeatures>[0])
     expect(f).toHaveLength(1)
     const ring = (f[0].geometry as GeoJSON.Polygon).coordinates[0]
     expect(ring).toHaveLength(5)
@@ -59,6 +59,6 @@ describe('indoor relations', () => {
   })
   it('drops an outline left open by a missing member', () => {
     const open = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }, { lat: 1, lon: 0 }]
-    expect(toFeatures([{ type: 'relation', id: 3, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: open }] }] as never)).toHaveLength(0)
+    expect(toFeatures([{ type: 'relation', id: 3, tags: { aeroway: 'terminal' }, members: [{ role: 'outer', geometry: open }] }] as Parameters<typeof toFeatures>[0])).toHaveLength(0)
   })
 })
