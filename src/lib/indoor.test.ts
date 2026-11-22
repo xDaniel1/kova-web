@@ -95,4 +95,19 @@ describe('indoor relations', () => {
     expect(loopsOf([p(0, 0), p(0, 1), p(1, 1)])).toHaveLength(0)
     expect(loopsOf([p(9, 9), p(0, 0), p(0, 1), p(1, 1), p(0, 0), p(8, 8)])).toHaveLength(1)
   })
+  it('keeps a ring when spurs sit between its ways', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    // A=(0,0), B=(1,1). One side A→B, a spur from B, a spur from A, then the other side B→A.
+    const members = [m([[0, 0], [0, 1], [1, 1]]), m([[1, 1], [3, 3]]), m([[0, 0], [-3, -3]]), m([[1, 1], [1, 0], [0, 0]])]
+    const f = toFeatures([{ type: 'relation', id: 7, tags: { aeroway: 'terminal' }, members }] as Parameters<typeof toFeatures>[0])
+    expect(f).toHaveLength(1)
+    expect((f[0].geometry as GeoJSON.Polygon).coordinates[0]).toHaveLength(5)
+  })
+  it('drops rings with no area', () => {
+    const m = (g: [number, number][]) => ({ role: 'outer', geometry: g.map(([lat, lon]) => ({ lat, lon })) })
+    const rel = (g: [number, number][]) => toFeatures([{ type: 'relation', id: 8, tags: { aeroway: 'terminal' }, members: [m(g)] }] as Parameters<typeof toFeatures>[0])
+    expect(rel([[0, 0], [1, 1], [1, 1], [0, 0]])).toHaveLength(0) // two distinct points
+    expect(rel([[0, 0], [1, 1], [2, 2], [0, 0]])).toHaveLength(0) // collinear
+    expect(rel([[0, 0], [0, 1], [1, 1], [0, 0]])).toHaveLength(1)
+  })
 })

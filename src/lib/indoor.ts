@@ -98,6 +98,31 @@ function ring(points: Point[]): [number, number][] {
 /** The closed loops in a chain of points: each time the chain returns to a point it already
  *  visited, the stretch since then is a ring. Splits outlines that touch at one point and keeps
  *  closed loops out of a chain whose ends never meet. */
+const sameSpot = (a: Point, b: Point) => a.lat === b.lat && a.lon === b.lon
+const spot = (p: Point) => `${p.lat},${p.lon}`
+
+/** Ways whose end touches no other way (spurs) can't be part of any outline. Removing them, again
+ *  until none are left, leaves only ways that join up into rings. A way closed on itself stays. */
+export function withoutSpurs(ways: Point[][]): Point[][] {
+  let left = ways.filter((w) => w.length >= 2)
+  for (;;) {
+    const ends = new Map<string, number>()
+    for (const w of left) for (const p of [w[0], w[w.length - 1]]) ends.set(spot(p), (ends.get(spot(p)) ?? 0) + 1)
+    const kept = left.filter((w) => sameSpot(w[0], w[w.length - 1]) || (ends.get(spot(w[0]))! >= 2 && ends.get(spot(w[w.length - 1]))! >= 2))
+    if (kept.length === left.length) return kept
+    left = kept
+  }
+}
+
+/** A closed ring with at least three distinct points and a non-zero area. */
+export function hasArea(r: Point[]): boolean {
+  if (r.length < 4 || !sameSpot(r[0], r[r.length - 1])) return false
+  if (new Set(r.slice(0, -1).map(spot)).size < 3) return false
+  let twice = 0
+  for (let i = 0; i < r.length - 1; i++) twice += r[i].lon * r[i + 1].lat - r[i + 1].lon * r[i].lat
+  return Math.abs(twice) > 1e-14
+}
+
 export function loopsOf(chain: Point[]): Point[][] {
   const loops: Point[][] = []
   const path: Point[] = []
@@ -154,27 +179,25 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
       if (!kind) continue
       const outers = el.members.filter((m) => (m.role || 'outer') === 'outer' && m.geometry && m.geometry.length >= 2)
       // Stitch outer segments into rings, as the iOS parser does.
-      const isClosed = (r: Point[]) => r.length >= 4 && r[0].lat === r[r.length - 1].lat && r[0].lon === r[r.length - 1].lon
-      // A member that is already a closed ring stays its own ring, so a ring touching another
-      // outline at one point is never stitched into it.
-      const rings: Point[][] = outers.map((m) => m.geometry!).filter(isClosed)
-      const segments = outers.map((m) => m.geometry!).filter((g) => !isClosed(g))
+      const segments = withoutSpurs(outers.map((m) => m.geometry!))
+      const rings: Point[][] = []
       while (segments.length) {
         let r = segments.shift()!
+        // Walk on until the chain returns to its start. With spurs gone, every way out of a point
+        // belongs to some ring, so the walk never strands a ring's closing way.
         let grew = true
-        while (grew && !isClosed(r)) {
+        while (grew && !sameSpot(r[0], r[r.length - 1])) {
           grew = false
           for (let i = 0; i < segments.length; i++) {
             const s = segments[i]
             const end = r[r.length - 1]
-            if (s[0].lat === end.lat && s[0].lon === end.lon) { r = r.concat(s.slice(1)); segments.splice(i, 1); grew = true; break }
-            const last = s[s.length - 1]
-            if (last.lat === end.lat && last.lon === end.lon) { r = r.concat(s.slice(0, -1).reverse()); segments.splice(i, 1); grew = true; break }
+            if (sameSpot(s[0], end)) { r = r.concat(s.slice(1)); segments.splice(i, 1); grew = true; break }
+            if (sameSpot(s[s.length - 1], end)) { r = r.concat(s.slice(0, -1).reverse()); segments.splice(i, 1); grew = true; break }
           }
         }
-        // A chain may pass through a point where two outlines touch; each loop it makes there is
-        // its own ring. Whatever is left open by missing members is dropped.
-        rings.push(...loopsOf(r))
+        // A chain through a point where outlines touch holds one loop per outline; whatever is
+        // left open by missing members is dropped, and so are loops with no area.
+        rings.push(...loopsOf(r).filter(hasArea))
       }
       for (const r of rings) {
         features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
