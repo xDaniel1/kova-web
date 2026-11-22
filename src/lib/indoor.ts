@@ -272,25 +272,16 @@ const areaOf = (r: Point[]) => Math.abs(shiftedArea(r.slice(0, -1)))
  *  (`osm_base`; empty for cells published before site 1.1.1). */
 export interface LoadedCell { cell: Cell; base: string; features: GeoJSON.Feature[] }
 
-/** The publisher asks Overpass for each cell's square plus this margin on every side. */
-export const MARGIN = 0.002
-
-const anchor = (g: GeoJSON.Geometry): number[] | null =>
-  g.type === 'Point' ? g.coordinates : g.type === 'LineString' ? g.coordinates[0] ?? null : g.type === 'Polygon' ? g.coordinates[0]?.[0] ?? null : null
-
-const covers = (c: Cell, [lon, lat]: number[]) =>
-  lat >= c.row * CELL - MARGIN && lat <= (c.row + 1) * CELL + MARGIN && lon >= c.col * CELL - MARGIN && lon <= (c.col + 1) * CELL + MARGIN
-
 /** Features from several cells, each element once.
  *
  *  Neighbouring cells are refreshed on different nights, so they can hold different versions of
  *  the same element. Its features all come from one cell, so two versions never mix: the one most
- *  recently confirmed against OpenStreetMap (the first cell on a tie). And if a cell confirmed
- *  more recently still covers where the element is but no longer has it, it was deleted or
- *  retagged, and isn't shown. */
+ *  recently confirmed against OpenStreetMap (the first cell on a tie). An element deleted from
+ *  OpenStreetMap can still show from a neighbour not yet refreshed (at most 14 days): a cell's
+ *  absence of an element can't prove it was deleted, since Overpass returns a way or relation for
+ *  any part crossing a cell. */
 export function mergeCells(cells: (LoadedCell | null)[]): GeoJSON.Feature[] {
   const loaded = cells.filter((c): c is LoadedCell => !!c)
-  const has = loaded.map((c) => new Set(c.features.map((f) => f.properties?.source as string | undefined)))
   const owner = new Map<string, number>()
   loaded.forEach((c, i) => {
     for (const f of c.features) {
@@ -300,18 +291,12 @@ export function mergeCells(cells: (LoadedCell | null)[]): GeoJSON.Feature[] {
       if (cur === undefined || c.base > loaded[cur].base) owner.set(source, i)
     }
   })
-  const gone = new Set<string>()
-  for (const [source, i] of owner) {
-    const f = loaded[i].features.find((x) => x.properties?.source === source)!
-    const at = anchor(f.geometry)
-    if (at && loaded.some((c, j) => c.base > loaded[i].base && !has[j].has(source) && covers(c.cell, at))) gone.add(source)
-  }
   const out: GeoJSON.Feature[] = []
   loaded.forEach((c, i) => {
     for (const f of c.features) {
       const source = f.properties?.source as string | undefined
       if (!source) out.push(f)
-      else if (owner.get(source) === i && !gone.has(source)) out.push(f)
+      else if (owner.get(source) === i) out.push(f)
     }
   })
   return out
@@ -486,9 +471,16 @@ export async function loadCell(cell: Cell): Promise<LoadedCell | null> {
     return null
   }
   if (!res.ok) return null // transient; try again on the next move
+  let text: string
   try {
-    const json = (await res.json()) as { elements?: Element[]; osm_base?: unknown }
-    const loaded: LoadedCell = { cell, base: typeof json.osm_base === 'string' ? json.osm_base : '', features: toFeatures(json.elements ?? []) }
+    text = await res.text()
+  } catch {
+    return null // the connection dropped mid-body; try again on the next move
+  }
+  try {
+    const json = JSON.parse(text) as { elements?: unknown; osm_base?: unknown }
+    if (!json || typeof json !== 'object' || !Array.isArray(json.elements)) throw new Error('not a cell')
+    const loaded: LoadedCell = { cell, base: typeof json.osm_base === 'string' ? json.osm_base : '', features: toFeatures(json.elements as Element[]) }
     rememberCell(key, loaded)
     return loaded
   } catch {

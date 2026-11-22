@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { cellOf, hasArea, levelLabel, loopsOf, mergeCells, outlinesOf, parseLevels, toFeatures, type LoadedCell } from './indoor'
 
 const lc = (features: GeoJSON.Feature[], base = '', cell = { row: 0, col: 0 }): LoadedCell => ({ cell, base, features })
@@ -273,15 +273,25 @@ describe('indoor relations', () => {
     expect(mergeCells([lc(old, '2026-11-01T00:00:00Z'), lc(fresh, '2026-11-20T00:00:00Z')])).toEqual(fresh)
     expect(mergeCells([lc(fresh, '2026-11-20T00:00:00Z'), lc(old, '2026-11-01T00:00:00Z')])).toEqual(fresh)
   })
-  it('hides an element that a more recently confirmed cell covering it no longer has', () => {
-    // A gate at (0.0061, 0.001): in cell (1,0)'s square and in cell (0,0)'s margin.
-    const gate = toFeatures([{ type: 'node', id: 7, lat: 0.0061, lon: 0.001, tags: { aeroway: 'gate', ref: 'A1' } }] as Parameters<typeof toFeatures>[0])
-    const older = lc(gate, '2026-11-01T00:00:00Z', { row: 0, col: 0 })
-    const retagged = lc([], '2026-11-20T00:00:00Z', { row: 1, col: 0 })
-    expect(mergeCells([older, retagged])).toHaveLength(0)
-    // A newer cell that doesn't cover the gate's spot says nothing about it.
-    expect(mergeCells([older, lc([], '2026-11-20T00:00:00Z', { row: 5, col: 5 })])).toHaveLength(1)
-    // Nor does an older one.
-    expect(mergeCells([lc(gate, '2026-11-20T00:00:00Z'), lc([], '2026-11-01T00:00:00Z', { row: 1, col: 0 })])).toHaveLength(1)
+})
+
+describe('loading cells', () => {
+  const respond = (status: number, text: () => Promise<string>) => ({ status, ok: status >= 200 && status < 300, text }) as unknown as Response
+  it('tries again after the body fails mid-download, but remembers a cell that is not a cell', async () => {
+    const { loadCell } = await import('./indoor')
+    let calls = 0
+    vi.stubGlobal('fetch', async () => {
+      calls++
+      return respond(200, calls === 1 ? () => Promise.reject(new TypeError('network')) : () => Promise.resolve('{"osm_base":"2026-11-22T07:20:03Z"}'))
+    })
+    try {
+      const cell = { row: 999_001, col: 999_001 }
+      expect(await loadCell(cell)).toBeNull() // dropped connection: not cached
+      expect(await loadCell(cell)).toBeNull() // no elements array: not a cell, cached
+      expect(await loadCell(cell)).toBeNull()
+      expect(calls).toBe(2)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
