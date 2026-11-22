@@ -295,3 +295,15 @@ describe('loading cells', () => {
     }
   })
 })
+
+describe('cell snapshots', () => {
+  it('ignores an osm_base that is not a snapshot time', async () => {
+    const { loadCell } = await import('./indoor')
+    vi.stubGlobal('fetch', async () => ({ status: 200, ok: true, text: async () => '{"elements":[],"osm_base":"zzz"}' }) as unknown as Response)
+    try {
+      expect((await loadCell({ row: 999_002, col: 999_002 }))?.base).toBe('')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+})

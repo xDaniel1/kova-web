@@ -444,6 +444,9 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
   return features
 }
 
+// The publisher's osm_base, e.g. 2026-11-22T07:20:03Z; anything else counts as no snapshot.
+const SNAPSHOT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/
+
 const cache = new Map<string, LoadedCell | null>()
 
 const MAX_CACHED_CELLS = 48
@@ -480,7 +483,7 @@ export async function loadCell(cell: Cell): Promise<LoadedCell | null> {
   try {
     const json = JSON.parse(text) as { elements?: unknown; osm_base?: unknown }
     if (!json || typeof json !== 'object' || !Array.isArray(json.elements)) throw new Error('not a cell')
-    const loaded: LoadedCell = { cell, base: typeof json.osm_base === 'string' ? json.osm_base : '', features: toFeatures(json.elements as Element[]) }
+    const loaded: LoadedCell = { cell, base: typeof json.osm_base === 'string' && SNAPSHOT.test(json.osm_base) ? json.osm_base : '', features: toFeatures(json.elements as Element[]) }
     rememberCell(key, loaded)
     return loaded
   } catch {
