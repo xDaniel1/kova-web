@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.10 — 2026-11-22
+
+Syncs with iPhone (waypoint-ios PR #34).
+
+- **Photo tabs on the place page, like iPhone.** A place's photos get All / Menu / Food & drink / Atmosphere tabs, and photos of the menu get their own Menu row above them. Google doesn't label photos, so the browser sorts them itself with a small image classifier (MobileNet v2, 16-bit, 3.9 MB, served with the app and kept by the service worker after the first download). Nothing is uploaded. Tabs only appear for categories that have photos; a photo the sorter isn't sure about stays under All. Sorting is skipped on a Save-Data connection. iPhone reads menus from the text in the photo; the web uses the classifier's own menu class, set high enough that a tray of food laid out in a grid isn't taken for a menu.
+- Indoor: Penn Station, Grand Central and other relation-mapped stations and terminals get their name on the map, inside the largest outline. A courtyard that shares part of the outer wall is cut out instead of dropped. A cell's snapshot time must be a real date. A cell that comes back as something else (a Wi-Fi sign-in page) is skipped for a minute instead of until reload.
+
 ## 1.0.9 — 2026-11-22
 
 Syncs with iPhone build 76.

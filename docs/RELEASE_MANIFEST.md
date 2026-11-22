@@ -1,14 +1,14 @@
 # Web release manifest — November 22, 2026
 
-Status: **1.0.9 candidate** — indoor relation outlines (iPhone build 76 sync). 1.0.8 is live and tagged.
+Status: **1.0.10 candidate** — place photo tabs (iPhone PR #34 sync) and indoor follow-ups. 1.0.9 is live and tagged.
 
 ## Source and deployment
 
-- Candidate branch `fix/indoor-blank-role` (PR #37) on main `966cc30` (merged PR #36).
-- Last verified production release: **1.0.8 build 57**, commit `966cc30`, tagged `web-v1.0.8`.
+- Candidate branch `feat/photo-tabs` on main `030e402` (merged PR #37).
+- Last verified production release: **1.0.9**, commit `030e402`, tagged `web-v1.0.9`.
 - Earlier `web-v1.0.x` tags (1.0.1–1.0.3 and 1.0.5–1.0.8; there is no `web-v1.0.4`) are historical releases and must not move.
-- Platforms share major.minor 1.0; patch and build counters are per platform. Candidate package/lockfile version: 1.0.9.
-- Candidate changes the indoor relation parser (blank roles, order-free outlines, holes, unplaceable points) and how cells are merged in `IndoorLayer` (each element once, from the cell with the newest snapshot). No database migration, Tower or iOS change. Pairs with waypoint-site 1.1.1 (PR #3), which republishes indoor cells with relation members.
+- Platforms share major.minor 1.0; patch and build counters are per platform. Candidate package/lockfile version: 1.0.10.
+- Candidate adds the photo sorter (`src/lib/photoSorter.ts`, model in `public/models/photo-sorter-v1/`, service worker caches `/models/`), the Menu row and photo tabs in `PlacePanel`, and indoor follow-ups (relation labels, edge-sharing courtyards, snapshot dates, brief caching of non-cells). No database, Tower or iOS change.
 
 ## Supabase contract inventory
 
@@ -61,6 +61,6 @@ Production RLS exercised with an existing Apple-backed authenticated session: ow
 - Successful Apple login also needs real account interaction; provider setup and cancellation callback only are proven. Secret rotation belongs to Control (expiry 2027-05-10); web did not access/change it.
 - Nationwide indoor/speed datasets and missing CDN cells remain coverage gaps. Feedback and external incident feeds missing; Home/Work editing awaits candidate deployment.
 - Lazy Mapbox vendor chunk remains ~1.93 MB raw / 545 kB gzip. CPU-throttled functional smoke passed; physical cheap-laptop GPU/FPS/memory certification is still outstanding. No new DEM source or 3D terrain was added.
-- Existing tests: 118 unit checks pass (1.0.9); build passes; Apple chooser Chrome checks pass. 45 remote-control browser checks pass across Chrome, WebKit, tablet and both phone projects. Local Firefox cannot launch ("Could not find profile folder"), including with a fresh temporary directory; its required Linux CI check remains enabled. Updated full cross-browser CI remains the merge gate.
+- Existing tests: 128 unit checks pass (1.0.10); build passes; Apple chooser Chrome checks pass. 45 remote-control browser checks pass across Chrome, WebKit, tablet and both phone projects. Local Firefox cannot launch ("Could not find profile folder"), including with a fresh temporary directory; its required Linux CI check remains enabled. Updated full cross-browser CI remains the merge gate.
 
 **Tag verdict: pending candidate CI and deployment.** Verify the new live version/build/commit before tagging `web-v1.0.9`. Full Google/Apple login remains assigned to Daniel and explicitly not a tag blocker. Never move existing release tags.

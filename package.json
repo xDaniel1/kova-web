@@ -1,7 +1,7 @@
 {
   "name": "kova-web",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.0.10",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
+    "@tensorflow/tfjs-backend-cpu": "^4.22.0",
+    "@tensorflow/tfjs-backend-webgl": "^4.22.0",
+    "@tensorflow/tfjs-converter": "^4.22.0",
+    "@tensorflow/tfjs-core": "^4.22.0",
     "mapbox-gl": "^3.34.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

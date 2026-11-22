@@ -2,11 +2,13 @@
 // - /assets/* are content-hashed by Vite: cache-first, the oldest are dropped past 60 entries.
 // - Google Fonts and Mapbox glyphs/sprites/styles: stale-while-revalidate.
 // - Pages: network-first, falling back to the cached shell when offline.
+// - /models/* (the photo sorter, versioned path): cache-first, kept.
 // Map tiles, search, routing and Supabase are never cached here.
 const VERSION = 'kova-v1'
 const SHELL = `${VERSION}-shell`
 const ASSETS = `${VERSION}-assets`
 const RUNTIME = `${VERSION}-runtime`
+const MODELS = `${VERSION}-models`
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/favicon.svg', '/manifest.webmanifest'])).then(() => self.skipWaiting()))
@@ -27,6 +29,20 @@ self.addEventListener('fetch', (e) => {
   const req = e.request
   if (req.method !== 'GET') return
   const url = new URL(req.url)
+
+  // The photo sorter's model (about 4 MB, versioned path): download once, keep.
+  if (url.origin === location.origin && url.pathname.startsWith('/models/')) {
+    e.respondWith(
+      caches.open(MODELS).then(async (c) => {
+        const hit = await c.match(req)
+        if (hit) return hit
+        const res = await fetch(req)
+        if (res.ok) await c.put(req, res.clone())
+        return res
+      }),
+    )
+    return
+  }
 
   if (url.origin === location.origin && url.pathname.startsWith('/assets/')) {
     e.respondWith(
