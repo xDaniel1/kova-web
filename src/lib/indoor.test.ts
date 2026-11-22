@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellOf, hasArea, levelLabel, loopsOf, outlinesOf, parseLevels, toFeatures } from './indoor'
+import { cellOf, hasArea, levelLabel, loopsOf, mergeCells, outlinesOf, parseLevels, toFeatures } from './indoor'
 
 describe('indoor cells and levels', () => {
   it('addresses cells like the iOS app (floor of coordinate / 0.006)', () => {
@@ -212,5 +212,25 @@ describe('indoor relations', () => {
   it('draws a ring once when an overlapping way makes it come out twice', () => {
     const sqWithMid = [pt(0, 0), pt(0, 1), pt(0, 2), pt(2, 2), pt(2, 0), pt(0, 0)]
     expect(outlinesOf([sqWithMid, [pt(0, 0), pt(0, 2)]])).toHaveLength(1)
+  })
+  it('shows a relation found in several cells once', () => {
+    const rel = { type: 'relation', id: 3568744, tags: { building: 'train_station', name: 'Penn' }, members: [{ role: 'outer', geometry: square }] }
+    const room = { type: 'way', id: 1, tags: { indoor: 'room', level: '0' }, geometry: square }
+    const a = toFeatures([rel, room] as Parameters<typeof toFeatures>[0])
+    const b = toFeatures([rel] as Parameters<typeof toFeatures>[0])
+    expect(mergeCells([a, b, null])).toHaveLength(a.length)
+  })
+  it('gives a hole to the innermost outline holding it (island in a courtyard)', () => {
+    const box = (lo: number, hi: number) => [pt(lo, lo), pt(lo, hi), pt(hi, hi), pt(hi, lo), pt(lo, lo)]
+    const members = [
+      { role: 'outer', geometry: box(0, 10) }, { role: 'inner', geometry: box(2, 8) },
+      { role: 'outer', geometry: box(3, 7) }, { role: 'inner', geometry: box(4, 6) },
+    ]
+    const f = toFeatures([{ type: 'relation', id: 22, tags: { building: 'train_station' }, members }] as Parameters<typeof toFeatures>[0])
+    expect(f.map((x) => (x.geometry as GeoJSON.Polygon).coordinates.length).sort()).toEqual([2, 2])
+  })
+  it('sees a ring and its reverse as one ring', () => {
+    const sq2 = [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)]
+    expect(outlinesOf([sq2, [...sq2].reverse()])).toHaveLength(1) // same ring either way round
   })
 })

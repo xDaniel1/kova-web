@@ -257,13 +257,27 @@ export function outlinesOf(ways: Point[][]): Point[][] {
       if (!hasArea(loop)) continue
       // Crossing lines without a shared point (invalid map data) can give the same ring twice;
       // drawing it twice would double its fill and stroke.
-      const key = loop.slice(0, -1).map(spot).sort().join(';')
+      const key = ringKey(loop)
       if (seenRing.has(key)) continue
       seenRing.add(key)
       rings.push(loop)
     }
   }
   return rings
+}
+
+const areaOf = (r: Point[]) => Math.abs(shiftedArea(r.slice(0, -1)))
+
+/** Features from several cells, each element's features once. */
+export function mergeCells(cells: (GeoJSON.Feature[] | null)[]): GeoJSON.Feature[] {
+  const seen = new Set<string>()
+  const out: GeoJSON.Feature[] = []
+  for (const f of cells.flatMap((c) => c ?? [])) {
+    const key = f.properties?.key as string | undefined
+    if (key) { if (seen.has(key)) continue; seen.add(key) }
+    out.push(f)
+  }
+  return out
 }
 
 /** Whether a point is strictly inside a closed ring (ray casting; points on the edge don't count). */
@@ -275,6 +289,15 @@ export function inside(p: Point, r: Point[]): boolean {
     if ((a.lat > p.lat) !== (b.lat > p.lat) && p.lon < ((b.lon - a.lon) * (p.lat - a.lat)) / (b.lat - a.lat) + a.lon) hit = !hit
   }
   return hit
+}
+
+/** The same text for a ring whatever point it starts at and whichever way it runs. */
+function ringKey(r: Point[]): string {
+  // A ring's points are distinct, so starting at the smallest one fixes the rotation.
+  const seq = r.slice(0, -1).map(spot)
+  const from = (xs: string[]) => { const i = xs.indexOf(xs.reduce((m, x) => (x < m ? x : m))); return [...xs.slice(i), ...xs.slice(0, i)].join(';') }
+  const a = from(seq), b = from([...seq].reverse())
+  return a < b ? a : b
 }
 
 /** Twice the signed area of a closed path of points, taken relative to its first point so real
@@ -320,13 +343,20 @@ export function loopsOf(chain: Point[]): Point[][] {
 
 export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
   const features: GeoJSON.Feature[] = []
+  // Each feature is keyed by the element it came from, so one drawn in several cells (a relation
+  // near a cell edge is in each neighbouring cell) can be shown once: see mergeCells.
+  let part = 0
+  let from = ''
+  const push = (f: GeoJSON.Feature) => { f.properties = { ...f.properties, key: `${from}#${part++}` }; features.push(f) }
   for (const el of elements) {
+    from = `${el.type}/${el.id}`
+    part = 0
     const tags = el.tags
     if (!tags) continue
     if (el.type === 'node' && Number.isFinite(el.lat) && Number.isFinite(el.lon)) {
       const kind: IndoorKind | null = tags.aeroway === 'gate' ? 'gate' : tags.shop ? 'shop' : tags.amenity ? 'amenity' : null
       if (!kind) continue
-      features.push({
+      push({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [el.lon!, el.lat!] },
         properties: { kind, name: tags.name ?? tags.ref ?? '', icon: icon(tags, kind), levels: parseLevels(tags.level), point: true },
@@ -342,13 +372,13 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
       const levels = kind === 'footprint' ? [] : parseLevels(tags.level)
       const props = { kind, name: tags.name ?? tags.ref ?? '', icon: icon(tags, kind), levels }
       if (closed && kind !== 'wall' && kind !== 'stairs') {
-        features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(pts)] }, properties: props })
+        push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(pts)] }, properties: props })
         if (props.name || props.icon) {
           const c = pts.reduce((a, p) => [a[0] + p.lon / pts.length, a[1] + p.lat / pts.length], [0, 0])
-          features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: c }, properties: { ...props, point: true, label: true } })
+          push({ type: 'Feature', geometry: { type: 'Point', coordinates: c }, properties: { ...props, point: true, label: true } })
         }
       } else {
-        features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: ring(pts) }, properties: props })
+        push({ type: 'Feature', geometry: { type: 'LineString', coordinates: ring(pts) }, properties: props })
       }
       continue
     }
@@ -361,11 +391,15 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
       // Inner rings (courtyards, atriums) become holes in the outline that holds them.
       const holes: Point[][][] = outers.map(() => [])
       for (const inner of outlinesOf(ways('inner'))) {
-        const at = outers.findIndex((o) => inner.slice(0, -1).some((p) => inside(p, o)))
+        // The innermost outline holding it: an island inside a courtyard keeps its own atrium.
+        let at = -1
+        outers.forEach((o, i) => {
+          if (inner.slice(0, -1).some((p) => inside(p, o)) && (at < 0 || areaOf(o) < areaOf(outers[at]))) at = i
+        })
         if (at >= 0) holes[at].push(inner)
       }
       outers.forEach((r, i) => {
-        features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r), ...holes[i].map(ring)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
+        push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r), ...holes[i].map(ring)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
       })
     }
   }
