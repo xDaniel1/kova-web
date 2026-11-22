@@ -277,7 +277,7 @@ export interface LoadedCell { cell: Cell; base: string; features: GeoJSON.Featur
  *  Neighbouring cells are refreshed on different nights, so they can hold different versions of
  *  the same element. Its features all come from one cell, so two versions never mix: the one most
  *  recently confirmed against OpenStreetMap (the first cell on a tie). An element deleted from
- *  OpenStreetMap can still show from a neighbour not yet refreshed (at most 14 days): a cell's
+ *  OpenStreetMap can still show from a neighbour until it next refreshes (normally within 14 days): a cell's
  *  absence of an element can't prove it was deleted, since Overpass returns a way or relation for
  *  any part crossing a cell. */
 export function mergeCells(cells: (LoadedCell | null)[]): GeoJSON.Feature[] {
