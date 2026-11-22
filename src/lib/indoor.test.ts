@@ -164,4 +164,27 @@ describe('indoor relations', () => {
     const f = toFeatures(els)
     expect(f.filter((x) => x.geometry.type === 'Polygon')).toHaveLength(1)
   })
+  const perms = <T,>(xs: T[]): T[][] => xs.length <= 1 ? [xs] : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((r) => [x, ...r]))
+  it('draws the full outline for every order of a square split by a crossing way', () => {
+    // Left side (0,0)→(0,1)… as three ways plus the way across the middle, also reversed.
+    const left = [pt(0, 0.5), pt(0, 0), pt(1, 0), pt(1, 0.5)]
+    const right = [pt(1, 0.5), pt(1, 1), pt(0, 1), pt(0, 0.5)]
+    const across = [pt(0, 0.5), pt(1, 0.5)]
+    for (const ways of perms([left, right, across])) {
+      for (const flip of [false, true]) {
+        const rings = outlinesOf(ways.map((w) => (flip ? [...w].reverse() : w)))
+        expect(rings).toHaveLength(1)
+        expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(6)
+      }
+    }
+  })
+  it('draws two rooms sharing a wall as their joint outline, whatever the order', () => {
+    const a = [pt(0, 0), pt(0, 1), pt(1, 1), pt(1, 0), pt(0, 0)]
+    const b = [pt(0, 1), pt(0, 2), pt(1, 2), pt(1, 1), pt(0, 1)]
+    for (const ways of [[a, b], [b, a]]) {
+      const rings = outlinesOf(ways)
+      expect(rings).toHaveLength(1)
+      expect(new Set(rings[0].slice(0, -1).map((p) => `${p.lat},${p.lon}`)).size).toBe(6)
+    }
+  })
 })
