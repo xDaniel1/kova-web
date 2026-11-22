@@ -249,10 +249,19 @@ export function outlinesOf(ways: Point[][]): Point[][] {
   }
 
   const rings: Point[][] = []
+  const seenRing = new Set<string>()
   for (const b of best) {
     if (!b) continue
     const chain = [...b.face, b.face[0]].map((i) => pts[i])
-    for (const loop of loopsOf(chain)) if (hasArea(loop)) rings.push(loop)
+    for (const loop of loopsOf(chain)) {
+      if (!hasArea(loop)) continue
+      // Crossing lines without a shared point (invalid map data) can give the same ring twice;
+      // drawing it twice would double its fill and stroke.
+      const key = loop.slice(0, -1).map(spot).sort().join(';')
+      if (seenRing.has(key)) continue
+      seenRing.add(key)
+      rings.push(loop)
+    }
   }
   return rings
 }

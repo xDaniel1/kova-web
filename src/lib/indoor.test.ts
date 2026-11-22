@@ -209,4 +209,8 @@ describe('indoor relations', () => {
     const f = toFeatures([{ type: 'relation', id: 21, tags: { building: 'train_station' }, members: [outer, inner] }] as Parameters<typeof toFeatures>[0])
     expect((f[0].geometry as GeoJSON.Polygon).coordinates).toHaveLength(1)
   })
+  it('draws a ring once when an overlapping way makes it come out twice', () => {
+    const sqWithMid = [pt(0, 0), pt(0, 1), pt(0, 2), pt(2, 2), pt(2, 0), pt(0, 0)]
+    expect(outlinesOf([sqWithMid, [pt(0, 0), pt(0, 2)]])).toHaveLength(1)
+  })
 })
