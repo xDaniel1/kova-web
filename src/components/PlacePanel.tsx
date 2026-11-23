@@ -1,5 +1,5 @@
 import { roleLabel, type FavoritePatch } from '../lib/favorites'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { lookupPlace, photoURL, type PlaceDetails } from '../lib/google'
 import type { FavoritePlace, Place } from '../lib/types'
 import { Icon } from './Icon'
@@ -19,7 +19,6 @@ const COLORS = ['#0e809c', '#2b3fa0', '#ea4335', '#fbbc04', '#34a853', '#a142f4'
 const EMOJI = ['★', '🏠', '💼', '☕', '🍽️', '🛒', '🏋️', '🎓', '✈️', '🏥', '🌳', '❤️']
 type Tab = 'overview' | 'reviews' | 'about'
 
-/** The full-height place panel: hero photo, name, rating, tabs, round actions, info rows. */
 export function PlacePanel(p: Props) {
   const { place, favorite } = p
   const [details, setDetails] = useState<PlaceDetails | null | 'loading'>('loading')
@@ -27,6 +26,7 @@ export function PlacePanel(p: Props) {
   const [showHours, setShowHours] = useState(false)
   const [editing, setEditing] = useState(false)
   const [photoIndex, setPhotoIndex] = useState(0)
+  const heroRef = useRef<HTMLDivElement>(null)
   const [photoFailed, setPhotoFailed] = useState(false)
 
   useEffect(() => {
@@ -57,6 +57,8 @@ export function PlacePanel(p: Props) {
   const photos = d?.photos ?? []
   const name = favorite?.customTitle || d?.displayName?.text || place.title
   const address = d?.formattedAddress || place.subtitle
+  const category = d?.primaryTypeDisplayName?.text ?? place.kind?.replace(/_/g, ' ')
+  const price = d?.priceLevel && PRICE[d.priceLevel]
   const hours = d?.currentOpeningHours
   const o = openLine(hours?.openNow, hours?.weekdayDescriptions)
   const today = (new Date().getDay() + 6) % 7
@@ -94,11 +96,38 @@ export function PlacePanel(p: Props) {
 
   return (
     <div className="panel-body place">
+      <header className="place-head">
+        {roleLabel(favorite?.role) && <span className="favorite-role">{roleLabel(favorite?.role)}</span>}
+        <h1>{favorite?.emoji && <span className="title-emoji">{favorite.emoji}</span>}{name}</h1>
+        {(category || price) && <p className="place-category">{[category, price].filter(Boolean).join(' · ')}</p>}
+        {address && <p className="place-address">{address}</p>}
+        <div className="place-facts">
+          {d?.rating !== undefined && (
+            <button className="place-score" onClick={() => setTab('reviews')}>
+              <Icon name="star" size={16} fill />
+              <strong>{d.rating.toFixed(1)}</strong>
+              <span>{d.userRatingCount === undefined ? 'Reviews' : `${d.userRatingCount.toLocaleString()} reviews`}</span>
+            </button>
+          )}
+          {d?.businessStatus === 'CLOSED_PERMANENTLY' ? (
+            <span className="closed">Permanently closed</span>
+          ) : o.open !== undefined && (
+            <span className={o.open ? 'open' : 'closed'}>{o.open ? 'Open' : 'Closed'}</span>
+          )}
+        </div>
+      </header>
+
+      <div className="place-primary-actions">
+        <button className="place-directions" onClick={p.onDirections}><Icon name="directions" /> Directions</button>
+        <button onClick={p.onToggleFavorite} aria-pressed={!!favorite}><Icon name="bookmark" fill={!!favorite} /> {favorite ? 'Saved' : 'Save'}</button>
+        <button onClick={share}><Icon name="share" /> Share</button>
+      </div>
+
       {details === 'loading' ? (
-        <div className="hero skeleton" />
+        <div className="hero skeleton" aria-hidden="true" />
       ) : photos.length > 0 ? (
-        <div className="hero">
-          <img src={photoURL(photos[photoIndex], 800)} alt={name} onError={() => setPhotoFailed(true)} style={photoFailed ? { display: 'none' } : undefined} />
+        <div className="hero" ref={heroRef}>
+          <img src={photoURL(photos[photoIndex], 800)} alt={`Photo of ${name}`} onError={() => setPhotoFailed(true)} style={photoFailed ? { display: 'none' } : undefined} />
           {photoFailed && <div className="photo-unavailable"><Icon name="location_on" />Photo unavailable</div>}
           {photos.length > 1 && (
             <div className="hero-nav">
@@ -110,23 +139,10 @@ export function PlacePanel(p: Props) {
         </div>
       ) : null}
 
-      <div className="place-head">
-        {roleLabel(favorite?.role) && <span className="favorite-role">{roleLabel(favorite?.role)}</span>}
-        <h1>{favorite?.emoji && <span className="title-emoji">{favorite.emoji}</span>}{name}</h1>
-        {d?.rating !== undefined && (
-          <div className="rating-line">
-            <span>{d.rating.toFixed(1)}</span> <Stars rating={d.rating} /> {d.userRatingCount !== undefined && <button className="link-plain" onClick={() => setTab('reviews')}>({d.userRatingCount.toLocaleString()})</button>}
-            {d.priceLevel && PRICE[d.priceLevel] && <span className="muted"> · {PRICE[d.priceLevel]}</span>}
-          </div>
-        )}
-        <div className="muted">{d?.primaryTypeDisplayName?.text ?? (place.kind ? place.kind.replace(/_/g, ' ') : '')}</div>
-        {d?.businessStatus === 'CLOSED_PERMANENTLY' && <div className="closed">Permanently closed</div>}
-      </div>
-
       {d && (
-        <div className="tabs" role="tablist">
+        <div className="place-sections" role="group" aria-label="Place details">
           {(['overview', 'reviews', 'about'] as Tab[]).map((t) => (
-            <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
+            <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>
               {t[0].toUpperCase() + t.slice(1)}
             </button>
           ))}
@@ -135,12 +151,9 @@ export function PlacePanel(p: Props) {
 
       {tab === 'overview' && (
         <>
-          <div className="round-actions">
-            <button className="primary" onClick={p.onDirections}><span><Icon name="directions" fill /></span>Directions</button>
-            <button onClick={p.onToggleFavorite} className={favorite ? 'on' : ''}><span><Icon name="bookmark" fill={!!favorite} /></span>{favorite ? 'Saved' : 'Save'}</button>
-            <button onClick={() => p.onNearby(place)}><span><Icon name="radar" /></span>Nearby</button>
-            <button onClick={sendToPhone}><span><Icon name="send_to_mobile" /></span>Send to phone</button>
-            <button onClick={share}><span><Icon name="share" /></span>Share</button>
+          <div className="place-tools">
+            <button onClick={() => p.onNearby(place)}><Icon name="radar" size={18} /> Nearby</button>
+            <button onClick={sendToPhone}><Icon name="send_to_mobile" size={18} /> Send to phone</button>
           </div>
 
           {favorite && (
@@ -215,7 +228,7 @@ export function PlacePanel(p: Props) {
               <h3 className="section-title">Photos</h3>
               <div className="photo-grid">
                 {photos.slice(0, 9).map((ph, i) => (
-                  <button key={ph.name} onClick={() => { setPhotoIndex(i); document.querySelector('.side-panel')?.scrollTo({ top: 0, behavior: 'smooth' }) }}>
+                  <button key={ph.name} aria-label={`Show photo ${i + 1}`} aria-pressed={photoIndex === i} onClick={() => { setPhotoIndex(i); heroRef.current?.scrollIntoView({ block: 'start' }) }}>
                     <img src={photoURL(ph, 200)} alt="" loading="lazy" />
                   </button>
                 ))}
