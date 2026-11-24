@@ -2,6 +2,7 @@
 //
 //   POST /google/places/search   { query, near?: {latitude, longitude} }        → one place with full details
 //   GET  /google/places/photo?name=places/…/photos/…&maxWidth=800               → 302 to the image
+//   GET  /google/nyc/cameras                                                   → NYC DOT traffic cameras (online, https stills)
 //   POST /google/places/list     { query, center, radius }                      → up to 20 places, Google-ranked
 //   POST /google/places/nearby   { latitude, longitude, radius, types: [...] }  → places for the guides shelves
 //   POST /google/transit         { origin, destination, departureTime?, arrivalTime? } → Routes API transit routes
@@ -82,6 +83,20 @@ Deno.serve(async (req) => {
       }
       const r = await google('https://places.googleapis.com/v1/places:searchText', { method: 'POST', body: JSON.stringify(body), fieldMask: DETAIL_FIELDS })
       return json(await r.json(), r.status, h, r.ok ? 3600 : 0)
+    }
+
+    // NYC DOT's traffic cameras (public, keyless). Proxied because the list has no CORS headers;
+    // nothing about the caller is sent on. Online cameras with an https picture only.
+    if (req.method === 'GET' && path === '/nyc/cameras') {
+      const r = await fetch('https://webcams.nyctmc.org/api/cameras', { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) }).catch(() => null)
+      if (!r || !r.ok) return json({ error: 'camera list unavailable' }, 502, h)
+      const list = await r.json().catch(() => null)
+      if (!list) return json({ error: 'camera list unavailable' }, 502, h)
+      const cameras = (Array.isArray(list) ? list : [])
+        .filter((c) => c && String(c.isOnline).toLowerCase() === 'true' && typeof c.imageUrl === 'string' && c.imageUrl.startsWith('https://')
+          && Number.isFinite(c.latitude) && Number.isFinite(c.longitude) && typeof c.id === 'string')
+        .map((c) => ({ id: c.id, name: typeof c.name === 'string' ? c.name : undefined, latitude: c.latitude, longitude: c.longitude, isOnline: 'true', imageUrl: c.imageUrl }))
+      return json(cameras, 200, h, 3600)
     }
 
     if (req.method === 'GET' && path === '/places/photo') {

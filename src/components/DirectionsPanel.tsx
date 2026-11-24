@@ -4,10 +4,21 @@ import type { Lane, Route, RouteStep, TravelMode } from '../lib/types'
 import type { Stop } from '../lib/url'
 import { Icon } from './Icon'
 import { StopField } from './StopField'
+import { isToll, warningDetail, warningTitle, type OnRoute, type RoadCamera } from '../lib/roadCameras'
 
 export type When = { kind: 'now' } | { kind: 'depart'; at: string } | { kind: 'arrive'; at: string }
 
 interface Props {
+  /** Cameras and tolls the selected driving route drives into, in order. */
+  cameras?: OnRoute<RoadCamera>[]
+  camerasPending?: number
+  /** Stretches of the route that could not be checked. */
+  camerasUnchecked?: number
+  /** Metres checked, when the route is longer than the camera lookup covers. */
+  camerasCheckedMeters?: number
+  /** NYC traffic webcams beside the route, and how to open one. */
+  webcams?: RoadCamera[]
+  onOpenWebcam?: (camera: RoadCamera) => void
   transitAvailable: boolean
   speedLimitsAvailable: boolean
   trafficAvailable: boolean
@@ -195,6 +206,45 @@ export function DirectionsPanel(p: Props) {
             <strong>{formatDuration(route.durationSeconds)}</strong> <span className="muted">({formatDistance(route.distanceMeters)})</span>
             <div className="muted small">Arrive around {formatArrival(route.durationSeconds)}{route.fare ? ` · ${route.fare}` : ''}</div>
           </div>
+          {route.mode === 'driving' && p.camerasPending !== undefined && (() => {
+            const found = p.cameras?.length ?? 0
+            const pending = p.camerasPending ?? 0
+            const unchecked = p.camerasUnchecked ?? 0
+            // Never let "nothing listed" read as "no cameras" unless the whole route was checked.
+            const status = pending ? 'checking the route…'
+              : unchecked ? (found ? 'part of the route could not be checked' : 'could not be checked right now')
+              : p.camerasCheckedMeters !== undefined ? `checked the first ${formatDistance(p.camerasCheckedMeters)}`
+              : found ? null : 'none mapped on this route'
+            return (
+              <section className="route-cameras" aria-label="Cameras and tolls on this route" aria-busy={pending > 0}>
+                <div className="leg-head"><Icon name="photo_camera" size={18} /> Cameras and tolls<span className="muted small" aria-live="polite">{status ? ` · ${status}` : ''}</span></div>
+                {found > 0 && (
+                  <ol className="steps">
+                    {p.cameras!.map(({ item: c, alongMeters }) => (
+                      <li key={c.id}>
+                        <span className="step-icon"><Icon name={isToll(c.kind) ? 'toll' : 'photo_camera'} /></span>
+                        <div className="step-text">
+                          <div>{warningTitle(c)} · {formatDistance(alongMeters)}</div>
+                          {warningDetail(c) && <div className="muted small">{warningDetail(c)}</div>}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {(p.webcams?.length ?? 0) > 0 && p.onOpenWebcam && (
+                  <details className="route-webcams">
+                    <summary><Icon name="videocam" size={18} /> {p.webcams!.length} live traffic {p.webcams!.length === 1 ? 'camera' : 'cameras'} along the way</summary>
+                    <ul>
+                      {p.webcams!.map((c) => (
+                        <li key={c.id}><button className="link-plain" onClick={() => p.onOpenWebcam!(c)}>{c.name ?? 'Traffic camera'}</button></li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+                <div className="muted tiny">From OpenStreetMap. Where it has nothing mapped, nothing is shown.</div>
+              </section>
+            )
+          })()}
           {route.legs.map((leg, li) => (
             <div key={li} className="leg">
               <div className="leg-head"><Icon name={li === 0 ? 'trip_origin' : 'location_on'} size={18} /> {stopName(stops[li])}</div>

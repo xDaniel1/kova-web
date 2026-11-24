@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.11 — 2026-11-24
+
+Syncs with iPhone build 77.
+
+- **Cameras and tolls on a drive, like iPhone.** A driving route lists and marks speed, red-light and average-speed cameras, toll gantries and plazas, in route order with the distance to each, and draws traffic lights and stop signs on the route. The data is OpenStreetMap only, read from the public Overpass servers: where OSM has nothing, nothing is shown. Each stretch is kept for a week (up to two months when the servers are busy).
+- NYC DOT traffic cameras beside the route, with their live picture. These are drawn on the map, never warned about.
+- When the map-data servers are down the panel says the route could not be checked instead of showing nothing. A server that never answers is skipped after 15 s, and after two stretches in a row fail the rest of the route uses only what is cached.
+
 ## 1.0.10 — 2026-11-22
 
 Syncs with iPhone (waypoint-ios PR #34).
