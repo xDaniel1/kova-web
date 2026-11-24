@@ -360,7 +360,7 @@ function countBlocks(): number {
   return n
 }
 
-interface Shared { promise: Promise<Block | null>; controller: AbortController; refs: number }
+interface Shared { promise: Promise<Block | null>; controller: AbortController; refs: number; settled: boolean }
 const memory = new Map<string, Shared>()
 
 /** One block's cameras and signals: a week-old copy is fresh (cameras change on the scale of
@@ -386,15 +386,16 @@ export function loadBlock(key: string, opts: { cachedOnly?: boolean; signal?: Ab
       }
       return cached?.block ?? null
     })()
-    const entry: Shared = { promise, controller, refs: 0 }
+    const entry: Shared = { promise, controller, refs: 0, settled: false }
     shared = entry
     memory.set(key, entry)
     // A failed or cancelled block can be asked again later.
-    void promise.then((b) => { if (!b && memory.get(key) === entry) memory.delete(key) })
+    void promise.then((b) => { entry.settled = true; if (!b && memory.get(key) === entry) memory.delete(key) })
   }
   const entry = shared
-  entry.refs++
+  // Only a caller that can give up counts as a claim; one without a signal never cancels anything.
   if (!opts.signal) return entry.promise
+  entry.refs++
   const signal = opts.signal
   return new Promise<Block | null>((resolve) => {
     let done = false
@@ -402,7 +403,8 @@ export function loadBlock(key: string, opts: { cachedOnly?: boolean; signal?: Ab
       if (done) return
       done = true
       entry.refs--
-      if (entry.refs <= 0 && memory.get(key) === entry) {
+      // A request that already finished is kept: an abort landing just after it settles costs nothing.
+      if (entry.refs <= 0 && !entry.settled && memory.get(key) === entry) {
         entry.controller.abort()
         memory.delete(key)
       }
