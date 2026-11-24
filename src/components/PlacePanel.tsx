@@ -1,6 +1,7 @@
 import { roleLabel, type FavoritePatch } from '../lib/favorites'
 import { useEffect, useState } from 'react'
 import { lookupPlace, photoURL, type PlaceDetails } from '../lib/google'
+import { CATEGORY_LABELS, CATEGORY_ORDER, sortPhotos, type PhotoCategory } from '../lib/photoSorter'
 import type { FavoritePlace, Place } from '../lib/types'
 import { Icon } from './Icon'
 import { PRICE, Stars, openLine } from './Stars'
@@ -28,6 +29,8 @@ export function PlacePanel(p: Props) {
   const [editing, setEditing] = useState(false)
   const [photoIndex, setPhotoIndex] = useState(0)
   const [photoFailed, setPhotoFailed] = useState(false)
+  const [photoCats, setPhotoCats] = useState<Map<string, PhotoCategory | null>>(new Map())
+  const [photoTab, setPhotoTab] = useState<PhotoCategory | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -37,6 +40,8 @@ export function PlacePanel(p: Props) {
     setEditing(false)
     setShowHours(false)
     setPhotoFailed(false)
+    setPhotoCats(new Map())
+    setPhotoTab(null)
     if (place.title === 'Dropped pin') {
       setDetails(null)
       return
@@ -58,6 +63,23 @@ export function PlacePanel(p: Props) {
   const name = favorite?.customTitle || d?.displayName?.text || place.title
   const address = d?.formattedAddress || place.subtitle
   const hours = d?.currentOpeningHours
+
+  // Sort the photos into Menu / Food & drink / Atmosphere on this device, as iPhone does.
+  useEffect(() => {
+    if (!photos.length) return
+    const controller = new AbortController()
+    void sortPhotos(photos, setPhotoCats, controller.signal)
+    return () => controller.abort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d])
+  const inTab = (c: PhotoCategory) => photos.filter((ph) => photoCats.get(ph.name) === c)
+  const menus = inTab('menu')
+  const photoTabs = CATEGORY_ORDER.filter((c) => inTab(c).length > 0)
+  const shownPhotos = photoTab ? inTab(photoTab) : photos
+  const showPhoto = (ph: (typeof photos)[number]) => {
+    setPhotoIndex(photos.indexOf(ph))
+    document.querySelector('.side-panel')?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
   const o = openLine(hours?.openNow, hours?.weekdayDescriptions)
   const today = (new Date().getDay() + 6) % 7
 
@@ -210,12 +232,33 @@ export function PlacePanel(p: Props) {
             <li><button onClick={() => copy(`${place.latitude.toFixed(6)}, ${place.longitude.toFixed(6)}`, 'Coordinates')}><Icon name="my_location" /><span>{place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}</span></button></li>
           </ul>
 
+          {menus.length > 0 && (
+            <>
+              <h3 className="section-title">Menu</h3>
+              <div className="menu-shelf">
+                {menus.map((ph, i) => (
+                  <button key={ph.name} aria-label={`Menu photo ${i + 1}`} onClick={() => showPhoto(ph)}>
+                    <img src={photoURL(ph, 400)} alt="" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
           {photos.length > 1 && (
             <>
               <h3 className="section-title">Photos</h3>
+              {photoTabs.length > 0 && (
+                <div className="photo-tabs" role="tablist" aria-label="Photo categories">
+                  <button role="tab" aria-selected={photoTab === null} className={photoTab === null ? 'on' : ''} onClick={() => setPhotoTab(null)}>All</button>
+                  {photoTabs.map((c) => (
+                    <button key={c} role="tab" aria-selected={photoTab === c} className={photoTab === c ? 'on' : ''} onClick={() => setPhotoTab(c)}>{CATEGORY_LABELS[c]}</button>
+                  ))}
+                </div>
+              )}
               <div className="photo-grid">
-                {photos.slice(0, 9).map((ph, i) => (
-                  <button key={ph.name} onClick={() => { setPhotoIndex(i); document.querySelector('.side-panel')?.scrollTo({ top: 0, behavior: 'smooth' }) }}>
+                {shownPhotos.slice(0, 9).map((ph) => (
+                  <button key={ph.name} onClick={() => showPhoto(ph)}>
                     <img src={photoURL(ph, 200)} alt="" loading="lazy" />
                   </button>
                 ))}

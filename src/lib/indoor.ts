@@ -316,6 +316,35 @@ export function crosses(a: Point[], b: Point[]): boolean {
   return false
 }
 
+/** Whether a point lies on a ring's outline: on a corner or along an edge (within about 1 cm). */
+export function onOutline(p: Point, r: Point[]): boolean {
+  for (let i = 0; i + 1 < r.length; i++) {
+    const a = r[i], b = r[i + 1]
+    const dx = b.lon - a.lon, dy = b.lat - a.lat, len2 = dx * dx + dy * dy
+    if (len2 === 0) { if (sameSpot(p, a)) return true; continue }
+    const t = ((p.lon - a.lon) * dx + (p.lat - a.lat) * dy) / len2
+    if (t < 0 || t > 1) continue
+    if (Math.abs((p.lon - a.lon) * dy - (p.lat - a.lat) * dx) / Math.sqrt(len2) < 1e-7) return true
+  }
+  return false
+}
+
+/** A point inside a ring to put its name on: the middle of the widest stretch of the ring along
+ *  the line of latitude through its centre, so even a U-shaped outline gets its name inside. */
+export function labelPoint(r: Point[]): number[] {
+  const pts = r.slice(0, -1)
+  const lat = pts.reduce((s, p) => s + p.lat, 0) / pts.length
+  const xs: number[] = []
+  for (let i = 0; i + 1 < r.length; i++) {
+    const a = r[i], b = r[i + 1]
+    if ((a.lat > lat) !== (b.lat > lat)) xs.push(a.lon + ((lat - a.lat) * (b.lon - a.lon)) / (b.lat - a.lat))
+  }
+  xs.sort((x, y) => x - y)
+  let best: number[] | null = null
+  for (let i = 0; i + 1 < xs.length; i += 2) if (!best || xs[i + 1] - xs[i] > best[1] - best[0]) best = [xs[i], xs[i + 1]]
+  return best ? [(best[0] + best[1]) / 2, lat] : [pts.reduce((s, p) => s + p.lon, 0) / pts.length, lat]
+}
+
 /** Whether a point is strictly inside a closed ring (ray casting). A point on a corner counts as
  *  outside; one lying along an edge may go either way. */
 export function inside(p: Point, r: Point[]): boolean {
@@ -431,14 +460,19 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
         outers.forEach((o, i) => {
           // Every point of the hole inside the outline (or on one of its corners); a ring crossing
           // the outline would make an invalid polygon and is left out.
-          const corners = new Set(o.map(spot))
-          if (inner.slice(0, -1).every((p) => corners.has(spot(p)) || inside(p, o)) && !crosses(inner, o) && (at < 0 || areaOf(o) < areaOf(outers[at]))) at = i
+          if (inner.slice(0, -1).every((p) => onOutline(p, o) || inside(p, o)) && inner.slice(0, -1).some((p) => inside(p, o)) && !crosses(inner, o) && (at < 0 || areaOf(o) < areaOf(outers[at]))) at = i
         })
         if (at >= 0) holes[at].push(inner)
       }
+      const props = { kind, name: tags.name ?? '', icon: icon(tags, kind), levels: kind === 'footprint' ? [] : parseLevels(tags.level) }
       outers.forEach((r, i) => {
-        push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r), ...holes[i].map(ring)] }, properties: { kind, name: tags.name ?? '', levels: kind === 'footprint' ? [] : parseLevels(tags.level) } })
+        push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring(r), ...holes[i].map(ring)] }, properties: props })
       })
+      // Named like a closed way is: one label, on the largest outline (Penn Station, Grand Central).
+      if (outers.length && (props.name || props.icon)) {
+        const biggest = outers.reduce((a, b) => (areaOf(b) > areaOf(a) ? b : a))
+        push({ type: 'Feature', geometry: { type: 'Point', coordinates: labelPoint(biggest) }, properties: { ...props, point: true, label: true } })
+      }
     }
   }
   return features
@@ -447,20 +481,41 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
 // The publisher's osm_base, e.g. 2026-11-22T07:20:03Z; anything else counts as no snapshot.
 const SNAPSHOT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/
 
+/** A real snapshot time in the publisher's format: a calendar date that exists, not in the future. */
+export function isSnapshot(v: unknown): v is string {
+  if (typeof v !== 'string' || !SNAPSHOT.test(v)) return false
+  const t = Date.parse(v)
+  // Date.parse accepts 2026-02-30 by rolling over; the round trip catches it.
+  return Number.isFinite(t) && new Date(t).toISOString().slice(0, 19) + 'Z' === v && t <= Date.now() + 3600_000
+}
+
 const cache = new Map<string, LoadedCell | null>()
 
 const MAX_CACHED_CELLS = 48
-function rememberCell(key: string, value: LoadedCell | null) {
+// A cell that came back as something other than a cell (a Wi-Fi sign-in page, a proxy error page)
+// is remembered as empty only briefly, so the plan comes back once the network does.
+const BRIEF_MS = 60_000
+const briefUntil = new Map<string, number>()
+
+function rememberCell(key: string, value: LoadedCell | null, brief = false) {
   cache.delete(key)
   cache.set(key, value)
+  if (brief) briefUntil.set(key, Date.now() + BRIEF_MS)
+  else briefUntil.delete(key)
   if (cache.size > MAX_CACHED_CELLS) cache.delete(cache.keys().next().value!)
 }
 
 export async function loadCell(cell: Cell): Promise<LoadedCell | null> {
   const key = `${cell.row}_${cell.col}`
+  const until = briefUntil.get(key)
+  if (until !== undefined && Date.now() >= until) {
+    cache.delete(key)
+    briefUntil.delete(key)
+  }
   if (cache.has(key)) {
     const value = cache.get(key)!
-    rememberCell(key, value)
+    rememberCell(key, value, until !== undefined)
+    if (until !== undefined) briefUntil.set(key, until) // touching it doesn't extend the wait
     return value
   }
   let res: Response
@@ -483,12 +538,12 @@ export async function loadCell(cell: Cell): Promise<LoadedCell | null> {
   try {
     const json = JSON.parse(text) as { elements?: unknown; osm_base?: unknown }
     if (!json || typeof json !== 'object' || !Array.isArray(json.elements)) throw new Error('not a cell')
-    const loaded: LoadedCell = { cell, base: typeof json.osm_base === 'string' && SNAPSHOT.test(json.osm_base) ? json.osm_base : '', features: toFeatures(json.elements as Element[]) }
+    const loaded: LoadedCell = { cell, base: isSnapshot(json.osm_base) ? json.osm_base : '', features: toFeatures(json.elements as Element[]) }
     rememberCell(key, loaded)
     return loaded
   } catch {
-    // Not JSON, or not a cell: it won't parse on the next move either; remember it as empty.
-    rememberCell(key, null)
+    // Not JSON, or not a cell: remember it as empty for a minute rather than ask on every move.
+    rememberCell(key, null, true)
     return null
   }
 }

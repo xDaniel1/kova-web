@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { cellOf, hasArea, levelLabel, loopsOf, mergeCells, outlinesOf, parseLevels, toFeatures, type LoadedCell } from './indoor'
+import { cellOf, hasArea, isSnapshot, labelPoint, levelLabel, loopsOf, mergeCells, outlinesOf, parseLevels, toFeatures, type LoadedCell } from './indoor'
 
 const lc = (features: GeoJSON.Feature[], base = '', cell = { row: 0, col: 0 }): LoadedCell => ({ cell, base, features })
 
@@ -54,8 +54,9 @@ describe('indoor relations', () => {
     const a = [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }, { lat: 1, lon: 1 }]
     const b = [{ lat: 0, lon: 0 }, { lat: 1, lon: 0 }, { lat: 1, lon: 1 }] // runs the other way
     const f = toFeatures([{ type: 'relation', id: 2, tags: { aeroway: 'terminal', name: 'T5' }, members: [{ role: 'outer', geometry: a }, { role: '', geometry: b }] }] as Parameters<typeof toFeatures>[0])
-    expect(f).toHaveLength(1)
-    const ring = (f[0].geometry as GeoJSON.Polygon).coordinates[0]
+    const polys = f.filter((x) => x.geometry.type === 'Polygon')
+    expect(polys).toHaveLength(1)
+    const ring = (polys[0].geometry as GeoJSON.Polygon).coordinates[0]
     expect(ring).toHaveLength(5)
     expect(ring[0]).toEqual(ring[ring.length - 1])
   })
@@ -303,6 +304,53 @@ describe('cell snapshots', () => {
     try {
       expect((await loadCell({ row: 999_002, col: 999_002 }))?.base).toBe('')
     } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+})
+
+describe('indoor follow-ups', () => {
+  const pt = (lat: number, lon: number) => ({ lat, lon })
+  it('only takes real snapshot dates', () => {
+    expect(isSnapshot('2026-11-22T07:20:03Z')).toBe(true)
+    for (const v of ['2026-99-99T99:99:99Z', '2026-02-30T00:00:00Z', '2999-01-01T00:00:00Z', 'zzz', 5, null]) expect(isSnapshot(v)).toBe(false)
+  })
+  it('keeps a courtyard that shares part of the outer wall', () => {
+    const outer = { role: 'outer', geometry: [pt(0, 0), pt(0, 4), pt(4, 4), pt(4, 0), pt(0, 0)] }
+    // The courtyard's left side runs along the outer wall (lon 0), between corners.
+    const inner = { role: 'inner', geometry: [pt(1, 0), pt(1, 2), pt(3, 2), pt(3, 0), pt(1, 0)] }
+    const f = toFeatures([{ type: 'relation', id: 30, tags: { building: 'train_station' }, members: [outer, inner] }] as Parameters<typeof toFeatures>[0])
+    const poly = f.find((x) => x.geometry.type === 'Polygon')!
+    expect((poly.geometry as GeoJSON.Polygon).coordinates).toHaveLength(2)
+  })
+  it('names a relation once, inside its largest outline', () => {
+    const u = [pt(0, 0), pt(0, 3), pt(3, 3), pt(3, 2), pt(1, 2), pt(1, 1), pt(3, 1), pt(3, 0), pt(0, 0)]
+    const f = toFeatures([{ type: 'relation', id: 31, tags: { building: 'train_station', name: 'Penn Station' }, members: [{ role: '', geometry: u }] }] as Parameters<typeof toFeatures>[0])
+    const labels = f.filter((x) => x.properties?.label)
+    expect(labels).toHaveLength(1)
+    expect(labels[0].properties?.name).toBe('Penn Station')
+    const [lon, lat] = labelPoint(u)
+    // inside the U's material, not in its notch
+    expect(lat).toBeGreaterThan(0)
+    expect(lat).toBeLessThan(3)
+    expect(lon >= 0 && lon <= 3).toBe(true)
+    expect(!(lat > 1 && lat < 2 && lon > 1)).toBe(true)
+  })
+  it('remembers a non-cell only for a minute', async () => {
+    const { loadCell } = await import('./indoor')
+    let calls = 0
+    vi.stubGlobal('fetch', async () => { calls++; return { status: 200, ok: true, text: async () => '<html>sign in</html>' } as unknown as Response })
+    const realNow = Date.now
+    try {
+      const cell = { row: 999_003, col: 999_003 }
+      await loadCell(cell)
+      await loadCell(cell)
+      expect(calls).toBe(1)
+      Date.now = () => realNow() + 61_000
+      await loadCell(cell)
+      expect(calls).toBe(2)
+    } finally {
+      Date.now = realNow
       vi.unstubAllGlobals()
     }
   })
