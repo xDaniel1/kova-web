@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  OVERPASS_ENDPOINTS, PER_SERVER_MS, blockOf, blockQuery, cameraKind, camerasOnRoute, covers, mergeTollLanes, overpass, parseCameras,
-  parseDirections, parseMaxspeed, parseNYCCameras, parseSignals, sampleRoute, signalsOnRoute, warningDetail, warningTitle,
+  OVERPASS_ENDPOINTS, PER_SERVER_MS, SampleIndex, blockOf, blockQuery, cameraKind, camerasOnRoute, covers, mergeTollLanes, overpass, parseCameras,
+  parseDirections, parseMaxspeed, parseNYCCameras, parseSignals, routeBlocks, sampleRoute, signalsOnRoute, warningDetail, warningTitle,
   webcamsNearRoute, type RoadCamera,
 } from './roadCameras'
 
@@ -94,13 +94,29 @@ describe('coverage and the route', () => {
       { id: 'side', lat: 40.005, lon: -74.002, kind: 'redLight', headings: [] }, // ~170 m off the road
       { id: 'web', lat: 40.004, lon: -74, kind: 'trafficCamera', headings: [], imageUrl: 'https://x' },
     ]
-    const on = camerasOnRoute(samples, cams)
+    const on = camerasOnRoute(new SampleIndex(samples), cams)
     expect(on.map((o) => o.item.id)).toEqual(['radar', 'toll'])
     expect(on[1].alongMeters).toBeGreaterThan(800)
-    expect(webcamsNearRoute(samples, cams).map((c) => c.id)).toEqual(['web'])
+    expect(webcamsNearRoute(new SampleIndex(samples), cams).map((c) => c.id)).toEqual(['web'])
+  })
+  it('never lists a camera already behind you or facing the other way', () => {
+    // The route drives north from 40.000 to 40.010. A camera at 40.005 facing south (180°) sees
+    // northbound traffic coming; one facing north (0°) watches the southbound side.
+    const towards: RoadCamera = { id: 'towards', lat: 40.005, lon: -74, kind: 'fixedRadar', headings: [180] }
+    const away: RoadCamera = { id: 'away', lat: 40.005, lon: -74, kind: 'fixedRadar', headings: [0] }
+    const on = camerasOnRoute(new SampleIndex(samples), [towards, away])
+    expect(on.map((o) => o.item.id)).toEqual(['towards'])
+    expect(on[0].alongMeters).toBeLessThan(560) // before reaching it, not after
+  })
+  it('fetches the next block when the route runs along its edge', () => {
+    // 40.0199 is 11 m below the 40.02 block edge (0.06° blocks: edge at 40.02 = 667 × 0.06).
+    const edge = 667 * 0.06
+    const keys = routeBlocks([[-74.03, edge - 0.0001], [-74.01, edge - 0.0001]])
+    expect(keys).toContain(blockOf(edge + 0.0005, -74.02))
+    expect(keys).toContain(blockOf(edge - 0.0005, -74.02))
   })
   it('keeps lights and stop signs on the route only', () => {
-    const sig = signalsOnRoute(samples, [
+    const sig = signalsOnRoute(new SampleIndex(samples), [
       { id: 'on', lat: 40.002, lon: -74.0001, kind: 'light' },
       { id: 'off', lat: 40.002, lon: -74.001, kind: 'stop' },
     ])

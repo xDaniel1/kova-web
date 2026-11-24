@@ -536,8 +536,11 @@ export default function App() {
               onSelectRoute={setSelectedRoute}
               onToast={notify}
               cameras={routeCameras.onRoute}
-              camerasPending={routeCameras.pending}
+              camerasPending={routeCameras.active ? routeCameras.pending : undefined}
               camerasUnchecked={routeCameras.unchecked}
+              camerasCheckedMeters={routeCameras.checkedMeters}
+              webcams={routeCameras.webcams}
+              onOpenWebcam={setWebcam}
             />
           )}
           {view.kind === 'saved' && (

@@ -117,13 +117,23 @@ function bearing(a: { lat: number; lon: number }, b: { lat: number; lon: number 
 
 /** Whether a point is inside a camera's coverage: a disc when its direction is unknown (or it
  *  spans the road, like a toll), else a cone along any of its headings. */
-export function covers(camera: RoadCamera, p: { lat: number; lon: number }): boolean {
+const angleDiff = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180)
+
+/** Whether a point is inside a camera's coverage: a disc when its direction is unknown (or it
+ *  spans the road, like a toll), else a cone along any of its headings. With `course` (the way the
+ *  route is moving there), a directional camera also has to face you: you drive towards it, within
+ *  45° of straight on, so a camera you have already passed, or one watching the other carriageway,
+ *  never counts (iPhone ties the cone to the live course the same way). */
+export function covers(camera: RoadCamera, p: { lat: number; lon: number }, course?: number): boolean {
   const d = distanceMeters(camera, p)
   if (d > RANGE_M[camera.kind]) return false
   const beam = BEAM[camera.kind]
-  if (beam >= 360 || camera.headings.length === 0 || d < 1) return true
+  if (beam >= 360 || camera.headings.length === 0) return true
+  const facesYou = (h: number) => course === undefined || angleDiff(course, (h + 180) % 360) <= 45
+  // Right at the camera the bearing to you means nothing; only which way it faces does.
+  if (d < 1) return camera.headings.some(facesYou)
   const b = bearing(camera, p)
-  return camera.headings.some((h) => Math.abs(((b - h + 540) % 360) - 180) <= beam / 2)
+  return camera.headings.some((h) => angleDiff(b, h) <= beam / 2 && facesYou(h))
 }
 
 // ---------- parsing
@@ -302,26 +312,64 @@ function readBlock(key: string): { at: number; block: Block } | null {
   }
 }
 
-function writeBlock(key: string, block: Block) {
-  try {
-    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ at: Date.now(), block }))
-  } catch {
-    /* storage full or blocked: the block is only kept for this page */
+const round5 = (n: number) => Math.round(n * 1e5) / 1e5
+
+/** Blocks older than two months are deleted; when storage is full the oldest go first. */
+function pruneBlocks(keepNewest: number) {
+  const entries: { key: string; at: number }[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key?.startsWith('kova.roadCameras.')) continue
+    let at = 0
+    try { at = Number(JSON.parse(localStorage.getItem(key) ?? 'null')?.at) || 0 } catch { /* unreadable: oldest */ }
+    entries.push({ key, at })
   }
+  entries.sort((a, b) => b.at - a.at)
+  entries.forEach((e, i) => { if (!e.key.startsWith(CACHE_PREFIX) || Date.now() - e.at >= KEEP_MS || i >= keepNewest) localStorage.removeItem(e.key) })
+}
+
+let sweptExpired = false
+
+function writeBlock(key: string, block: Block) {
+  // Five decimals is about a metre: city blocks with thousands of signals stay small.
+  const compact: Block = {
+    cameras: block.cameras.map((c) => ({ ...c, lat: round5(c.lat), lon: round5(c.lon) })),
+    signals: block.signals.map((s) => ({ ...s, lat: round5(s.lat), lon: round5(s.lon) })),
+  }
+  const value = JSON.stringify({ at: Date.now(), block: compact })
+  try {
+    // Expired blocks are swept once per page, not on every write (each read parses a whole block).
+    if (!sweptExpired) { sweptExpired = true; pruneBlocks(Infinity) }
+    localStorage.setItem(CACHE_PREFIX + key, value)
+  } catch {
+    // Full: keep the newest half and try once more; otherwise the block lives only in this page.
+    try {
+      pruneBlocks(Math.floor(countBlocks() / 2))
+      localStorage.setItem(CACHE_PREFIX + key, value)
+    } catch { /* storage blocked */ }
+  }
+}
+
+function countBlocks(): number {
+  let n = 0
+  for (let i = 0; i < localStorage.length; i++) if (localStorage.key(i)?.startsWith('kova.roadCameras.')) n++
+  return n
 }
 
 const memory = new Map<string, Promise<Block | null>>()
 
 /** One block's cameras and signals: a week-old copy is fresh (cameras change on the scale of
  *  months), and a two-month-old one beats a blank map when every server is busy. */
-export function loadBlock(key: string, opts: { cachedOnly?: boolean } = {}): Promise<Block | null> {
+export function loadBlock(key: string, opts: { cachedOnly?: boolean; signal?: AbortSignal } = {}): Promise<Block | null> {
   if (opts.cachedOnly) return Promise.resolve(memory.has(key) ? memory.get(key)! : readBlock(key)?.block ?? null)
   let p = memory.get(key)
   if (!p) {
     p = (async () => {
       const cached = readBlock(key)
       if (cached && Date.now() - cached.at < FRESH_MS) return cached.block
-      const elements = await overpass(blockQuery(key))
+      // Aborted (the route changed): this request is dropped from memory below, so the next
+      // caller asks again rather than inheriting a cancelled answer.
+      const elements = await overpass(blockQuery(key), opts.signal)
       if (elements) {
         const block = { cameras: parseCameras(elements), signals: parseSignals(elements) }
         writeBlock(key, block)
@@ -353,42 +401,80 @@ export function loadNYCCameras(): Promise<RoadCamera[]> {
 
 export interface OnRoute<T> { item: T; alongMeters: number }
 
-/** Route points every `spacing` metres with their distance from the start. */
-export function sampleRoute(line: number[][], spacing = 10): { lat: number; lon: number; along: number }[] {
-  const out: { lat: number; lon: number; along: number }[] = []
+export interface Sample { lat: number; lon: number; along: number; /** The route's course here. */ course: number }
+
+/** Route points every `spacing` metres with their distance from the start and the route's course. */
+export function sampleRoute(line: number[][], spacing = 10): Sample[] {
+  const out: Sample[] = []
   let along = 0
+  let course = 0
   for (let i = 0; i + 1 < line.length; i++) {
     const a = { lon: line[i][0], lat: line[i][1] }, b = { lon: line[i + 1][0], lat: line[i + 1][1] }
     const seg = distanceMeters(a, b)
+    if (seg > 0) course = bearing(a, b)
     const n = Math.max(1, Math.ceil(seg / spacing))
     for (let k = 0; k < n; k++) {
       const t = k / n
-      out.push({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t, along: along + seg * t })
+      out.push({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t, along: along + seg * t, course })
     }
     along += seg
   }
   const last = line[line.length - 1]
-  if (last) out.push({ lon: last[0], lat: last[1], along })
+  if (last) out.push({ lon: last[0], lat: last[1], along, course })
   return out
 }
 
-/** Block keys the route passes through, in route order. */
+/** Samples bucketed on a ~100 m grid, so matching thousands of city signals against a long drive
+ *  looks at a handful of nearby samples instead of every one (a low-end laptop stays responsive). */
+export class SampleIndex {
+  private cells = new Map<string, Sample[]>()
+  constructor(samples: Sample[]) {
+    for (const s of samples) {
+      const k = SampleIndex.key(Math.floor(s.lat / SampleIndex.CELL), Math.floor(s.lon / SampleIndex.CELL))
+      const list = this.cells.get(k)
+      if (list) list.push(s)
+      else this.cells.set(k, [s])
+    }
+  }
+  static readonly CELL = 0.001
+  private static key(r: number, c: number) { return r + ',' + c }
+  /** Samples within `meters` of a point, in route order. */
+  near(p: { lat: number; lon: number }, meters: number): Sample[] {
+    const dr = Math.ceil(meters / 111_000 / SampleIndex.CELL)
+    const dc = Math.ceil(meters / (111_000 * Math.max(0.2, Math.cos(rad(p.lat)))) / SampleIndex.CELL)
+    const r0 = Math.floor(p.lat / SampleIndex.CELL), c0 = Math.floor(p.lon / SampleIndex.CELL)
+    const out: Sample[] = []
+    for (let r = r0 - dr; r <= r0 + dr; r++) for (let c = c0 - dc; c <= c0 + dc; c++) {
+      for (const s of this.cells.get(SampleIndex.key(r, c)) ?? []) if (distanceMeters(s, p) <= meters) out.push(s)
+    }
+    return out.sort((a, b) => a.along - b.along)
+  }
+}
+
+/** How close to a block's edge the route may pass before the next block is fetched too: the
+ *  longest camera reach plus a margin, so a camera just over the edge is not missed. */
+const EDGE_M = 150
+
+/** Block keys the route passes through or near, in route order. */
 export function routeBlocks(line: number[][]): string[] {
   const keys: string[] = []
-  for (const p of sampleRoute(line, 500)) {
-    const k = blockOf(p.lat, p.lon)
-    if (!keys.includes(k)) keys.push(k)
+  const add = (k: string) => { if (!keys.includes(k)) keys.push(k) }
+  for (const p of sampleRoute(line, 100)) {
+    add(blockOf(p.lat, p.lon))
+    const dLat = EDGE_M / 111_000, dLon = EDGE_M / (111_000 * Math.max(0.2, Math.cos(rad(p.lat))))
+    for (const [a, b] of [[dLat, 0], [-dLat, 0], [0, dLon], [0, -dLon], [dLat, dLon], [dLat, -dLon], [-dLat, dLon], [-dLat, -dLon]]) add(blockOf(p.lat + a, p.lon + b))
   }
   return keys
 }
 
-/** Cameras the route drives into: the first point of the route inside each camera's coverage, as
- *  iPhone judges "approaching" (a camera on a cross street 40 m away never sees you). */
-export function camerasOnRoute(samples: { lat: number; lon: number; along: number }[], cameras: RoadCamera[]): OnRoute<RoadCamera>[] {
+/** Cameras the route drives into: the first point of the route inside each camera's coverage and
+ *  heading towards it, as iPhone judges "approaching" (a camera on a cross street 40 m away, or
+ *  one already behind you, never sees you). */
+export function camerasOnRoute(index: SampleIndex, cameras: RoadCamera[]): OnRoute<RoadCamera>[] {
   const out: OnRoute<RoadCamera>[] = []
   for (const c of cameras) {
     if (!alertsDriver(c.kind)) continue
-    const hit = samples.find((s) => Math.abs(s.lat - c.lat) < 0.002 && Math.abs(s.lon - c.lon) < 0.003 && covers(c, s))
+    const hit = index.near(c, RANGE_M[c.kind]).find((s) => covers(c, s, s.course))
     if (hit) out.push({ item: c, alongMeters: hit.along })
   }
   return out.sort((a, b) => a.alongMeters - b.alongMeters)
@@ -396,13 +482,13 @@ export function camerasOnRoute(samples: { lat: number; lon: number; along: numbe
 
 /** Lights and stop signs on the route itself: a light is on the junction node, a stop sign on the
  *  approach, so both are within a road's width (18 m, as on iPhone). */
-export function signalsOnRoute(samples: { lat: number; lon: number; along: number }[], signals: TrafficSignal[]): TrafficSignal[] {
-  return signals.filter((s) => samples.some((p) => Math.abs(p.lat - s.lat) < 0.0005 && Math.abs(p.lon - s.lon) < 0.0007 && distanceMeters(p, s) <= 18))
+export function signalsOnRoute(index: SampleIndex, signals: TrafficSignal[]): TrafficSignal[] {
+  return signals.filter((s) => index.near(s, 18).length > 0)
 }
 
 /** Traffic webcams within `meters` of the drive. */
-export function webcamsNearRoute(samples: { lat: number; lon: number; along: number }[], cameras: RoadCamera[], meters = 150): RoadCamera[] {
-  return cameras.filter((c) => c.kind === 'trafficCamera' && samples.some((p) => Math.abs(p.lat - c.lat) < 0.003 && Math.abs(p.lon - c.lon) < 0.004 && distanceMeters(p, c) <= meters))
+export function webcamsNearRoute(index: SampleIndex, cameras: RoadCamera[], meters = 150): RoadCamera[] {
+  return cameras.filter((c) => c.kind === 'trafficCamera' && index.near(c, meters).length > 0)
 }
 
 /** What the route list says for a camera: "Toll Camera ahead". */

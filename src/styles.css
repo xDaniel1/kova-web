@@ -512,6 +512,11 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .ctrl-3d { font: 700 13px/1 Manrope, Inter, sans-serif; color: var(--text); border-radius: var(--tile-sm); box-shadow: var(--shadow); }
 .ctrl-3d.on { background: var(--accent); color: #fff; }
 .route-cameras { margin-bottom: 4px; }
+.route-cameras > .tiny { padding: 0 16px 8px 44px; }
+.route-webcams { padding: 0 16px 8px 16px; }
+.route-webcams summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 0; font-size: 14px; color: var(--accent); }
+.route-webcams ul { list-style: none; margin: 0; padding: 0 0 0 26px; display: grid; gap: 4px; }
+.route-webcams button { text-align: left; font-size: 14px; }
 .webcam-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
 .webcam-card { background: var(--surface); color: var(--text); border-radius: 16px; padding: 16px; width: min(480px, 100%); display: flex; flex-direction: column; gap: 8px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
 .webcam-head { display: flex; align-items: center; justify-content: space-between; }
