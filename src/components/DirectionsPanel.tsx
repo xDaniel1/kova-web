@@ -217,7 +217,7 @@ export function DirectionsPanel(p: Props) {
               : found ? null : 'none mapped on this route'
             return (
               <section className="route-cameras" aria-label="Cameras and tolls on this route" aria-busy={pending > 0}>
-                <div className="leg-head"><Icon name="photo_camera" size={18} /> Cameras and tolls{status && <span className="muted small"> · {status}</span>}</div>
+                <div className="leg-head"><Icon name="photo_camera" size={18} /> Cameras and tolls<span className="muted small" aria-live="polite">{status ? ` · ${status}` : ''}</span></div>
                 {found > 0 && (
                   <ol className="steps">
                     {p.cameras!.map(({ item: c, alongMeters }) => (

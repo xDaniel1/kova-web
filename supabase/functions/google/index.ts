@@ -88,8 +88,8 @@ Deno.serve(async (req) => {
     // NYC DOT's traffic cameras (public, keyless). Proxied because the list has no CORS headers;
     // nothing about the caller is sent on. Online cameras with an https picture only.
     if (req.method === 'GET' && path === '/nyc/cameras') {
-      const r = await fetch('https://webcams.nyctmc.org/api/cameras', { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) })
-      if (!r.ok) return json({ error: 'camera list unavailable' }, 502, h)
+      const r = await fetch('https://webcams.nyctmc.org/api/cameras', { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) }).catch(() => null)
+      if (!r || !r.ok) return json({ error: 'camera list unavailable' }, 502, h)
       const list = await r.json().catch(() => null)
       if (!list) return json({ error: 'camera list unavailable' }, 502, h)
       const cameras = (Array.isArray(list) ? list : [])

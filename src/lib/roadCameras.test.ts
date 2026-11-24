@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   OVERPASS_ENDPOINTS, PER_SERVER_MS, SampleIndex, blockOf, blockQuery, cameraKind, camerasOnRoute, covers, mergeTollLanes, overpass, parseCameras,
-  parseDirections, parseMaxspeed, parseNYCCameras, parseSignals, routeBlocks, sampleRoute, signalsOnRoute, warningDetail, warningTitle,
+  parseDirections, parseMaxspeed, parseNYCCameras, parseSignals, loadBlock, routeBlocks, sampleRoute, signalsOnRoute, warningDetail, warningTitle,
   webcamsNearRoute, type RoadCamera,
 } from './roadCameras'
 
@@ -111,9 +111,18 @@ describe('coverage and the route', () => {
   it('fetches the next block when the route runs along its edge', () => {
     // 40.0199 is 11 m below the 40.02 block edge (0.06° blocks: edge at 40.02 = 667 × 0.06).
     const edge = 667 * 0.06
-    const keys = routeBlocks([[-74.03, edge - 0.0001], [-74.01, edge - 0.0001]])
+    const { keys } = routeBlocks([[-74.03, edge - 0.0001], [-74.01, edge - 0.0001]])
     expect(keys).toContain(blockOf(edge + 0.0005, -74.02))
     expect(keys).toContain(blockOf(edge - 0.0005, -74.02))
+  })
+  it('caps the blocks the route itself enters, not their edge neighbours', () => {
+    // 250 km due east along a block edge: every step also pulls in the block across the edge.
+    const edge = 667 * 0.06
+    const r = routeBlocks([[-80, edge - 0.0001], [-77.05, edge - 0.0001]], 40)
+    expect(r.own.size).toBe(40)
+    expect(r.truncated).toBe(true)
+    expect(r.keys.length).toBeGreaterThan(40)
+    expect(routeBlocks([[-80, edge - 0.0001], [-77.65, edge - 0.0001]], 40).truncated).toBe(false) // ~200 km
   })
   it('keeps lights and stop signs on the route only', () => {
     const sig = signalsOnRoute(new SampleIndex(samples), [
@@ -157,6 +166,31 @@ describe('Overpass', () => {
       expect(await pending).toHaveLength(1)
     } finally {
       vi.useRealTimers()
+    }
+  })
+  it('a route that gives up a shared block does not cancel it for another route', async () => {
+    let release!: (r: Response) => void
+    let aborted = false
+    const fetcher = vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((resolve, reject) => {
+      release = resolve
+      init?.signal?.addEventListener('abort', () => { aborted = true; reject(new DOMException('aborted', 'AbortError')) })
+    })) as unknown as typeof fetch
+    const real = globalThis.fetch
+    globalThis.fetch = fetcher
+    try {
+      const a = new AbortController(), b = new AbortController()
+      const key = '9999,9999'
+      const first = loadBlock(key, { signal: a.signal })
+      const second = loadBlock(key, { signal: b.signal })
+      a.abort()
+      expect(await first).toBeNull()
+      await Promise.resolve()
+      expect(aborted).toBe(false)
+      release(new Response('{"elements":[{"type":"node","id":7,"lat":1,"lon":1,"tags":{"highway":"stop"}}]}', { status: 200 }))
+      const block = await second
+      expect(block?.signals).toHaveLength(1)
+    } finally {
+      globalThis.fetch = real
     }
   })
   it('returns null when every server fails', async () => {

@@ -26,7 +26,7 @@ export interface RouteCameras {
 }
 
 const EMPTY: RouteCameras = { active: false, onRoute: [], webcams: [], signals: [], pending: 0, unchecked: 0 }
-/** About 250 km of route. Beyond that the list stops rather than queueing dozens of Overpass calls. */
+/** Blocks the route itself enters (about 250 km); beyond that the list says how far it checked. */
 export const MAX_BLOCKS = 40
 
 /** How far along the route stays inside the given blocks from the start. */
@@ -51,10 +51,9 @@ export function useRouteCameras(route: Route | null, enabled: boolean): RouteCam
     const controller = new AbortController()
     const samples = sampleRoute(line, 10)
     const index = new SampleIndex(samples)
-    const allBlocks = routeBlocks(line)
-    const blocks = allBlocks.slice(0, MAX_BLOCKS)
+    const { keys: blocks, own, truncated } = routeBlocks(line, MAX_BLOCKS)
     // A route longer than the block limit says how far it was checked instead of looking complete.
-    const checkedMeters = allBlocks.length > MAX_BLOCKS ? lastAlongIn(samples, new Set(blocks)) : undefined
+    const checkedMeters = truncated ? lastAlongIn(samples, own) : undefined
     let webcams: RoadCamera[] = []
     let onRoute: OnRoute<RoadCamera>[] = []
     let onSignals: TrafficSignal[] = []
@@ -150,7 +149,7 @@ export function RoadCamerasLayer({ map, data, onOpenWebcam }: { map: Map; data: 
       if (cam) onOpenWebcam(cam)
     }
     // Only webcams do anything on click, so only they get the pointer.
-    const enter = (e: MapMouseEvent) => { map.getCanvas().style.cursor = map.queryRenderedFeatures(e.point, { layers: [LAYER] }).some((x) => x.properties?.webcam) ? 'pointer' : '' }
+    const enter = (e: MapMouseEvent) => { map.getCanvas().style.cursor = e.features?.some((x) => x.properties?.webcam) ? 'pointer' : '' }
     const leave = () => { map.getCanvas().style.cursor = '' }
     map.on('styleimagemissing', missing)
     map.on('style.load', ensure)

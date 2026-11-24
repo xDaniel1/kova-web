@@ -339,7 +339,11 @@ function writeBlock(key: string, block: Block) {
   const value = JSON.stringify({ at: Date.now(), block: compact })
   try {
     // Expired blocks are swept once per page, not on every write (each read parses a whole block).
-    if (!sweptExpired) { sweptExpired = true; pruneBlocks(Infinity) }
+    if (!sweptExpired) {
+      sweptExpired = true
+      const idle = (globalThis as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 2000))
+      idle(() => { try { pruneBlocks(Infinity) } catch { /* storage blocked */ } })
+    }
     localStorage.setItem(CACHE_PREFIX + key, value)
   } catch {
     // Full: keep the newest half and try once more; otherwise the block lives only in this page.
@@ -356,20 +360,25 @@ function countBlocks(): number {
   return n
 }
 
-const memory = new Map<string, Promise<Block | null>>()
+interface Shared { promise: Promise<Block | null>; controller: AbortController; refs: number }
+const memory = new Map<string, Shared>()
 
 /** One block's cameras and signals: a week-old copy is fresh (cameras change on the scale of
- *  months), and a two-month-old one beats a blank map when every server is busy. */
+ *  months), and a two-month-old one beats a blank map when every server is busy.
+ *
+ *  Routes share blocks (alternatives share their opening stretch), so the request is shared and
+ *  counted: a caller's `signal` only gives up its own claim, and the request is cancelled only when
+ *  nobody is waiting on it. An aborted caller gets null; the others still get the block. */
 export function loadBlock(key: string, opts: { cachedOnly?: boolean; signal?: AbortSignal } = {}): Promise<Block | null> {
-  if (opts.cachedOnly) return Promise.resolve(memory.has(key) ? memory.get(key)! : readBlock(key)?.block ?? null)
-  let p = memory.get(key)
-  if (!p) {
-    p = (async () => {
+  if (opts.cachedOnly) return memory.has(key) ? memory.get(key)!.promise : Promise.resolve(readBlock(key)?.block ?? null)
+  if (opts.signal?.aborted) return Promise.resolve(null)
+  let shared = memory.get(key)
+  if (!shared) {
+    const controller = new AbortController()
+    const promise = (async () => {
       const cached = readBlock(key)
       if (cached && Date.now() - cached.at < FRESH_MS) return cached.block
-      // Aborted (the route changed): this request is dropped from memory below, so the next
-      // caller asks again rather than inheriting a cancelled answer.
-      const elements = await overpass(blockQuery(key), opts.signal)
+      const elements = await overpass(blockQuery(key), controller.signal)
       if (elements) {
         const block = { cameras: parseCameras(elements), signals: parseSignals(elements) }
         writeBlock(key, block)
@@ -377,10 +386,37 @@ export function loadBlock(key: string, opts: { cachedOnly?: boolean; signal?: Ab
       }
       return cached?.block ?? null
     })()
-    memory.set(key, p)
-    p.then((b) => { if (!b) memory.delete(key) }) // a failed block can be asked again later
+    const entry: Shared = { promise, controller, refs: 0 }
+    shared = entry
+    memory.set(key, entry)
+    // A failed or cancelled block can be asked again later.
+    void promise.then((b) => { if (!b && memory.get(key) === entry) memory.delete(key) })
   }
-  return p
+  const entry = shared
+  entry.refs++
+  if (!opts.signal) return entry.promise
+  const signal = opts.signal
+  return new Promise<Block | null>((resolve) => {
+    let done = false
+    const leave = () => {
+      if (done) return
+      done = true
+      entry.refs--
+      if (entry.refs <= 0 && memory.get(key) === entry) {
+        entry.controller.abort()
+        memory.delete(key)
+      }
+      resolve(null)
+    }
+    signal.addEventListener('abort', leave, { once: true })
+    void entry.promise.then((b) => {
+      if (done) return
+      done = true
+      entry.refs--
+      signal.removeEventListener('abort', leave)
+      resolve(b)
+    })
+  })
 }
 
 let nyc: Promise<RoadCamera[]> | null = null
@@ -455,16 +491,24 @@ export class SampleIndex {
  *  longest camera reach plus a margin, so a camera just over the edge is not missed. */
 const EDGE_M = 150
 
-/** Block keys the route passes through or near, in route order. */
-export function routeBlocks(line: number[][]): string[] {
+/** Block keys the route passes through or near, in route order, up to `maxOwn` blocks the route
+ *  itself enters (their neighbours along an edge come with them and don't count). `truncated` says
+ *  the route went on past that. */
+export function routeBlocks(line: number[][], maxOwn = Infinity): { keys: string[]; own: Set<string>; truncated: boolean } {
   const keys: string[] = []
+  const own = new Set<string>()
   const add = (k: string) => { if (!keys.includes(k)) keys.push(k) }
   for (const p of sampleRoute(line, 100)) {
-    add(blockOf(p.lat, p.lon))
+    const k = blockOf(p.lat, p.lon)
+    if (!own.has(k)) {
+      if (own.size >= maxOwn) return { keys, own, truncated: true }
+      own.add(k)
+    }
+    add(k)
     const dLat = EDGE_M / 111_000, dLon = EDGE_M / (111_000 * Math.max(0.2, Math.cos(rad(p.lat))))
     for (const [a, b] of [[dLat, 0], [-dLat, 0], [0, dLon], [0, -dLon], [dLat, dLon], [dLat, -dLon], [-dLat, dLon], [-dLat, -dLon]]) add(blockOf(p.lat + a, p.lon + b))
   }
-  return keys
+  return { keys, own, truncated: false }
 }
 
 /** Cameras the route drives into: the first point of the route inside each camera's coverage and
