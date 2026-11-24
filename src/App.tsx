@@ -7,6 +7,9 @@ import { CATEGORIES, CategoryChips } from './components/CategoryChips'
 import { DirectionsPanel, type When } from './components/DirectionsPanel'
 import { Icon } from './components/Icon'
 import { SpeedLimitsLayer } from './components/SpeedLimitsLayer'
+import { RoadCamerasLayer, useRouteCameras } from './components/RoadCamerasLayer'
+import { TrafficCameraView } from './components/TrafficCameraView'
+import type { RoadCamera } from './lib/roadCameras'
 import { TransitLayer } from './components/TransitLayer'
 import { TreeLayer } from './components/TreeLayer'
 import { LayersControl } from './components/LayersControl'
@@ -86,6 +89,7 @@ export default function App() {
   const [selectedRoute, setSelectedRoute] = useState(0)
   const [routeBusy, setRouteBusy] = useState(false)
   const [routeError, setRouteError] = useState<string | null>(null)
+  const [webcam, setWebcam] = useState<RoadCamera | null>(null)
   const [modeTimes, setModeTimes] = useState<Partial<Record<TravelMode, number>>>({})
   const [when, setWhen] = useState<When>({ kind: 'now' })
   const [base, setBase] = useState<BaseMap>('default')
@@ -299,6 +303,9 @@ export default function App() {
 
   // ---- directions
   const needsFix = view.kind === 'directions' && view.stops.some((s) => s.kind === 'me')
+  // Cameras, tolls, lights and stop signs along the driving route shown, as on iPhone's drive.
+  const routeCameras = useRouteCameras(view.kind === 'directions' ? routes[selectedRoute] ?? null : null, !remote.maintenance && !remote.updateRequired)
+  const closeWebcam = useCallback(() => setWebcam(null), [])
   useEffect(() => {
     if (needsFix && !geo.fix && !geo.busy && !geo.error) geo.locate()
   }, [needsFix, geo])
@@ -440,6 +447,7 @@ export default function App() {
       />
       {mapInstance && <TreeLayer map={mapInstance} enabled={treesOn && base !== 'satellite' && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <TransitLayer map={mapInstance} enabled={transitMap && transitOn && !remote.maintenance && !remote.updateRequired} />}
+      {mapInstance && <RoadCamerasLayer map={mapInstance} data={routeCameras} onOpenWebcam={setWebcam} />}
       {mapInstance && <SpeedLimitsLayer map={mapInstance} enabled={speedLimits && speedOn && !remote.maintenance && !remote.updateRequired} />}
       {mapInstance && <IndoorLayer map={mapInstance} enabled={indoorOn} placeLabels={placeLabelsOn} dark={dark && base !== 'satellite'} left={(isNarrow ? 8 : leftInset + 16) + (isNarrow ? 72 : 92)} />}
       </Suspense>
@@ -527,6 +535,9 @@ export default function App() {
               onWhen={setWhen}
               onSelectRoute={setSelectedRoute}
               onToast={notify}
+              cameras={routeCameras.onRoute}
+              camerasPending={routeCameras.pending}
+              camerasUnchecked={routeCameras.unchecked}
             />
           )}
           {view.kind === 'saved' && (
@@ -578,6 +589,7 @@ export default function App() {
       </div>
 
       {toast && <div className="toast" role="status">{toast}</div>}
+      {webcam && <TrafficCameraView camera={webcam} onClose={closeWebcam} />}
 
       {/* Tower gates. Update-required wins over maintenance; messages never sit on top of either. */}
       {remote.updateRequired ? (

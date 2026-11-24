@@ -4,10 +4,16 @@ import type { Lane, Route, RouteStep, TravelMode } from '../lib/types'
 import type { Stop } from '../lib/url'
 import { Icon } from './Icon'
 import { StopField } from './StopField'
+import { isToll, warningDetail, warningTitle, type OnRoute, type RoadCamera } from '../lib/roadCameras'
 
 export type When = { kind: 'now' } | { kind: 'depart'; at: string } | { kind: 'arrive'; at: string }
 
 interface Props {
+  /** Cameras and tolls the selected driving route drives into, in order. */
+  cameras?: OnRoute<RoadCamera>[]
+  camerasPending?: number
+  /** Stretches of the route that could not be checked. */
+  camerasUnchecked?: number
   transitAvailable: boolean
   speedLimitsAvailable: boolean
   trafficAvailable: boolean
@@ -195,6 +201,22 @@ export function DirectionsPanel(p: Props) {
             <strong>{formatDuration(route.durationSeconds)}</strong> <span className="muted">({formatDistance(route.distanceMeters)})</span>
             <div className="muted small">Arrive around {formatArrival(route.durationSeconds)}{route.fare ? ` · ${route.fare}` : ''}</div>
           </div>
+          {route.mode === 'driving' && ((p.cameras?.length ?? 0) > 0 || (p.camerasPending ?? 0) > 0 || (p.camerasUnchecked ?? 0) > 0) && (
+            <div className="route-cameras" aria-label="Cameras and tolls on this route">
+              <div className="leg-head"><Icon name="photo_camera" size={18} /> Cameras and tolls{p.camerasPending ? <span className="muted small"> · checking the route…</span> : p.camerasUnchecked ? <span className="muted small"> · {p.cameras?.length ? 'part of the route could not be checked' : 'could not be checked right now'}</span> : null}</div>
+              <ol className="steps">
+                {(p.cameras ?? []).map(({ item: c, alongMeters }) => (
+                  <li key={c.id}>
+                    <span className="step-icon"><Icon name={isToll(c.kind) ? 'toll' : 'photo_camera'} /></span>
+                    <div className="step-text">
+                      <div>{warningTitle(c)} · {formatDistance(alongMeters)}</div>
+                      {warningDetail(c) && <div className="muted small">{warningDetail(c)}</div>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
           {route.legs.map((leg, li) => (
             <div key={li} className="leg">
               <div className="leg-head"><Icon name={li === 0 ? 'trip_origin' : 'location_on'} size={18} /> {stopName(stops[li])}</div>
