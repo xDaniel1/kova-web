@@ -39,10 +39,14 @@ self.addEventListener('fetch', (e) => {
         const res = await fetch(req)
         // Only a whole file is kept: a page served in its place (HTML) or a download cut short
         // would otherwise be served from the cache for good.
-        if (res.ok && !(res.headers.get('content-type') ?? '').includes('text/html')) {
-          const body = await res.clone().arrayBuffer()
-          const length = Number(res.headers.get('content-length'))
-          if (body.byteLength > 0 && (!length || res.headers.has('content-encoding') || length === body.byteLength)) await c.put(req, res.clone())
+        // A partial (206) answer is never kept. Caching is best effort: a write the browser
+        // refuses (quota) still hands the file to the page.
+        if (res.status === 200 && !(res.headers.get('content-type') ?? '').includes('text/html')) {
+          try {
+            const body = await res.clone().arrayBuffer()
+            const length = Number(res.headers.get('content-length'))
+            if (body.byteLength > 0 && (!length || res.headers.has('content-encoding') || length === body.byteLength)) await c.put(req, res.clone())
+          } catch { /* not cached; the response below is still whole */ }
         }
         return res
       }),
