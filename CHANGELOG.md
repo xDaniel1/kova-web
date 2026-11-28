@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.12 — 2026-11-28
+
+Follow-ups to the 1.0.10 photo tabs from review.
+
+- **No second download of each photo for sorting.** The sorter now asks for exactly the image the photo grid shows, in the same CORS mode, so it comes from the browser cache. Before, on high-resolution screens it fetched every photo again at twice the size (up to ten extra Google photo charges per place).
+- **No sorting without a GPU.** When the browser falls back to the CPU backend, photos stay unsorted (in All) instead of freezing the page for seconds per photo.
+- **A brief network drop no longer turns sorting off until reload.** A failed model download is tried again on a later place, waiting 30 s, then 1, 2, 4, up to 10 minutes.
+- **The service worker keeps only whole model files.** A download cut short, or a page served in a model file's place, is no longer cached for good. The cache moves to `kova-v2`, which drops anything a 1.0.10 worker kept, and a failed model load clears the model cache.
+- The model ships the full Apache License 2.0 text (`public/models/photo-sorter-v1/LICENSE.txt`), as the licence requires.
+- Indoor: a terminal or station's name no longer lands inside an atrium or courtyard in its middle.
+- Release manifest: points at the next tag (`web-v1.0.12`) instead of `web-v1.0.9`.
+
 ## 1.0.11 — 2026-11-24
 
 Syncs with iPhone build 77.

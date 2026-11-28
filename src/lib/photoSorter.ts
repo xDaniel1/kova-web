@@ -55,8 +55,12 @@ export function categoryOf(probs: ArrayLike<number>): PhotoCategory | null {
 
 type Classify = (img: HTMLImageElement) => Promise<Float32Array>
 let classifier: Promise<Classify | null> | null = null
+/** After a failed load (often a brief network drop), when the next place may try again. */
+let retryAt = 0
+let failures = 0
 
 function loadClassifier(): Promise<Classify | null> {
+  if (classifier === null && Date.now() < retryAt) return Promise.resolve(null)
   classifier ??= (async () => {
     try {
       const tf = await import('@tensorflow/tfjs-core')
@@ -64,6 +68,9 @@ function loadClassifier(): Promise<Classify | null> {
       await import('@tensorflow/tfjs-backend-cpu')
       const { loadGraphModel } = await import('@tensorflow/tfjs-converter')
       await tf.ready()
+      // No GPU: the CPU backend takes seconds per photo and stalls the page, so the photos are
+      // left unsorted instead (as when there's no backend at all).
+      if (tf.getBackend() !== 'webgl') return null
       const model = await loadGraphModel(`${import.meta.env.BASE_URL}models/photo-sorter-v1/model.json`)
       return async (img: HTMLImageElement) => {
         const logits = tf.tidy(() => {
@@ -77,7 +84,13 @@ function loadClassifier(): Promise<Classify | null> {
         return probs
       }
     } catch {
-      return null // no WebGL/CPU backend or the model didn't load: the photos just aren't sorted
+      // The model didn't load: try again on a later place, waiting longer each time (30 s, 1 min,
+      // 2 min … up to 10 min), and drop a cached copy in case that is what's broken.
+      failures++
+      retryAt = Date.now() + Math.min(600_000, 30_000 * 2 ** (failures - 1))
+      classifier = null
+      try { await caches.delete('kova-v2-models') } catch { /* no Cache API */ }
+      return null
     }
   })()
   return classifier
@@ -133,8 +146,9 @@ export async function sortPhotos(photos: PlacePhoto[], onUpdate: (categories: Ma
   for (const p of todo) {
     if (signal?.aborted) return
     try {
-      // 400 px: the same image the thumbnails use, so it usually comes from the browser cache.
-      const img = await loadImage(photoURL(p, 400))
+      // The same URL (and CORS mode) the thumbnails use, so it comes from the browser cache
+      // instead of being fetched, and billed, a second time.
+      const img = await loadImage(photoURL(p, 200))
       const category = categoryOf(await classify(img))
       known.set(p.name, category)
       result.set(p.name, category)

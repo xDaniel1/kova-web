@@ -4,7 +4,7 @@
 // - Pages: network-first, falling back to the cached shell when offline.
 // - /models/* (the photo sorter, versioned path): cache-first, kept.
 // Map tiles, search, routing and Supabase are never cached here.
-const VERSION = 'kova-v1'
+const VERSION = 'kova-v2' // v2: drops model files a v1 worker may have cached broken
 const SHELL = `${VERSION}-shell`
 const ASSETS = `${VERSION}-assets`
 const RUNTIME = `${VERSION}-runtime`
@@ -37,7 +37,13 @@ self.addEventListener('fetch', (e) => {
         const hit = await c.match(req)
         if (hit) return hit
         const res = await fetch(req)
-        if (res.ok) await c.put(req, res.clone())
+        // Only a whole file is kept: a page served in its place (HTML) or a download cut short
+        // would otherwise be served from the cache for good.
+        if (res.ok && !(res.headers.get('content-type') ?? '').includes('text/html')) {
+          const body = await res.clone().arrayBuffer()
+          const length = Number(res.headers.get('content-length'))
+          if (body.byteLength > 0 && (!length || res.headers.has('content-encoding') || length === body.byteLength)) await c.put(req, res.clone())
+        }
         return res
       }),
     )

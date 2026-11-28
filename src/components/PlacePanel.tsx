@@ -259,7 +259,7 @@ export function PlacePanel(p: Props) {
               <div className="photo-grid">
                 {shownPhotos.slice(0, 9).map((ph) => (
                   <button key={ph.name} onClick={() => showPhoto(ph)}>
-                    <img src={photoURL(ph, 200)} alt="" loading="lazy" />
+                    <img src={photoURL(ph, 200)} alt="" loading="lazy" crossOrigin="anonymous" />
                   </button>
                 ))}
               </div>

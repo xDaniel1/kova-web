@@ -336,6 +336,17 @@ describe('indoor follow-ups', () => {
     expect(lon >= 0 && lon <= 3).toBe(true)
     expect(!(lat > 1 && lat < 2 && lon > 1)).toBe(true)
   })
+  it('keeps a name out of the atrium in the middle', () => {
+    const outer = [pt(0, 0), pt(0, 4), pt(4, 4), pt(4, 0), pt(0, 0)]
+    const atrium = [pt(1, 1), pt(1, 3), pt(3, 3), pt(3, 1), pt(1, 1)]
+    const f = toFeatures([{ type: 'relation', id: 32, tags: { aeroway: 'terminal', name: 'Terminal 4' }, members: [{ role: 'outer', geometry: outer }, { role: 'inner', geometry: atrium }] }] as Parameters<typeof toFeatures>[0])
+    const label = f.find((x) => x.properties?.label)
+    expect(label).toBeTruthy()
+    const [x, y] = (label!.geometry as { coordinates: number[] }).coordinates
+    const inAtrium = x > 1 && x < 3 && y > 1 && y < 3
+    expect(inAtrium).toBe(false)
+    expect(labelPoint(outer)).toEqual([2, 2]) // without the hole it would sit right in it
+  })
   it('remembers a non-cell only for a minute', async () => {
     const { loadCell } = await import('./indoor')
     let calls = 0
