@@ -4,7 +4,7 @@
 // - Pages: network-first, falling back to the cached shell when offline.
 // - /models/* (the photo sorter, versioned path): cache-first, kept.
 // Map tiles, search, routing and Supabase are never cached here.
-const VERSION = 'kova-v1'
+const VERSION = 'kova-v2' // v2: drops model files a v1 worker may have cached broken
 const SHELL = `${VERSION}-shell`
 const ASSETS = `${VERSION}-assets`
 const RUNTIME = `${VERSION}-runtime`
@@ -32,15 +32,24 @@ self.addEventListener('fetch', (e) => {
 
   // The photo sorter's model (about 4 MB, versioned path): download once, keep.
   if (url.origin === location.origin && url.pathname.startsWith('/models/')) {
-    e.respondWith(
-      caches.open(MODELS).then(async (c) => {
-        const hit = await c.match(req)
-        if (hit) return hit
-        const res = await fetch(req)
-        if (res.ok) await c.put(req, res.clone())
-        return res
-      }),
-    )
+    e.respondWith((async () => {
+      // Cache Storage failing (quota, a broken profile) must never block the download itself.
+      const c = await caches.open(MODELS).catch(() => null)
+      const hit = c && (await c.match(req).catch(() => undefined))
+      if (hit) return hit
+      const res = await fetch(req)
+      // Only a whole file is kept: a page served in its place (HTML), a partial (206) answer or a
+      // download cut short would otherwise be served from the cache for good. Caching is best
+      // effort: a write the browser refuses still hands the file to the page.
+      if (c && res.status === 200 && !(res.headers.get('content-type') ?? '').includes('text/html')) {
+        try {
+          const body = await res.clone().arrayBuffer()
+          const length = Number(res.headers.get('content-length'))
+          if (body.byteLength > 0 && (!length || res.headers.has('content-encoding') || length === body.byteLength)) await c.put(req, res.clone())
+        } catch { /* not cached; the response below is still whole */ }
+      }
+      return res
+    })())
     return
   }
 

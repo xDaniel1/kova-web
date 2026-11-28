@@ -330,14 +330,17 @@ export function onOutline(p: Point, r: Point[]): boolean {
 }
 
 /** A point inside a ring to put its name on: the middle of the widest stretch of the ring along
- *  the line of latitude through its centre, so even a U-shaped outline gets its name inside. */
-export function labelPoint(r: Point[]): number[] {
+ *  the line of latitude through its centre, so even a U-shaped outline gets its name inside.
+ *  Holes (atriums, courtyards) cut that line too, so the name never lands in one. */
+export function labelPoint(r: Point[], holes: Point[][] = []): number[] {
   const pts = r.slice(0, -1)
   const lat = pts.reduce((s, p) => s + p.lat, 0) / pts.length
   const xs: number[] = []
-  for (let i = 0; i + 1 < r.length; i++) {
-    const a = r[i], b = r[i + 1]
-    if ((a.lat > lat) !== (b.lat > lat)) xs.push(a.lon + ((lat - a.lat) * (b.lon - a.lon)) / (b.lat - a.lat))
+  for (const ring of [r, ...holes]) {
+    for (let i = 0; i + 1 < ring.length; i++) {
+      const a = ring[i], b = ring[i + 1]
+      if ((a.lat > lat) !== (b.lat > lat)) xs.push(a.lon + ((lat - a.lat) * (b.lon - a.lon)) / (b.lat - a.lat))
+    }
   }
   xs.sort((x, y) => x - y)
   let best: number[] | null = null
@@ -470,8 +473,8 @@ export function toFeatures(elements: Element[]): GeoJSON.Feature[] {
       })
       // Named like a closed way is: one label, on the largest outline (Penn Station, Grand Central).
       if (outers.length && (props.name || props.icon)) {
-        const biggest = outers.reduce((a, b) => (areaOf(b) > areaOf(a) ? b : a))
-        push({ type: 'Feature', geometry: { type: 'Point', coordinates: labelPoint(biggest) }, properties: { ...props, point: true, label: true } })
+        const at = outers.reduce((a, _, i) => (areaOf(outers[i]) > areaOf(outers[a]) ? i : a), 0)
+        push({ type: 'Feature', geometry: { type: 'Point', coordinates: labelPoint(outers[at], holes[at]) }, properties: { ...props, point: true, label: true } })
       }
     }
   }

@@ -66,9 +66,11 @@ export function PlacePanel(p: Props) {
 
   // Sort the photos into Menu / Food & drink / Atmosphere on this device, as iPhone does.
   useEffect(() => {
-    if (!photos.length) return
+    // Only photos the grid shows as thumbnails (it appears from two photos, up to nine), so each
+    // one sorted is an image already downloaded, never an extra Google photo request.
+    if (photos.length < 2) return
     const controller = new AbortController()
-    void sortPhotos(photos, setPhotoCats, controller.signal)
+    void sortPhotos(photos.slice(0, 9), setPhotoCats, controller.signal)
     return () => controller.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d])
@@ -238,7 +240,7 @@ export function PlacePanel(p: Props) {
               <div className="menu-shelf">
                 {menus.map((ph, i) => (
                   <button key={ph.name} aria-label={`Menu photo ${i + 1}`} onClick={() => showPhoto(ph)}>
-                    <img src={photoURL(ph, 400)} alt="" loading="lazy" />
+                    <img src={photoURL(ph, 400)} alt="" loading="lazy" crossOrigin="anonymous" />
                   </button>
                 ))}
               </div>
@@ -259,7 +261,7 @@ export function PlacePanel(p: Props) {
               <div className="photo-grid">
                 {shownPhotos.slice(0, 9).map((ph) => (
                   <button key={ph.name} onClick={() => showPhoto(ph)}>
-                    <img src={photoURL(ph, 200)} alt="" loading="lazy" />
+                    <img src={photoURL(ph, 200)} alt="" loading="lazy" crossOrigin="anonymous" />
                   </button>
                 ))}
               </div>
