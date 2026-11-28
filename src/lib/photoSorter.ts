@@ -58,10 +58,12 @@ let classifier: Promise<Classify | null> | null = null
 /** After a failed load (often a brief network drop), when the next place may try again. */
 let retryAt = 0
 let failures = 0
+let modelFetchStarted = false
 
 function loadClassifier(): Promise<Classify | null> {
   if (classifier === null && Date.now() < retryAt) return Promise.resolve(null)
   classifier ??= (async () => {
+    modelFetchStarted = false
     try {
       const tf = await import('@tensorflow/tfjs-core')
       await import('@tensorflow/tfjs-backend-webgl')
@@ -71,6 +73,7 @@ function loadClassifier(): Promise<Classify | null> {
       // No GPU: the CPU backend takes seconds per photo and stalls the page, so the photos are
       // left unsorted instead (as when there's no backend at all).
       if (tf.getBackend() !== 'webgl') return null
+      modelFetchStarted = true
       const model = await loadGraphModel(`${import.meta.env.BASE_URL}models/photo-sorter-v1/model.json`)
       return async (img: HTMLImageElement) => {
         const logits = tf.tidy(() => {
@@ -85,11 +88,17 @@ function loadClassifier(): Promise<Classify | null> {
       }
     } catch {
       // The model didn't load: try again on a later place, waiting longer each time (30 s, 1 min,
-      // 2 min … up to 10 min), and drop a cached copy in case that is what's broken.
+      // 2 min … up to 10 min), and drop a cached model in case that is what's broken.
       failures++
       retryAt = Date.now() + Math.min(600_000, 30_000 * 2 ** (failures - 1))
       classifier = null
-      try { await caches.delete('kova-v2-models') } catch { /* no Cache API */ }
+      // Only when the model itself failed (a library chunk failing to download says nothing
+      // about the cached model), and by suffix, so it follows the worker's cache version.
+      if (modelFetchStarted) {
+        try {
+          for (const name of await caches.keys()) if (name.endsWith('-models')) await caches.delete(name)
+        } catch { /* no Cache API */ }
+      }
       return null
     }
   })()
