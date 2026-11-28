@@ -240,7 +240,7 @@ export function PlacePanel(p: Props) {
               <div className="menu-shelf">
                 {menus.map((ph, i) => (
                   <button key={ph.name} aria-label={`Menu photo ${i + 1}`} onClick={() => showPhoto(ph)}>
-                    <img src={photoURL(ph, 400)} alt="" loading="lazy" />
+                    <img src={photoURL(ph, 400)} alt="" loading="lazy" crossOrigin="anonymous" />
                   </button>
                 ))}
               </div>

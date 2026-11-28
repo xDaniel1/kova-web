@@ -32,25 +32,24 @@ self.addEventListener('fetch', (e) => {
 
   // The photo sorter's model (about 4 MB, versioned path): download once, keep.
   if (url.origin === location.origin && url.pathname.startsWith('/models/')) {
-    e.respondWith(
-      caches.open(MODELS).then(async (c) => {
-        const hit = await c.match(req)
-        if (hit) return hit
-        const res = await fetch(req)
-        // Only a whole file is kept: a page served in its place (HTML) or a download cut short
-        // would otherwise be served from the cache for good.
-        // A partial (206) answer is never kept. Caching is best effort: a write the browser
-        // refuses (quota) still hands the file to the page.
-        if (res.status === 200 && !(res.headers.get('content-type') ?? '').includes('text/html')) {
-          try {
-            const body = await res.clone().arrayBuffer()
-            const length = Number(res.headers.get('content-length'))
-            if (body.byteLength > 0 && (!length || res.headers.has('content-encoding') || length === body.byteLength)) await c.put(req, res.clone())
-          } catch { /* not cached; the response below is still whole */ }
-        }
-        return res
-      }),
-    )
+    e.respondWith((async () => {
+      // Cache Storage failing (quota, a broken profile) must never block the download itself.
+      const c = await caches.open(MODELS).catch(() => null)
+      const hit = c && (await c.match(req).catch(() => undefined))
+      if (hit) return hit
+      const res = await fetch(req)
+      // Only a whole file is kept: a page served in its place (HTML), a partial (206) answer or a
+      // download cut short would otherwise be served from the cache for good. Caching is best
+      // effort: a write the browser refuses still hands the file to the page.
+      if (c && res.status === 200 && !(res.headers.get('content-type') ?? '').includes('text/html')) {
+        try {
+          const body = await res.clone().arrayBuffer()
+          const length = Number(res.headers.get('content-length'))
+          if (body.byteLength > 0 && (!length || res.headers.has('content-encoding') || length === body.byteLength)) await c.put(req, res.clone())
+        } catch { /* not cached; the response below is still whole */ }
+      }
+      return res
+    })())
     return
   }
 
